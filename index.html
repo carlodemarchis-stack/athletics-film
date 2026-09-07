@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>World Record Film — 100 Metres</title>
+<meta name="description" content="Every world record ever set, as film. An interactive athletics experience by A guy with a scarf (Carlo De Marchis).">
+<link rel="canonical" href="https://athletics.aguywithascarf.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="A guy with a scarf">
+<meta property="og:title" content="World Record Film — 100 Metres">
+<meta property="og:description" content="Every world record ever set, as film. An interactive athletics experience by A guy with a scarf.">
+<meta property="og:url" content="https://athletics.aguywithascarf.com/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0807'/><g stroke='%23e2572f' stroke-width='2.2' stroke-linecap='round'><path d='M5 11h22M5 21h22'/></g><path d='M24 3.5v25' stroke='%23f2c14e' stroke-width='2.6'/></svg>">
+<style>
+  :root{
+    --bg0:#0a0807; --bg1:#1a100c; --bg2:#2b1610;
+    --ink:#f6efe9; --muted:#b39a8c; --muted-2:#7c675c;
+    --line:rgba(230,190,160,.14);
+    --gold:#f2c14e; --track:#e2572f; --steel:#7f96b8; --green:#5ed39b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%; overflow:hidden}
+  body{background:var(--bg0); color:var(--ink);
+    font-family:"Helvetica Neue",Arial,system-ui,sans-serif; -webkit-font-smoothing:antialiased}
+
+  .stage{position:fixed; inset:0; overflow:hidden}
+  .card{position:absolute; inset:0; display:flex; flex-direction:column;
+    padding:clamp(14px,2.4vh,30px) clamp(18px,3.2vw,54px) clamp(12px,2vh,22px); overflow:hidden}
+  .card__bg{position:absolute; inset:0; z-index:0;
+    background:radial-gradient(120% 95% at 84% 8%, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%)}
+  .card__bg::after{content:""; position:absolute; inset:0; opacity:.5;
+    background:radial-gradient(60% 80% at 8% 115%, rgba(226,87,47,.16), transparent 62%)}
+  .ghostnum{position:absolute; z-index:1; right:-1.5vw; top:-3vh; font-weight:800;
+    font-size:min(44vh,30vw); line-height:.8; letter-spacing:-.05em; color:rgba(255,255,255,.037);
+    pointer-events:none; user-select:none; white-space:nowrap}
+  .inner{position:relative; z-index:2; display:flex; flex-direction:column; height:100%;
+    width:100%; max-width:1560px; margin:0 auto; gap:clamp(8px,1.4vh,16px)}
+
+  /* ---------- head ---------- */
+  .head{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex:0 0 auto}
+  .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
+  .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
+  .title h1{font-size:clamp(30px,4.6vh,52px); font-weight:800; letter-spacing:-.025em}
+  .sex{font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--track); border:1px solid rgba(226,87,47,.45); border-radius:999px; padding:5px 12px}
+  .rec{text-align:right; line-height:1}
+  .rec .v{font-size:clamp(38px,6.4vh,74px); font-weight:800; letter-spacing:-.035em; color:var(--gold)}
+  .rec .v small{font-size:.4em; font-weight:700; color:var(--muted); letter-spacing:0; margin-left:8px}
+  .rec .w{font-size:14px; font-weight:700; color:var(--ink); margin-top:8px}
+  .rec .w b{color:var(--muted); font-weight:600}
+
+  /* ---------- stat bar ---------- */
+  .statbar{display:flex; gap:clamp(18px,2.6vw,44px); align-items:flex-end; flex-wrap:wrap;
+    padding:0 0 clamp(8px,1.3vh,14px); border-bottom:1px solid var(--line); flex:0 0 auto}
+  .stat .v{font-size:clamp(19px,2.9vh,30px); font-weight:800; letter-spacing:-.02em; line-height:1; white-space:nowrap}
+  .stat .v small{font-size:.55em; font-weight:700; color:var(--muted)}
+  .stat .v.hl{color:var(--gold)}
+  .stat .k{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted-2); margin-top:6px}
+
+  /* ---------- chart ---------- */
+  .chartwrap{position:relative; flex:1 1 auto; min-height:0}
+  .chartwrap svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+  .lbl{font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; fill:var(--muted-2)}
+  .axv{font-size:10.5px; font-weight:700; fill:var(--muted-2)}
+  .seam{stroke:rgba(255,255,255,.22); stroke-width:1; stroke-dasharray:2 4}
+  .seamlbl{font-size:9.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; fill:var(--muted-2)}
+  .dot{cursor:pointer}
+  .plateaulbl{font-size:12px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; fill:var(--gold)}
+
+  .tip{position:absolute; z-index:9; pointer-events:none; opacity:0; transition:opacity .12s;
+    background:rgba(12,9,8,.94); border:1px solid var(--line); border-radius:10px;
+    padding:9px 12px; font-size:12px; line-height:1.45; white-space:nowrap;
+    box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .tip .p{font-weight:800; font-size:15px; letter-spacing:-.01em}
+  .tip .n{font-weight:700; color:var(--ink)}
+  .tip .m{color:var(--muted)}
+
+  /* ---------- ghost race ---------- */
+  .race{flex:0 0 auto; border-top:1px solid var(--line); padding-top:clamp(8px,1.3vh,14px)}
+  .racehead{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:8px}
+  .racehead .t{font-size:10px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--muted-2)}
+  .racehead .t b{color:var(--ink); font-weight:800}
+  .btn{font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
+    color:var(--ink); background:rgba(255,255,255,.06); border:1px solid var(--line);
+    border-radius:999px; padding:7px 16px}
+  .btn:hover{background:rgba(255,255,255,.12)}
+  .racewrap{position:relative; height:clamp(96px,16vh,152px)}
+  .racewrap svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+  .runlbl{font-size:9.5px; font-weight:800; fill:var(--muted-2)}
+
+  /* ---------- stories ---------- */
+  .stories{flex:0 0 auto; display:flex; gap:10px; flex-wrap:wrap; padding-top:clamp(8px,1.3vh,14px);
+    border-top:1px solid var(--line)}
+  .chip{font-size:12px; font-weight:600; color:var(--muted); padding:7px 13px; border-radius:999px;
+    background:rgba(255,255,255,.045); border:1px solid var(--line)}
+  .chip b{color:var(--ink); font-weight:800}
+  .chip.gold{color:var(--gold); background:rgba(242,193,78,.1); border-color:rgba(242,193,78,.28)}
+  .chip.gold b{color:var(--gold)}
+
+  .note{position:absolute; left:clamp(18px,3.2vw,54px); bottom:6px; font-size:10px; color:var(--muted-2); z-index:3}
+</style>
+</head>
+<body>
+<div class="stage">
+  <section class="card">
+    <div class="card__bg"></div>
+    <div class="ghostnum" id="ghostnum"></div>
+    <div class="inner">
+
+      <div class="head">
+        <div>
+          <div class="disc" id="kicker">World record progression</div>
+          <div class="title"><h1 id="title">—</h1><span class="sex" id="sex"></span></div>
+        </div>
+        <div class="rec">
+          <div class="v" id="recv">—</div>
+          <div class="w" id="recw"></div>
+        </div>
+      </div>
+
+      <div class="statbar" id="statbar"></div>
+
+      <div class="chartwrap" id="chartwrap">
+        <svg id="stair"></svg>
+        <div class="tip" id="tip"></div>
+      </div>
+
+      <div class="race">
+        <div class="racehead">
+          <div class="t" id="racetitle">The ghost race</div>
+          <button class="btn" id="playbtn">▶ Race the eras</button>
+        </div>
+        <div class="racewrap"><svg id="racesvg"></svg></div>
+      </div>
+
+      <div class="stories" id="stories"></div>
+    </div>
+    <div class="note">Data: World Athletics · A guy with a scarf</div>
+  </section>
+</div>
+
+<script>
+/* ============================ data helpers ============================ */
+const MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+const TODAY = new Date();
+
+const parseDate = s => { const [d,m,y] = s.split(' '); return new Date(+y, MONTHS[m.toUpperCase()], +d); };
+
+/* "9.58" · "10.0h" · "1:53.28" · "2:09:56" · "9126" (points) · "8.95" (metres) */
+function parseMark(p){
+  const hand = /h$/.test(p);
+  const s = p.replace(/h$/,'').replace(/[^\d:.]/g,'');
+  const v = s.split(':').reduce((a,x)=>a*60+parseFloat(x), 0);
+  return {value:v, hand};
+}
+
+const TIMED = /Metres|Miles|Marathon|Hurdles|Relay|Kilometres|Yards/;
+const betterIsLower = d => TIMED.test(d) && !/Jump|Vault|Put|Throw/.test(d);
+
+const fmtYears = days => (days/365.25);
+const plural = (n,w) => n + ' ' + w + (n===1?'':'s');
+
+/* ============================ build a card model ============================ */
+function model(card){
+  const lower = betterIsLower(card.discipline);
+  // API returns newest first — flip to chronological
+  const rows = card.entries.map(e => {
+    const m = parseMark(e.performance);
+    return {perf:e.performance, value:m.value, hand:m.hand, date:parseDate(e.date), dateStr:e.date,
+            who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal};
+  }).reverse();
+
+  // quality: always "bigger = better" so every card climbs toward the ceiling
+  rows.forEach(r => r.q = lower ? -r.value : r.value);
+  rows.forEach((r,i) => {
+    const end = i < rows.length-1 ? rows[i+1].date : TODAY;
+    r.reign = Math.round((end - r.date) / 864e5);
+    r.until = end;
+  });
+
+  const cur = rows[rows.length-1], first = rows[0];
+  const byWho = new Map(), byCountry = new Map();
+  rows.forEach(r => { byWho.set(r.who,(byWho.get(r.who)||0)+1);
+                      byCountry.set(r.country,(byCountry.get(r.country)||0)+1); });
+  const top = [...byWho.entries()].sort((a,b)=>b[1]-a[1])[0];
+  const topCty = [...byCountry.entries()].sort((a,b)=>b[1]-a[1])[0];
+  const byDay = new Map();
+  rows.forEach(r => byDay.set(r.dateStr,(byDay.get(r.dateStr)||0)+1));
+  const busiest = [...byDay.entries()].sort((a,b)=>b[1]-a[1])[0];
+  const firstAuto = rows.find(r => !r.hand && rows.some(x=>x.hand));
+
+  return {card, lower, rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
+          improvement: Math.abs(cur.value - first.value),
+          improvementPct: Math.abs(cur.value - first.value) / first.value * 100,
+          spanYears: fmtYears((cur.date - first.date) / 864e5)};
+}
+
+/* ============================ the staircase ============================ */
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t,a={}) => { const n = document.createElementNS(NS,t);
+  for (const k in a) n.setAttribute(k, a[k]); return n; };
+
+function drawStair(M){
+  const svg = document.getElementById('stair'), wrap = document.getElementById('chartwrap');
+  svg.innerHTML = '';
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const pad = {t: 22, r: 128, b: 30, l: 8};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+  const t0 = M.rows[0].date.getTime(), t1 = TODAY.getTime();
+  const qs = M.rows.map(r => r.q);
+  let q0 = Math.min(...qs), q1 = Math.max(...qs);
+  const padQ = (q1 - q0) * 0.14 || 1;
+  q0 -= padQ; q1 += padQ * .5;
+  const X = t => pad.l + (t - t0) / (t1 - t0) * iw;
+  const Y = q => pad.t + (1 - (q - q0) / (q1 - q0)) * ih;
+
+  /* --- decade gridlines --- */
+  const y0 = M.rows[0].date.getFullYear(), y1 = TODAY.getFullYear();
+  for (let y = Math.ceil(y0/20)*20; y <= y1; y += 20){
+    const x = X(new Date(y,0,1).getTime());
+    svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
+    const tx = el('text',{x, y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}); tx.textContent = y;
+    svg.appendChild(tx);
+  }
+
+  /* --- the ceiling: today's record, drawn all the way across --- */
+  svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw+42, y1:Y(M.cur.q), y2:Y(M.cur.q),
+    stroke:'rgba(242,193,78,.32)', 'stroke-width':1, 'stroke-dasharray':'1 5'}));
+
+  /* --- steps --- */
+  const dyn = [...M.byWho.entries()].filter(([,n]) => n >= 2).map(([n]) => n);
+  const HUES = ['#7f96b8','#c98a5c','#8fb98a','#b98aa8','#6fa9b8','#c0a05c','#9a8fc4','#b8836f'];
+  const colourOf = r => r.who === M.cur.who ? 'var(--gold)'
+                      : dyn.includes(r.who) ? HUES[dyn.indexOf(r.who) % HUES.length]
+                      : 'rgba(160,175,200,.5)';
+
+  const area = [`M ${X(t0)} ${Y(q0)}`];
+  M.rows.forEach((r,i) => {
+    const x1 = X(r.date.getTime()), x2 = X(r.until.getTime()), y = Y(r.q);
+    area.push(`L ${x1} ${y} L ${x2} ${y}`);
+    // riser up (or down) into this record
+    if (i > 0){
+      svg.appendChild(el('line',{x1, x2:x1, y1:Y(M.rows[i-1].q), y2:y,
+        stroke:colourOf(r), 'stroke-width':1.4, opacity:.55}));
+    }
+    svg.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:colourOf(r),
+      'stroke-width': r.who === M.cur.who ? 3.2 : 2,
+      'stroke-dasharray': r.hand ? '5 3' : null,
+      'stroke-linecap':'round'}));
+  });
+  area.push(`L ${X(t1)} ${Y(q0)} Z`);
+  const fill = el('path',{d: area.join(' '), fill:'url(#stairgrad)', opacity:.5});
+  const defs = el('defs');
+  const g = el('linearGradient',{id:'stairgrad', x1:0, y1:0, x2:0, y2:1});
+  g.appendChild(el('stop',{offset:'0%',  'stop-color':'rgba(242,193,78,.20)'}));
+  g.appendChild(el('stop',{offset:'100%','stop-color':'rgba(242,193,78,0)'}));
+  defs.appendChild(g); svg.appendChild(defs); svg.insertBefore(fill, svg.firstChild);
+
+  /* --- the seam: when auto timing became the standard --- */
+  if (M.firstAuto){
+    const x = X(M.firstAuto.date.getTime());
+    svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-6, y2:pad.t+ih, class:'seam'}));
+    const t = el('text',{x:x+6, y:pad.t+2, class:'seamlbl'});
+    t.textContent = 'electronic timing'; svg.appendChild(t);
+  }
+
+  /* --- dots + hover --- */
+  const tip = document.getElementById('tip');
+  M.rows.forEach(r => {
+    const c = el('circle',{cx:X(r.date.getTime()), cy:Y(r.q), r: r.who===M.cur.who?5:3,
+      fill: r.who===M.cur.who ? 'var(--gold)' : 'var(--bg0)',
+      stroke: colourOf(r), 'stroke-width':1.6, class:'dot'});
+    c.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${r.perf}${r.wind?` <span class="m">${r.wind}</span>`:''}</div>`
+        + `<div class="n">${r.who} <span class="m">${r.country}</span></div>`
+        + `<div class="m">${r.venue}</div>`
+        + `<div class="m">${r.dateStr} · stood ${fmtReign(r.reign)}</div>`;
+      tip.style.opacity = 1;
+      const b = wrap.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, wrap.clientWidth - 260) + 'px';
+      tip.style.top  = (ev.clientY - b.top - 10) + 'px';
+    });
+    c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    svg.appendChild(c);
+  });
+
+  /* --- the plateau label sitting on the current record --- */
+  const px = X(M.cur.date.getTime()), py = Y(M.cur.q);
+  const lab = el('text',{x: Math.min(px + 12, pad.l+iw-4), y: py - 14, class:'plateaulbl'});
+  lab.textContent = `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`;
+  svg.appendChild(lab);
+
+  /* --- right-hand value scale: first record vs today --- */
+  [[M.first,'first ratified'], [M.cur,'today']].forEach(([r, k]) => {
+    const y = Y(r.q);
+    const v = el('text',{x: pad.l+iw+14, y: y+4, class:'axv',
+      style: r===M.cur ? 'fill:var(--gold);font-weight:800' : ''});
+    v.textContent = r.perf; svg.appendChild(v);
+    const kk = el('text',{x: pad.l+iw+14, y: y+17, class:'lbl'}); kk.textContent = k;
+    svg.appendChild(kk);
+  });
+}
+
+function fmtReign(days){
+  const y = days/365.25;
+  if (y >= 2) return `${y.toFixed(y<10?1:0)} years`;
+  if (days >= 60) return `${Math.round(days/30.44)} months`;
+  if (days >= 1) return plural(days,'day');
+  return 'same day';
+}
+
+/* ============================ the ghost race ============================ */
+let raceAnim = null;
+function drawRace(M){
+  const svg = document.getElementById('racesvg'), wrap = svg.parentElement;
+  svg.innerHTML = '';
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const padL = 30, padR = 150, padT = 14, padB = 16;
+  const lane = W - padL - padR, laneH = H - padT - padB;
+
+  // one runner per distinct mark, fastest in the top lane
+  const seen = new Set(), runners = [];
+  M.rows.forEach(r => { if (!seen.has(r.perf)){ seen.add(r.perf); runners.push(r); } });
+  runners.sort((a,b) => b.q - a.q);
+
+  const fastest = runners[0].value, slowest = runners[runners.length-1].value;
+  const rowH = laneH / Math.max(runners.length - 1, 1);
+  const yOf = i => padT + i * rowH;
+  const unit = M.lower ? 'm' : '';
+
+  /* everyone finishes inside the last few metres, so once the leader lands the
+     lane zooms into the finish stretch — otherwise the whole field is one blob */
+  const gapM = 100 - 100 * fastest / slowest;
+  const zoomFrom = Math.max(0, 100 - gapM * 1.35);
+  let dMin = 0;
+  const X = m => padL + (m - dMin) / (100 - dMin) * lane;
+
+  const grid = el('g'); svg.appendChild(grid);
+  const startLbl = el('text',{y: padT+laneH+16, class:'lbl'}); svg.appendChild(startLbl);
+  const finLbl = el('text',{y: padT+laneH+16, class:'lbl', 'text-anchor':'end'});
+  finLbl.textContent = 'finish'; svg.appendChild(finLbl);
+
+  function drawTrack(){
+    grid.innerHTML = '';
+    const step = (100 - dMin) > 40 ? 10 : (100 - dMin) > 12 ? 5 : 2;
+    for (let m = Math.ceil(dMin/step)*step; m <= 100; m += step){
+      grid.appendChild(el('line',{x1:X(m), x2:X(m), y1:padT-6, y2:padT+laneH+6,
+        stroke: m===100 ? 'rgba(242,193,78,.55)' : 'rgba(255,255,255,.06)',
+        'stroke-width': m===100 ? 1.5 : 1}));
+    }
+    startLbl.setAttribute('x', X(dMin));
+    startLbl.textContent = dMin < 1 ? 'start' : `${dMin.toFixed(0)} m`;
+    finLbl.setAttribute('x', X(100));
+  }
+
+  const dots = runners.map((r,i) => {
+    const streak = el('line',{x1:padL, x2:padL, y1:yOf(i), y2:yOf(i),
+      stroke: r === M.cur ? 'rgba(242,193,78,.5)' : 'rgba(190,205,225,.22)', 'stroke-width':1.4});
+    const c = el('circle',{cx:padL, cy:yOf(i), r: r === M.cur ? 4 : 2.4,
+      fill: r === M.cur ? 'var(--gold)' : 'rgba(200,214,234,.6)'});
+    svg.appendChild(streak); svg.appendChild(c);
+    return {r, c, streak, y:yOf(i), m:0};
+  });
+
+  /* labels: the current record, the oldest mark, the first electronic one */
+  const marked = new Map();
+  marked.set(runners[0], ['var(--gold)', true]);
+  marked.set(runners[runners.length-1], ['var(--muted)', false]);
+  if (M.firstAuto){ const fa = runners.find(r => r.perf === M.firstAuto.perf);
+    if (fa && !marked.has(fa)) marked.set(fa, ['var(--muted-2)', false]); }
+  const labels = [...marked].map(([r,[col,bold]]) => {
+    const d = dots.find(x => x.r === r);
+    const t = el('text',{x:padL, y:d.y + 3.5, class:'runlbl',
+      style:`fill:${col}${bold?';font-weight:800':''}`});
+    t.textContent = `${r.perf} · ${r.date.getFullYear()}`;
+    svg.appendChild(t);
+    return {t, d};
+  });
+
+  /* the gap bracket, revealed when the leader crosses */
+  const gap = el('g',{opacity:0});
+  const gapLine = el('line',{y1:padT-8, y2:padT+laneH+2, stroke:'rgba(255,255,255,.3)',
+    'stroke-dasharray':'2 4'});
+  const gapTxt = el('text',{y:padT-12, class:'runlbl',
+    style:'fill:var(--ink);font-weight:800;font-size:11px'});
+  gapTxt.textContent = `${gapM.toFixed(1)} m back when ${short(M.cur.who)} finishes`;
+  gap.appendChild(gapLine); gap.appendChild(gapTxt); svg.appendChild(gap);
+
+  function place(){
+    dots.forEach(d => {
+      const x = X(d.m);
+      d.c.setAttribute('cx', x);
+      d.streak.setAttribute('x1', Math.max(X(dMin), x - 14));
+      d.streak.setAttribute('x2', x);
+    });
+    labels.forEach(({t:txt, d}) => txt.setAttribute('x', +d.c.getAttribute('cx') + 9));
+    const gx = X(100 - gapM);
+    gapLine.setAttribute('x1', gx); gapLine.setAttribute('x2', gx);
+    gapTxt.setAttribute('x', gx + 6);
+  }
+
+  const RUN = 3400, ZOOM = 900;                     // wall-clock ms
+  cancelAnimationFrame(raceAnim);
+  const t0 = performance.now();
+  drawTrack(); place();
+  function frame(now){
+    const ms = now - t0;
+    const t = Math.min(ms / (RUN / fastest), fastest);   // race seconds, frozen at the leader's time
+    dots.forEach(d => d.m = Math.min(1, t / d.r.value) * 100);
+    if (ms > RUN){                                        // ease the zoom into the finish
+      const k = Math.min(1, (ms - RUN) / ZOOM);
+      dMin = zoomFrom * (1 - Math.pow(1 - k, 3));
+      gap.setAttribute('opacity', k);
+      drawTrack();
+    }
+    place();
+    if (ms < RUN + ZOOM) raceAnim = requestAnimationFrame(frame);
+  }
+  raceAnim = requestAnimationFrame(frame);
+
+  const oldest = runners[runners.length-1];
+  document.getElementById('racetitle').innerHTML =
+    `The ghost race — every record mark run at once. When <b>${short(M.cur.who)}</b> hits the line, `
+    + `<b>${oldest.date.getFullYear()}</b> is still <b>${gapM.toFixed(1)} ${unit||'behind'}</b> back.`;
+}
+
+const short = n => { const p = n.split(' '); return p[p.length-1].replace(/^(.)(.*)$/, (m,a,b)=>a+b.toLowerCase()); };
+
+/* ============================ chrome ============================ */
+function render(M){
+  const c = M.card;
+  document.getElementById('title').textContent = c.discipline;
+  document.getElementById('sex').textContent = c.gender === 'men' ? 'Men' : c.gender === 'women' ? 'Women' : c.gender;
+  document.getElementById('ghostnum').textContent = M.cur.perf;
+  document.getElementById('recv').innerHTML = M.cur.perf + (M.cur.wind ? `<small>${M.cur.wind}</small>` : '');
+  document.getElementById('recw').innerHTML =
+    `${M.cur.who} <b>${M.cur.country}</b> · ${M.cur.venue} · <b>${M.cur.dateStr}</b>`;
+
+  const st = [
+    ['v hl', fmtReign(M.cur.reign), 'standing'],
+    ['v', M.rows.length, 'records set'],
+    ['v', M.spanYears.toFixed(0) + '<small>y</small>', 'of progression'],
+    ['v', '−' + (M.lower ? M.improvement.toFixed(2) + '<small>s</small>' : M.improvement.toFixed(2)),
+          'total gain'],
+    ['v', M.improvementPct.toFixed(1) + '<small>%</small>', 'faster than 1st'],
+    ['v', M.byWho.size, 'athletes'],
+    ['v', M.byCountry.size, 'nations'],
+  ];
+  document.getElementById('statbar').innerHTML = st.map(([cl,v,k]) =>
+    `<div class="stat"><div class="${cl}">${v}</div><div class="k">${k}</div></div>`).join('');
+
+  const stories = [];
+  stories.push(`<span class="chip gold"><b>${M.cur.perf}</b> has stood since <b>${M.cur.date.getFullYear()}</b> — the longest wait in this event's history</span>`);
+  if (M.busiest[1] > 1)
+    stories.push(`<span class="chip"><b>${M.busiest[0]}</b> — the record fell <b>${M.busiest[1]} times</b> in one day</span>`);
+  stories.push(`<span class="chip"><b>${M.top[0]}</b> set <b>${M.top[1]}</b> of them</span>`);
+  stories.push(`<span class="chip"><b>${M.topCty[0]}</b> holds <b>${M.topCty[1]}</b> of ${M.rows.length}</span>`);
+  const handN = M.rows.filter(r => r.hand).length;
+  if (handN) stories.push(`<span class="chip"><b>${handN}</b> hand-timed <span style="opacity:.7">(dashed — not comparable with electronic marks)</span></span>`);
+  document.getElementById('stories').innerHTML = stories.join('');
+
+  paint();
+}
+
+/* the SVGs are sized from their flex containers, so only ever paint after layout */
+let CURRENT = null, pt = null;
+function paint(){
+  clearTimeout(pt);
+  pt = setTimeout(() => {
+    if (!CURRENT || document.getElementById('chartwrap').clientWidth < 80) return;
+    drawStair(CURRENT); drawRace(CURRENT);
+  }, 60);
+}
+
+fetch('data/progressions.json').then(r => r.json()).then(d => {
+  const card = d.cards.find(c => c.gender === 'men' && c.discipline === '100 Metres');
+  CURRENT = model(card);
+  render(CURRENT);
+});
+
+new ResizeObserver(paint).observe(document.getElementById('chartwrap'));
+document.getElementById('playbtn').addEventListener('click', () => CURRENT && drawRace(CURRENT));
+</script>
+</body>
+</html>
