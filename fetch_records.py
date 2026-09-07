@@ -34,13 +34,17 @@ def gql(query):
 
 
 def discipline_index():
-    d = gql("{getRecordsDisciplineList{gender disciplineTypes{disciplines{eventId name}}}}")
-    out = {}
+    """In the order World Athletics themselves list them — discipline group, then discipline."""
+    d = gql("{getRecordsDisciplineList{gender disciplineTypes{name disciplines{eventId name}}}}")
+    out = []
     for g in d["getRecordsDisciplineList"]:
+        rank = 0
         for t in g["disciplineTypes"]:
             for x in t["disciplines"]:
                 if x["name"] in EVENTS:
-                    out[(g["gender"], x["name"])] = int(x["eventId"])
+                    out.append({"gender": g["gender"], "discipline": x["name"],
+                                "eventId": int(x["eventId"]), "group": t["name"], "order": rank})
+                    rank += 1
     return out
 
 
@@ -85,7 +89,8 @@ def competition_of(entry):
 def main():
     idx = discipline_index()
     cards = []
-    for (gender, name), eid in sorted(idx.items()):
+    for e in idx:
+        gender, name, eid = e["gender"], e["discipline"], e["eventId"]
         pid = progression_id(eid)
         if not pid:
             print(f"  !! no World Records progression for {gender} {name}", file=sys.stderr)
@@ -95,9 +100,10 @@ def main():
         cards.append({"gender": gender, "discipline": name, "eventId": eid,
                       "progressionId": pid, "environment": p["environment"],
                       "disciplineCode": p["discipline"]["disciplineCode"],
+                      "group": e["group"], "order": e["order"],
                       "competition": meet,
                       "entries": p["entries"]})
-        print(f"  {gender:5} {name:20} pid={pid:<6} {len(p['entries']):3} records  {meet or '—'}")
+        print(f"  {gender:5} {e['group']:15} {name:20} #{e['order']:<3} {len(p['entries']):3} records")
         time.sleep(0.15)
     path = os.path.join(HERE, "data", "progressions.json")
     with open(path, "w") as f:

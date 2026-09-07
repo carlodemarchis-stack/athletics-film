@@ -48,8 +48,13 @@
   .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
   .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
   .title h1{font-size:clamp(28px,4.5vh,52px); font-weight:800; letter-spacing:-.025em; white-space:nowrap}
-  .sex{font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
-    color:var(--track); border:1px solid rgba(226,87,47,.45); border-radius:999px; padding:5px 12px}
+  .kicker{display:flex; align-items:center; gap:14px}
+  .sexsw{display:flex; gap:6px; align-items:center}
+  .sx{font-size:10.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    padding:5px 12px; border-radius:999px; cursor:pointer; font-family:inherit; transition:.15s;
+    border:1px solid transparent; background:transparent; color:var(--muted-2)}
+  .sx:hover{color:var(--ink); background:rgba(255,255,255,.05)}
+  .sx.on{color:var(--track); border-color:rgba(226,87,47,.45); background:rgba(226,87,47,.08)}
   .rec{text-align:right; line-height:1; min-width:0}
   .recline{display:flex; align-items:baseline; justify-content:flex-end; flex-wrap:wrap;
     gap:4px clamp(10px,1.6vw,22px)}
@@ -119,9 +124,11 @@
   .runlbl{font-size:9.5px; font-weight:800; fill:var(--muted-2)}
 
   /* ---------- stories ---------- */
-  .stories{flex:0 0 auto; display:flex; gap:10px; flex-wrap:wrap; padding-top:clamp(8px,1.3vh,14px);
-    border-top:1px solid var(--line)}
-  .chip{font-size:12px; font-weight:600; color:var(--muted); padding:7px 13px; border-radius:999px;
+  .stories{flex:0 0 auto; display:flex; gap:9px; flex-wrap:nowrap; overflow-x:auto;
+    scrollbar-width:none; padding-top:clamp(8px,1.3vh,14px); border-top:1px solid var(--line)}
+  .stories::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto; white-space:nowrap; font-size:12px; font-weight:600; color:var(--muted);
+    padding:7px 13px; border-radius:999px;
     background:rgba(255,255,255,.045); border:1px solid var(--line)}
   .chip b{color:var(--ink); font-weight:800}
   .chip.gold{color:var(--gold); background:rgba(242,193,78,.1); border-color:rgba(242,193,78,.28)}
@@ -347,7 +354,8 @@ function model(card){
             who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal};
   }).reverse();
 
-  // quality: always "bigger = better" so every card climbs toward the ceiling
+  // quality: always "bigger = better", so every card in the film climbs the same way
+  // and the standing record is the ceiling at the top of the plot
   rows.forEach(r => r.q = lower ? -r.value : r.value);
   rows.forEach((r,i) => {
     const end = i < rows.length-1 ? rows[i+1].date : TODAY;
@@ -372,9 +380,11 @@ function model(card){
   // a mark flagged `equal` matched the standing record rather than beating it
   const improvements = rows.filter(r => !r.equal).length;
   const firstAuto = rows.find(r => !r.hand && rows.some(x=>x.hand));
+  // the record standing today is not necessarily the one that stood longest
+  const longestReign = rows.reduce((a,b) => b.reign > a.reign ? b : a);
 
   return {card, lower, rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
-          heldDays, totalDays, improvements, equalled: rows.length - improvements,
+          longestReign, heldDays, totalDays, improvements, equalled: rows.length - improvements,
           improvement: Math.abs(cur.value - first.value),
           improvementPct: Math.abs(cur.value - first.value) / first.value * 100,
           firstYear: first.date.getFullYear(),
@@ -477,10 +487,13 @@ function drawStair(M, root){
   svg.appendChild(txt(el('text',{x: pad.l+iw, y: Y(M.cur.q) - 14, class:'plateaulbl',
     'text-anchor':'end'}), `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`));
 
-  /* --- right-hand anchor: today's mark (the first one is on the staircase already) --- */
+  /* --- right-hand axis: today's mark at the top, where it started at the foot --- */
   svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.cur.q)+4, class:'axv',
     style:'fill:var(--gold);font-weight:800'}), M.cur.perf));
   svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.cur.q)+17, class:'lbl'}), 'today'));
+  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.first.q)+4, class:'axv'}), M.first.perf));
+  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.first.q)+17, class:'lbl'}),
+    M.first.date.getFullYear()));
 }
 
 /* the gap expressed in the event's own units rather than a bare percentage */
@@ -507,7 +520,7 @@ function drawRace(M, root){
   // one runner per distinct mark, fastest in the top lane
   const seen = new Set(), runners = [];
   M.rows.forEach(r => { if (!seen.has(r.perf)){ seen.add(r.perf); runners.push(r); } });
-  runners.sort((a,b) => b.q - a.q);
+  runners.sort((a,b) => M.lower ? a.value - b.value : b.value - a.value);   // best first
 
   const fastest = runners[0].value, slowest = runners[runners.length-1].value;
   const rowH = laneH / Math.max(runners.length - 1, 1);
@@ -586,6 +599,14 @@ function drawRace(M, root){
   const RUN = 3400, ZOOM = 900;                     // wall-clock ms
   const t0 = performance.now();
   drawTrack(); place();
+
+  /* right-align the replay button to where the leader's label ends, so the button
+     and the record/year below it share an edge */
+  const btn = root.querySelector('.replay');
+  if (btn){
+    const lw = labels[0].t.getBBox().width;
+    btn.style.marginRight = Math.max(0, Math.round(W - (padL + lane + 9 + lw))) + 'px';
+  }
   function frame(now){
     const ms = now - t0;
     const t = Math.min(ms / (RUN / fastest), fastest);   // race seconds, frozen at the leader's time
@@ -672,12 +693,16 @@ function drawOpening(root, deck){
 }
 
 /* ============================ card chrome ============================ */
-function eventCardHTML(){
+const sexTabs = sex => `<div class="sexsw">`
+  + ['men','women'].map(x => `<button class="sx${x === sex ? ' on' : ''}" data-sex="${x}">${x}</button>`).join('')
+  + `</div>`;
+
+function eventCardHTML(sex){
   return `<div class="card__bg"></div><div class="ghostnum"></div>
     <div class="inner">
       <div class="head">
-        <div><div class="disc">World record progression</div>
-          <div class="title"><h1></h1><span class="sex"></span></div></div>
+        <div><div class="kicker"><div class="disc">World record progression</div>${sexTabs(sex)}</div>
+          <div class="title"><h1></h1></div></div>
         <div class="rec">
           <div class="recline"><div class="who"></div><div class="v"></div></div>
           <div class="w"></div>
@@ -699,7 +724,6 @@ function eventCardHTML(){
 function fillEventCard(root, M){
   const c = M.card;
   root.querySelector('.title h1').textContent = c.discipline;
-  root.querySelector('.sex').textContent = c.gender === 'men' ? 'Men' : c.gender === 'women' ? 'Women' : c.gender;
   root.querySelector('.ghostnum').textContent = M.cur.perf;
   root.querySelector('.rec .v').innerHTML = M.cur.perf + (M.cur.wind ? `<small>${M.cur.wind}</small>` : '');
   root.querySelector('.rec .who').innerHTML = flagOf(M.cur.country) + nameHTML(M.cur.who);
@@ -737,23 +761,26 @@ function fillEventCard(root, M){
     }).join('') + '</div>';
 
   const stories = [];
-  stories.push(`<span class="chip gold"><b>${M.cur.perf}</b> has stood since <b>${M.cur.date.getFullYear()}</b> — the longest wait in this event's history</span>`);
+  const L = M.longestReign;
+  stories.push(L === M.cur
+    ? `<span class="chip gold"><b>${fmtReign(M.cur.reign)}</b> — the longest wait in this event's history</span>`
+    : `<span class="chip gold">Longest ever wait: <b>${fmtReign(L.reign)}</b> — ${surnameOf(L.who)}'s ${L.perf}</span>`);
   const [day, d] = M.busiest;
   if (d.n > 1){
-    const what = d.imp >= 2 ? `the record fell <b>${d.imp} times</b>`
-      : d.imp === 1 ? `the record fell once and was equalled <b>${d.n - 1} more time${d.n > 2 ? 's' : ''}</b>`
-      : `the record was equalled <b>${d.n} times</b>`;
-    stories.push(`<span class="chip"><b>${day}</b> — ${what} in a single day</span>`);
+    const what = d.imp >= 2 ? `fell <b>${d.imp}×</b>`
+      : d.imp === 1 ? `fell once, equalled <b>${d.n - 1}×</b>`
+      : `equalled <b>${d.n}×</b>`;
+    stories.push(`<span class="chip"><b>${day}</b> — ${what} in a day</span>`);
   }
-  stories.push(`<span class="chip"><b>${M.top[0]}</b> — <b>${M.top[1]}</b> of the ${M.rows.length} marks</span>`);
+  stories.push(`<span class="chip"><b>${surnameOf(M.top[0])}</b> — ${M.top[1]} of ${M.rows.length} marks</span>`);
   const handN = M.rows.filter(r => r.hand).length;
-  if (handN) stories.push(`<span class="chip"><b>${handN}</b> hand-timed <span style="opacity:.7">(dashed — not comparable with electronic marks)</span></span>`);
+  if (handN) stories.push(`<span class="chip"><b>${handN}</b> of ${M.rows.length} hand-timed</span>`);
   root.querySelector('.stories').innerHTML = stories.join('');
 
   root.querySelector('.replay').addEventListener('click', () => drawRace(M, root));
 }
 
-function openingCardHTML(deck){
+function openingCardHTML(deck, sex){
   const ages = deck.map(M => fmtYears(M.cur.reign)).sort((a,b) => a-b);
   const median = ages[Math.floor(ages.length/2)];
   const pre2000 = deck.filter(M => M.cur.date.getFullYear() < 2000).length;
@@ -769,7 +796,7 @@ function openingCardHTML(deck){
   return `<div class="card__bg"></div><div class="ghostnum">1983</div>
     <div class="inner">
       <div class="head">
-        <div><div class="disc">World record film · opening</div>
+        <div><div class="kicker"><div class="disc">World record film · every event</div>${sexTabs(sex)}</div>
           <div class="title"><h1>The Longest Wait</h1></div>
           <div class="sub">Every standing world record in the sport, ranked by how long it has held.
             Each bar starts the day the record was set and runs to today.</div></div>
@@ -796,35 +823,37 @@ function labelNations(root){
 }
 
 /* ============================ the film ============================ */
-let DECK = [], SLIDES = [], IDX = 0, TIMER = null;
-const CARD_OF = new Map();
+let DECK = [], SLIDES = [], IDX = 0, TIMER = null, SEX = 'men';
+const CARD_OF = new Map(), FILMS = {};
 
 fetch('data/progressions.json').then(r => r.json()).then(d => {
   DECK = d.cards.map(model);
   const track = document.getElementById('track');
 
-  // opening card
-  const open = document.createElement('section');
-  open.className = 'card';
-  open.innerHTML = openingCardHTML(DECK);
-  track.appendChild(open);
-  SLIDES.push({el: open, slug: 'opening', paint: () => drawOpening(open, DECK)});
-
-  // event cards — timed events for now; field events need their own second panel
-  const events = DECK.filter(M => M.lower).sort((a,b) => b.cur.reign - a.cur.reign);
-  events.forEach(M => {
-    const s = document.createElement('section');
-    s.className = 'card';
-    s.innerHTML = eventCardHTML();
-    track.appendChild(s);
-    fillEventCard(s, M);
-    CARD_OF.set(M.card.gender + '|' + M.card.discipline, SLIDES.length);
-    SLIDES.push({el: s, M, slug: slugOf(M),
-      paint: () => { drawStair(M, s); drawRace(M, s); labelNations(s); }});
+  // one film per sex — timed events for now; field events need their own second panel
+  const timed = DECK.filter(M => M.lower);
+  ['men','women'].forEach(sex => {
+    const events = timed.filter(M => M.card.gender === sex)
+                        .sort((a,b) => a.card.order - b.card.order);   // World Athletics' own order
+    FILMS[sex] = {start: SLIDES.length, len: events.length + 1};
+    events.forEach(M => {
+      const s = document.createElement('section');
+      s.className = 'card';
+      s.innerHTML = eventCardHTML(sex);
+      track.appendChild(s);
+      fillEventCard(s, M);
+      CARD_OF.set(M.card.gender + '|' + M.card.discipline, SLIDES.length);
+      SLIDES.push({el: s, M, sex, slug: slugOf(M),
+        paint: () => { drawStair(M, s); drawRace(M, s); labelNations(s); }});
+    });
+    // the mixed men-and-women ranking closes both films
+    const lw = document.createElement('section');
+    lw.className = 'card';
+    lw.innerHTML = openingCardHTML(DECK, sex);
+    track.appendChild(lw);
+    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', paint: () => drawOpening(lw, DECK)});
   });
-
-  document.getElementById('ctot').textContent = SLIDES.length;
-  buildJump();
+  document.querySelectorAll('.sx').forEach(b => b.onclick = () => switchSex(b.dataset.sex));
 
   /* reload lands where you left off — the hash first (so cards are linkable),
      then the last card of the previous visit */
@@ -841,8 +870,12 @@ const slugOf = M => (M.card.gender + '-' + M.card.discipline)
 
 function go(i, fromHash){
   IDX = (i + SLIDES.length) % SLIDES.length;
+  SEX = SLIDES[IDX].sex;
+  const f = FILMS[SEX];
   document.getElementById('track').style.transform = `translateX(${-IDX * 100}%)`;
-  document.getElementById('cnum').textContent = IDX + 1;
+  document.getElementById('cnum').textContent = IDX - f.start + 1;
+  document.getElementById('ctot').textContent = f.len;
+  buildJump();
   const slug = SLIDES[IDX].slug;
   if (!fromHash) history.replaceState(null, '', '#' + slug);
   try { localStorage.setItem('wrf.card', slug); } catch(e){}
@@ -857,14 +890,15 @@ addEventListener('hashchange', () => {
 
 /* ---- jump-to drop-up ---- */
 function buildJump(){
-  document.getElementById('jgrid').innerHTML = SLIDES.map((s, i) => {
-    const M = s.M;
-    const dot = M ? `var(--${M.card.gender === 'women' ? 'women' : 'men'})` : 'var(--gold)';
-    const name = M ? `${M.card.discipline} <span style="opacity:.55">· ${M.card.gender === 'women' ? 'W' : 'M'}</span>`
+  const f = FILMS[SEX];
+  document.getElementById('jgrid').innerHTML = SLIDES.slice(f.start, f.start + f.len).map((s, k) => {
+    const M = s.M, i = f.start + k;
+    const dot = `var(--${SEX === 'women' ? 'women' : 'men'})`;
+    const name = M ? `${M.card.discipline} <span style="opacity:.55">· ${M.card.group}</span>`
                    : 'The Longest Wait';
-    const yrs = M ? fmtYears(M.cur.reign).toFixed(1) + 'y' : 'opening';
-    return `<button class="jitem" data-i="${i}"><span class="ji">${i+1}</span>`
-      + `<span class="jd" style="background:${dot}"></span>`
+    const yrs = M ? fmtYears(M.cur.reign).toFixed(1) + 'y' : 'all events';
+    return `<button class="jitem" data-i="${i}"><span class="ji">${k+1}</span>`
+      + `<span class="jd" style="background:${M ? dot : 'var(--gold)'}"></span>`
       + `<span class="jn">${name}</span><span class="jy">${yrs}</span></button>`;
   }).join('');
   document.querySelectorAll('.jitem').forEach(b =>
@@ -895,7 +929,21 @@ function paint(){
   }, 60);
 }
 
-const next = () => go(IDX + 1), prev = () => go(IDX - 1);
+/* the two films are separate reels — stepping off the end wraps within the film */
+const step = d => { const f = FILMS[SEX];
+  go(f.start + ((IDX - f.start + d + f.len) % f.len)); };
+const next = () => step(1), prev = () => step(-1);
+
+/* switching sex holds your place: same discipline if it exists, else same slot */
+function switchSex(sex){
+  if (sex === SEX || !FILMS[sex]) return;
+  const cur = SLIDES[IDX], f = FILMS[sex];
+  let to = cur.M
+    ? SLIDES.findIndex(s => s.sex === sex && s.M && s.M.card.discipline === cur.M.card.discipline)
+    : -1;
+  if (to < 0) to = f.start + Math.min(IDX - FILMS[SEX].start, f.len - 1);
+  go(to);
+}
 function setPlaying(on){
   clearInterval(TIMER);
   TIMER = on ? setInterval(next, 11000) : null;
