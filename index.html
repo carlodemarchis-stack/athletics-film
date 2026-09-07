@@ -392,7 +392,7 @@ function drawStair(M, root){
   const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
   svg.innerHTML = '';
   const W = wrap.clientWidth, H = wrap.clientHeight;
-  const pad = {t: 22, r: 128, b: 30, l: 8};
+  const pad = {t: 22, r: 74, b: 30, l: 8};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
 
   const t0 = M.rows[0].date.getTime(), t1 = TODAY.getTime();
@@ -412,7 +412,7 @@ function drawStair(M, root){
   }
 
   /* --- the ceiling: today's record, drawn all the way across --- */
-  svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw+42, y1:Y(M.cur.q), y2:Y(M.cur.q),
+  svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw+8, y1:Y(M.cur.q), y2:Y(M.cur.q),
     stroke:'rgba(242,193,78,.32)', 'stroke-width':1, 'stroke-dasharray':'1 5'}));
 
   /* --- steps --- */
@@ -473,16 +473,14 @@ function drawStair(M, root){
   });
 
   /* --- the plateau label sitting on the current record --- */
-  svg.appendChild(txt(el('text',{x: Math.min(X(M.cur.date.getTime()) + 12, pad.l+iw-4),
-    y: Y(M.cur.q) - 14, class:'plateaulbl'}), `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`));
+  /* the plateau always ends at today, so anchor its label to the right edge of the plot */
+  svg.appendChild(txt(el('text',{x: pad.l+iw, y: Y(M.cur.q) - 14, class:'plateaulbl',
+    'text-anchor':'end'}), `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`));
 
-  /* --- right-hand value scale: first record vs today --- */
-  [[M.first,'first ratified'], [M.cur,'today']].forEach(([r, k]) => {
-    const y = Y(r.q);
-    svg.appendChild(txt(el('text',{x: pad.l+iw+14, y: y+4, class:'axv',
-      style: r===M.cur ? 'fill:var(--gold);font-weight:800' : ''}), r.perf));
-    svg.appendChild(txt(el('text',{x: pad.l+iw+14, y: y+17, class:'lbl'}), k));
-  });
+  /* --- right-hand anchor: today's mark (the first one is on the staircase already) --- */
+  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.cur.q)+4, class:'axv',
+    style:'fill:var(--gold);font-weight:800'}), M.cur.perf));
+  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.cur.q)+17, class:'lbl'}), 'today'));
 }
 
 /* the gap expressed in the event's own units rather than a bare percentage */
