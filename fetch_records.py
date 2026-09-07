@@ -59,7 +59,27 @@ def progression(pid):
     return gql(
         "{getRecordsDetailByProgression(progressionId:%d){gender environment ageCategory "
         "discipline{name disciplineCode} entries{performance equal pending wind date venue "
-        "country competitor{name}}}}" % pid)["getRecordsDetailByProgression"]
+        "country competitor{id name urlSlug}}}}" % pid)["getRecordsDetailByProgression"]
+
+
+def competition_of(entry):
+    """The meet a record was set at. The progression payload doesn't carry it, so look it up
+    in the athlete's own results for that year and match on date + mark."""
+    cid = (entry.get("competitor") or {}).get("id")
+    if not cid:
+        return None                                     # relay teams have no competitor id
+    year = int(entry["date"].split()[-1])
+    try:
+        d = gql('{getSingleCompetitorResultsDate(id:%d,resultsByYear:%d,resultsByYearOrderBy:"date")'
+                '{resultsByDate{date competition mark}}}' % (cid, year))
+        rows = (d["getSingleCompetitorResultsDate"] or {}).get("resultsByDate") or []
+    except Exception:
+        return None
+    same_day = [r for r in rows if r["date"] == entry["date"]]
+    for r in same_day:
+        if r["mark"] == entry["performance"]:
+            return r["competition"]
+    return same_day[0]["competition"] if len(same_day) == 1 else None
 
 
 def main():
@@ -71,11 +91,13 @@ def main():
             print(f"  !! no World Records progression for {gender} {name}", file=sys.stderr)
             continue
         p = progression(pid)
+        meet = competition_of(p["entries"][0])          # the meet of the standing record
         cards.append({"gender": gender, "discipline": name, "eventId": eid,
                       "progressionId": pid, "environment": p["environment"],
                       "disciplineCode": p["discipline"]["disciplineCode"],
+                      "competition": meet,
                       "entries": p["entries"]})
-        print(f"  {gender:5} {name:20} pid={pid:<6} {len(p['entries']):3} records")
+        print(f"  {gender:5} {name:20} pid={pid:<6} {len(p['entries']):3} records  {meet or '—'}")
         time.sleep(0.15)
     path = os.path.join(HERE, "data", "progressions.json")
     with open(path, "w") as f:

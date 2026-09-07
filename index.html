@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>World Record Film — 100 Metres</title>
+<title>World Record Film — Athletics</title>
 <meta name="description" content="Every world record ever set, as film. An interactive athletics experience by A guy with a scarf (Carlo De Marchis).">
 <link rel="canonical" href="https://athletics.aguywithascarf.com/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="A guy with a scarf">
-<meta property="og:title" content="World Record Film — 100 Metres">
+<meta property="og:title" content="World Record Film — Athletics">
 <meta property="og:description" content="Every world record ever set, as film. An interactive athletics experience by A guy with a scarf.">
 <meta property="og:url" content="https://athletics.aguywithascarf.com/">
 <meta name="twitter:card" content="summary_large_image">
@@ -18,16 +18,20 @@
     --bg0:#0a0807; --bg1:#1a100c; --bg2:#2b1610;
     --ink:#f6efe9; --muted:#b39a8c; --muted-2:#7c675c;
     --line:rgba(230,190,160,.14);
-    --gold:#f2c14e; --track:#e2572f; --steel:#7f96b8; --green:#5ed39b;
+    --gold:#f2c14e; --track:#e2572f;
+    --men:#6f8fb8; --women:#d9834a;
   }
   *{box-sizing:border-box; margin:0; padding:0}
   html,body{height:100%; overflow:hidden}
   body{background:var(--bg0); color:var(--ink);
     font-family:"Helvetica Neue",Arial,system-ui,sans-serif; -webkit-font-smoothing:antialiased}
 
+  /* ---------- film viewport ---------- */
   .stage{position:fixed; inset:0; overflow:hidden}
-  .card{position:absolute; inset:0; display:flex; flex-direction:column;
-    padding:clamp(14px,2.4vh,30px) clamp(18px,3.2vw,54px) clamp(12px,2vh,22px); overflow:hidden}
+  .track{display:flex; height:100%; width:100%; transition:transform .55s cubic-bezier(.7,0,.2,1)}
+  .card{flex:0 0 100%; height:100%; position:relative; display:flex; flex-direction:column;
+    padding:clamp(14px,2.4vh,30px) clamp(18px,3.2vw,54px) clamp(74px,10vh,98px); overflow:hidden;
+    content-visibility:auto; contain-intrinsic-size:100vw 100vh}
   .card__bg{position:absolute; inset:0; z-index:0;
     background:radial-gradient(120% 95% at 84% 8%, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%)}
   .card__bg::after{content:""; position:absolute; inset:0; opacity:.5;
@@ -42,23 +46,41 @@
   .head{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex:0 0 auto}
   .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
   .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
-  .title h1{font-size:clamp(30px,4.6vh,52px); font-weight:800; letter-spacing:-.025em}
+  .title h1{font-size:clamp(28px,4.5vh,52px); font-weight:800; letter-spacing:-.025em; white-space:nowrap}
   .sex{font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
     color:var(--track); border:1px solid rgba(226,87,47,.45); border-radius:999px; padding:5px 12px}
-  .rec{text-align:right; line-height:1}
-  .rec .v{font-size:clamp(38px,6.4vh,74px); font-weight:800; letter-spacing:-.035em; color:var(--gold)}
+  .rec{text-align:right; line-height:1; min-width:0}
+  .rec .v{font-size:clamp(34px,6.2vh,74px); font-weight:800; letter-spacing:-.035em; color:var(--gold)}
   .rec .v small{font-size:.4em; font-weight:700; color:var(--muted); letter-spacing:0; margin-left:8px}
-  .rec .w{font-size:14px; font-weight:700; color:var(--ink); margin-top:8px}
-  .rec .w b{color:var(--muted); font-weight:600}
+  .rec .who{display:flex; align-items:center; justify-content:flex-end; gap:12px; flex-wrap:wrap;
+    font-size:clamp(19px,3.1vh,34px); font-weight:800; letter-spacing:-.02em; margin-top:10px}
+  .rec .who .f{font-weight:300; opacity:.85}
+  .rec .who .flag{font-size:1.05em; line-height:1}
+  .cc{font-size:.46em; font-weight:800; letter-spacing:.08em; color:var(--muted);
+    border:1px solid var(--line); border-radius:4px; padding:3px 6px; vertical-align:.28em}
+  .rec .w{font-size:13px; font-weight:600; color:var(--muted); margin-top:9px}
+  .rec .w b{color:var(--ink); font-weight:800; white-space:nowrap}
 
   /* ---------- stat bar ---------- */
-  .statbar{display:flex; gap:clamp(18px,2.6vw,44px); align-items:flex-end; flex-wrap:wrap;
-    padding:0 0 clamp(8px,1.3vh,14px); border-bottom:1px solid var(--line); flex:0 0 auto}
-  .stat .v{font-size:clamp(19px,2.9vh,30px); font-weight:800; letter-spacing:-.02em; line-height:1; white-space:nowrap}
+  .statbar{display:flex; gap:clamp(16px,2.5vw,44px); align-items:flex-end; flex-wrap:wrap;
+    padding:0; flex:0 0 auto}
+  .stat .v{font-size:clamp(18px,2.8vh,30px); font-weight:800; letter-spacing:-.02em; line-height:1; white-space:nowrap}
   .stat .v small{font-size:.55em; font-weight:700; color:var(--muted)}
   .stat .v.hl{color:var(--gold)}
   .stat .k{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
     color:var(--muted-2); margin-top:6px}
+
+  /* ---------- nations: who has actually owned the record ---------- */
+  .nations{display:flex; align-items:center; gap:14px; flex:0 0 auto;
+    padding:clamp(8px,1.2vh,13px) 0 clamp(8px,1.3vh,14px); border-bottom:1px solid var(--line)}
+  .nk{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted-2); white-space:nowrap}
+  .nbar{display:flex; flex:1 1 auto; gap:2px; height:17px; min-width:0}
+  .nseg{display:flex; align-items:center; gap:5px; padding:0 5px; border-radius:3px;
+    overflow:hidden; min-width:3px; background:rgba(196,210,230,var(--tone))}
+  .nseg.on{background:var(--gold)}
+  .nseg i{font-style:normal; font-size:9.5px; font-weight:800; letter-spacing:.05em; color:rgba(10,8,7,.9)}
+  .nseg em{font-style:normal; font-size:9.5px; font-weight:700; color:rgba(10,8,7,.55)}
 
   /* ---------- chart ---------- */
   .chartwrap{position:relative; flex:1 1 auto; min-height:0}
@@ -85,9 +107,9 @@
   .racehead .t b{color:var(--ink); font-weight:800}
   .btn{font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; cursor:pointer;
     color:var(--ink); background:rgba(255,255,255,.06); border:1px solid var(--line);
-    border-radius:999px; padding:7px 16px}
+    border-radius:999px; padding:7px 16px; white-space:nowrap}
   .btn:hover{background:rgba(255,255,255,.12)}
-  .racewrap{position:relative; height:clamp(96px,16vh,152px)}
+  .racewrap{position:relative; height:clamp(90px,15vh,148px)}
   .racewrap svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
   .runlbl{font-size:9.5px; font-weight:800; fill:var(--muted-2)}
 
@@ -100,46 +122,127 @@
   .chip.gold{color:var(--gold); background:rgba(242,193,78,.1); border-color:rgba(242,193,78,.28)}
   .chip.gold b{color:var(--gold)}
 
-  .note{position:absolute; left:clamp(18px,3.2vw,54px); bottom:6px; font-size:10px; color:var(--muted-2); z-index:3}
+  /* ---------- opening card ---------- */
+  .legend{display:flex; align-items:center; gap:18px; font-size:10px; font-weight:800;
+    letter-spacing:.13em; text-transform:uppercase; color:var(--muted-2)}
+  .legend span{display:flex; align-items:center; gap:7px}
+  .legend i{width:16px; height:8px; border-radius:2px; display:inline-block}
+  .sub{font-size:13.5px; color:var(--muted); margin-top:9px; max-width:660px; line-height:1.5}
+  .rowname{font-size:10.5px; font-weight:700; fill:var(--ink)}
+  .rowmark{font-size:11px; font-weight:800; fill:var(--gold)}
+  .rowwho{font-size:10px; font-weight:700; fill:var(--muted)}
+  .rowyrs{font-size:10px; font-weight:800; fill:var(--ink)}
+  .rowhit{cursor:pointer}
+  .rowhit:hover .rowbar{filter:brightness(1.4)}
+  .rowhit:hover .rowname{fill:var(--gold)}
+
+  .note{position:absolute; left:clamp(18px,3.2vw,54px); bottom:calc(clamp(74px,10vh,98px) - 22px);
+    font-size:10px; color:var(--muted-2); z-index:3}
+
+  /* ---------- control bar ---------- */
+  .controls{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:40;
+    display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px;
+    background:rgba(14,9,7,.86); border:1px solid var(--line); backdrop-filter:blur(12px);
+    box-shadow:0 12px 40px rgba(0,0,0,.55)}
+  .controls button{border:0; background:transparent; color:var(--muted); cursor:pointer; border-radius:50%;
+    width:38px; height:38px; display:flex; align-items:center; justify-content:center; transition:.15s;
+    font-size:15px; font-weight:800; font-family:inherit}
+  .controls button:hover{color:var(--ink); background:rgba(255,255,255,.08)}
+  .controls button svg{width:18px; height:18px; fill:currentColor}
+  .controls .play{width:50px; height:50px; background:var(--ink); color:#160d09}
+  .controls .play:hover{background:#fff; color:#160d09}
+  .controls .play svg{width:21px; height:21px}
+  .counter{display:flex; align-items:center; gap:8px; padding:6px 14px; white-space:nowrap;
+    font-size:12px; font-weight:800; letter-spacing:.1em; color:var(--muted)}
+  .counter b{color:var(--gold); font-size:14px}
+  .counter .lbl{color:var(--muted-2); letter-spacing:.16em}
+  .sep{width:1px; height:24px; background:var(--line); margin:0 4px}
+  @media (max-width:760px){ #fs, .controls .sep{display:none} }
+
+  /* ---------- help ---------- */
+  .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+    padding:24px}
+  .modal[hidden]{display:none}
+  .modal__ov{position:absolute; inset:0; background:rgba(6,4,3,.78); backdrop-filter:blur(6px)}
+  .modal__box{position:relative; max-width:640px; width:100%; max-height:84vh; overflow:auto;
+    background:linear-gradient(180deg,#1b1109,#120c08); border:1px solid var(--line);
+    border-radius:18px; padding:30px 32px 26px; box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .modal__box h2{font-size:24px; letter-spacing:-.02em; margin-bottom:4px}
+  .modal__box .csub{font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--muted-2); margin-bottom:20px}
+  .modal__box h3{font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--gold); margin:18px 0 7px}
+  .modal__box p{font-size:13.5px; line-height:1.6; color:var(--muted)}
+  .modal__box p b{color:var(--ink)}
+  .modal__box a{color:var(--gold)}
+  .keys{display:grid; grid-template-columns:auto 1fr; gap:7px 14px; font-size:13px; color:var(--muted);
+    margin-top:4px; align-items:center}
+  .keys kbd{background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:5px;
+    padding:3px 8px; font-family:inherit; font-size:11px; font-weight:800; color:var(--ink); text-align:center}
+  .mclose{position:absolute; top:14px; right:16px; background:transparent; border:0; color:var(--muted-2);
+    font-size:26px; cursor:pointer; line-height:1}
+  .mclose:hover{color:var(--ink)}
 </style>
 </head>
 <body>
-<div class="stage">
-  <section class="card">
-    <div class="card__bg"></div>
-    <div class="ghostnum" id="ghostnum"></div>
-    <div class="inner">
+<div class="stage"><div class="track" id="track"></div></div>
 
-      <div class="head">
-        <div>
-          <div class="disc" id="kicker">World record progression</div>
-          <div class="title"><h1 id="title">—</h1><span class="sex" id="sex"></span></div>
-        </div>
-        <div class="rec">
-          <div class="v" id="recv">—</div>
-          <div class="w" id="recw"></div>
-        </div>
-      </div>
+<div class="controls">
+  <button id="restart" title="Restart (Home)"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+  <button id="prev" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15.5 5v14l-11-7z"/><rect x="16.5" y="5" width="2.4" height="14" rx="1"/></svg></button>
+  <button class="play" id="play" title="Play / Pause (Space)"><svg id="playIcon" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></button>
+  <button id="next" title="Next (→)"><svg viewBox="0 0 24 24"><path d="M8.5 5v14l11-7z"/><rect x="5.1" y="5" width="2.4" height="14" rx="1"/></svg></button>
+  <div class="counter"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">–</span></span></div>
+  <div class="sep"></div>
+  <button id="helpbtn" title="Help (H)">?</button>
+  <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
+</div>
 
-      <div class="statbar" id="statbar"></div>
+<div class="modal" id="help" hidden>
+  <div class="modal__ov" onclick="closeHelp()"></div>
+  <div class="modal__box">
+    <button class="mclose" onclick="closeHelp()" aria-label="Close">×</button>
+    <h2>World Record Film</h2>
+    <div class="csub">Athletics · A guy with a scarf</div>
 
-      <div class="chartwrap" id="chartwrap">
-        <svg id="stair"></svg>
-        <div class="tip" id="tip"></div>
-      </div>
+    <h3>What you're looking at</h3>
+    <p>One card per event: <b>every world record ever ratified in it</b>, drawn as a staircase through
+    time. Each step sits at the mark that was set, and the <b>width of the step is how long that record
+    survived</b>. The line always climbs — times are inverted so that better is up — and the flat gold
+    tail on the right is how long the current record has stood untouched.</p>
 
-      <div class="race">
-        <div class="racehead">
-          <div class="t" id="racetitle">The ghost race</div>
-          <button class="btn" id="playbtn">▶ Race the eras</button>
-        </div>
-        <div class="racewrap"><svg id="racesvg"></svg></div>
-      </div>
+    <h3>The ghost race</h3>
+    <p>Every distinct record mark, run at once. It freezes the instant the current record-holder crosses
+    the line, then zooms into the finish stretch — because a century of progress fits inside the last
+    few metres.</p>
 
-      <div class="stories" id="stories"></div>
+    <h3>Hand timing</h3>
+    <p>Marks ending in <b>h</b> were taken by hand and are drawn dashed. They are not directly comparable
+    with electronic marks, which is why some events step <i>backwards</i> in 1968, when automatic timing
+    became the standard. That kink is real, and it is left in.</p>
+
+    <h3>Keys</h3>
+    <div class="keys">
+      <kbd>←</kbd><span>Previous card</span>
+      <kbd>→</kbd><span>Next card</span>
+      <kbd>Space</kbd><span>Play / pause the film</span>
+      <kbd>R</kbd><span>Replay the ghost race</span>
+      <kbd>F</kbd><span>Fullscreen</span>
+      <kbd>H</kbd><span>This panel</span>
     </div>
-    <div class="note">Data: World Athletics · A guy with a scarf</div>
-  </section>
+
+    <h3>Data</h3>
+    <p>Every mark, date, venue and wind reading comes from the official
+    <a href="https://worldathletics.org/records" target="_blank" rel="noopener noreferrer">World Athletics</a>
+    record progressions, read from their public API. Nothing is hand-entered and nothing is
+    editorialised — the order is simply how long each record has stood.</p>
+
+    <h3>A note</h3>
+    <p>An independent, non-commercial fan project, made for the love of athletics and of data
+    visualisation. All data is the property of World Athletics. Built by
+    <a href="https://aguywithascarf.substack.com/" target="_blank" rel="noopener noreferrer">Carlo De Marchis</a>
+    with Claude Code.</p>
+  </div>
 </div>
 
 <script>
@@ -148,6 +251,32 @@ const MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:
 const TODAY = new Date();
 
 const parseDate = s => { const [d,m,y] = s.split(' '); return new Date(+y, MONTHS[m.toUpperCase()], +d); };
+
+/* IOC → ISO2 for the flag emoji. Nations that no longer exist (URS, GDR, FRG, TCH, YUG)
+   have no flag codepoint, so they fall back to the code itself — which is honest. */
+const IOC = {ALG:"DZ",AUS:"AU",AUT:"AT",BEL:"BE",BRA:"BR",BUL:"BG",CAN:"CA",CHN:"CN",CUB:"CU",
+  CZE:"CZ",DEN:"DK",EST:"EE",ETH:"ET",FIN:"FI",FRA:"FR",GBR:"GB",GER:"DE",GRE:"GR",HAI:"HT",
+  HUN:"HU",ITA:"IT",JAM:"JM",JPN:"JP",KEN:"KE",LTU:"LT",MAR:"MA",MEX:"MX",NED:"NL",NGR:"NG",
+  NOR:"NO",NZL:"NZ",PAN:"PA",POL:"PL",POR:"PT",PRK:"KP",ROU:"RO",RSA:"ZA",RUS:"RU",SUI:"CH",
+  SWE:"SE",TAN:"TZ",TPE:"TW",TUR:"TR",UGA:"UG",UKR:"UA",USA:"US",VEN:"VE"};
+const flagEmoji = c => { const i = IOC[c];
+  return i ? i.replace(/./g, ch => String.fromCodePoint(127397 + ch.charCodeAt())) : null; };
+const flagOf = c => { const f = flagEmoji(c);
+  return f ? `<span class="flag">${f}</span>` : `<span class="cc">${c || ''}</span>`; };
+
+/* "Usain BOLT" → first name light, surname bold */
+const UPPER = /([\p{Lu}\p{Lm}'’.\-\s]+)$/u;
+const nameHTML = n => n.replace(/^(.*?)\s([\p{Lu}\p{Lm}'’.\-\s]+)$/u, '<span class="f">$1</span> $2');
+const surnameOf = n => { const m = n.match(UPPER); return (m ? m[1] : n).trim(); };
+const short = n => { const s = surnameOf(n).split(' ').pop();
+  return s.charAt(0) + s.slice(1).toLowerCase(); };
+
+/* the meet, minus the venue tail the API repeats and the " - Diamond Discipline" suffixes */
+function meetName(comp, venue){
+  if (!comp) return '';
+  const m = comp.split(' - ')[0].split(',')[0].trim();
+  return (venue || '').includes(m) ? '' : m;
+}
 
 /* "9.58" · "10.0h" · "1:53.28" · "2:09:56" · "9126" (points) · "8.95" (metres) */
 function parseMark(p){
@@ -162,6 +291,14 @@ const betterIsLower = d => TIMED.test(d) && !/Jump|Vault|Put|Throw/.test(d);
 
 const fmtYears = days => (days/365.25);
 const plural = (n,w) => n + ' ' + w + (n===1?'':'s');
+
+function fmtReign(days){
+  const y = days/365.25;
+  if (y >= 2) return `${y.toFixed(y<10?1:0)} years`;
+  if (days >= 60) return `${Math.round(days/30.44)} months`;
+  if (days >= 1) return plural(days,'day');
+  return 'same day';
+}
 
 /* ============================ build a card model ============================ */
 function model(card){
@@ -182,29 +319,36 @@ function model(card){
   });
 
   const cur = rows[rows.length-1], first = rows[0];
-  const byWho = new Map(), byCountry = new Map();
+  const byWho = new Map(), byCountry = new Map(), daysByCountry = new Map();
   rows.forEach(r => { byWho.set(r.who,(byWho.get(r.who)||0)+1);
-                      byCountry.set(r.country,(byCountry.get(r.country)||0)+1); });
+                      byCountry.set(r.country,(byCountry.get(r.country)||0)+1);
+                      daysByCountry.set(r.country,(daysByCountry.get(r.country)||0)+r.reign); });
   const top = [...byWho.entries()].sort((a,b)=>b[1]-a[1])[0];
   const topCty = [...byCountry.entries()].sort((a,b)=>b[1]-a[1])[0];
+  // who has *owned* the record longest is a different question from who set the most
+  const heldDays = [...daysByCountry.entries()].sort((a,b)=>b[1]-a[1]);
+  const totalDays = heldDays.reduce((a,[,d]) => a+d, 0);
   const byDay = new Map();
   rows.forEach(r => byDay.set(r.dateStr,(byDay.get(r.dateStr)||0)+1));
   const busiest = [...byDay.entries()].sort((a,b)=>b[1]-a[1])[0];
   const firstAuto = rows.find(r => !r.hand && rows.some(x=>x.hand));
 
   return {card, lower, rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
+          heldDays, totalDays,
           improvement: Math.abs(cur.value - first.value),
           improvementPct: Math.abs(cur.value - first.value) / first.value * 100,
           spanYears: fmtYears((cur.date - first.date) / 864e5)};
 }
 
-/* ============================ the staircase ============================ */
+/* ============================ svg helpers ============================ */
 const NS = 'http://www.w3.org/2000/svg';
 const el = (t,a={}) => { const n = document.createElementNS(NS,t);
-  for (const k in a) n.setAttribute(k, a[k]); return n; };
+  for (const k in a) if (a[k] !== null && a[k] !== undefined) n.setAttribute(k, a[k]); return n; };
+const txt = (n, s) => { n.textContent = s; return n; };
 
-function drawStair(M){
-  const svg = document.getElementById('stair'), wrap = document.getElementById('chartwrap');
+/* ============================ the staircase ============================ */
+function drawStair(M, root){
+  const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
   svg.innerHTML = '';
   const W = wrap.clientWidth, H = wrap.clientHeight;
   const pad = {t: 22, r: 128, b: 30, l: 8};
@@ -218,13 +362,12 @@ function drawStair(M){
   const X = t => pad.l + (t - t0) / (t1 - t0) * iw;
   const Y = q => pad.t + (1 - (q - q0) / (q1 - q0)) * ih;
 
-  /* --- decade gridlines --- */
+  /* --- gridlines every 20 years --- */
   const y0 = M.rows[0].date.getFullYear(), y1 = TODAY.getFullYear();
   for (let y = Math.ceil(y0/20)*20; y <= y1; y += 20){
     const x = X(new Date(y,0,1).getTime());
     svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
-    const tx = el('text',{x, y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}); tx.textContent = y;
-    svg.appendChild(tx);
+    svg.appendChild(txt(el('text',{x, y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}), y));
   }
 
   /* --- the ceiling: today's record, drawn all the way across --- */
@@ -242,34 +385,32 @@ function drawStair(M){
   M.rows.forEach((r,i) => {
     const x1 = X(r.date.getTime()), x2 = X(r.until.getTime()), y = Y(r.q);
     area.push(`L ${x1} ${y} L ${x2} ${y}`);
-    // riser up (or down) into this record
     if (i > 0){
       svg.appendChild(el('line',{x1, x2:x1, y1:Y(M.rows[i-1].q), y2:y,
         stroke:colourOf(r), 'stroke-width':1.4, opacity:.55}));
     }
     svg.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:colourOf(r),
       'stroke-width': r.who === M.cur.who ? 3.2 : 2,
-      'stroke-dasharray': r.hand ? '5 3' : null,
-      'stroke-linecap':'round'}));
+      'stroke-dasharray': r.hand ? '5 3' : null, 'stroke-linecap':'round'}));
   });
   area.push(`L ${X(t1)} ${Y(q0)} Z`);
-  const fill = el('path',{d: area.join(' '), fill:'url(#stairgrad)', opacity:.5});
+  const gid = 'sg' + Math.random().toString(36).slice(2,8);
   const defs = el('defs');
-  const g = el('linearGradient',{id:'stairgrad', x1:0, y1:0, x2:0, y2:1});
+  const g = el('linearGradient',{id:gid, x1:0, y1:0, x2:0, y2:1});
   g.appendChild(el('stop',{offset:'0%',  'stop-color':'rgba(242,193,78,.20)'}));
   g.appendChild(el('stop',{offset:'100%','stop-color':'rgba(242,193,78,0)'}));
-  defs.appendChild(g); svg.appendChild(defs); svg.insertBefore(fill, svg.firstChild);
+  defs.appendChild(g); svg.appendChild(defs);
+  svg.insertBefore(el('path',{d: area.join(' '), fill:`url(#${gid})`, opacity:.5}), svg.firstChild);
 
   /* --- the seam: when auto timing became the standard --- */
   if (M.firstAuto){
     const x = X(M.firstAuto.date.getTime());
     svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-6, y2:pad.t+ih, class:'seam'}));
-    const t = el('text',{x:x+6, y:pad.t+2, class:'seamlbl'});
-    t.textContent = 'electronic timing'; svg.appendChild(t);
+    svg.appendChild(txt(el('text',{x:x+6, y:pad.t+ih-5, class:'seamlbl'}), 'electronic timing'));
   }
 
   /* --- dots + hover --- */
-  const tip = document.getElementById('tip');
+  const tip = root.querySelector('.tip');
   M.rows.forEach(r => {
     const c = el('circle',{cx:X(r.date.getTime()), cy:Y(r.q), r: r.who===M.cur.who?5:3,
       fill: r.who===M.cur.who ? 'var(--gold)' : 'var(--bg0)',
@@ -289,34 +430,34 @@ function drawStair(M){
   });
 
   /* --- the plateau label sitting on the current record --- */
-  const px = X(M.cur.date.getTime()), py = Y(M.cur.q);
-  const lab = el('text',{x: Math.min(px + 12, pad.l+iw-4), y: py - 14, class:'plateaulbl'});
-  lab.textContent = `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`;
-  svg.appendChild(lab);
+  svg.appendChild(txt(el('text',{x: Math.min(X(M.cur.date.getTime()) + 12, pad.l+iw-4),
+    y: Y(M.cur.q) - 14, class:'plateaulbl'}), `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`));
 
   /* --- right-hand value scale: first record vs today --- */
   [[M.first,'first ratified'], [M.cur,'today']].forEach(([r, k]) => {
     const y = Y(r.q);
-    const v = el('text',{x: pad.l+iw+14, y: y+4, class:'axv',
-      style: r===M.cur ? 'fill:var(--gold);font-weight:800' : ''});
-    v.textContent = r.perf; svg.appendChild(v);
-    const kk = el('text',{x: pad.l+iw+14, y: y+17, class:'lbl'}); kk.textContent = k;
-    svg.appendChild(kk);
+    svg.appendChild(txt(el('text',{x: pad.l+iw+14, y: y+4, class:'axv',
+      style: r===M.cur ? 'fill:var(--gold);font-weight:800' : ''}), r.perf));
+    svg.appendChild(txt(el('text',{x: pad.l+iw+14, y: y+17, class:'lbl'}), k));
   });
 }
 
-function fmtReign(days){
-  const y = days/365.25;
-  if (y >= 2) return `${y.toFixed(y<10?1:0)} years`;
-  if (days >= 60) return `${Math.round(days/30.44)} months`;
-  if (days >= 1) return plural(days,'day');
-  return 'same day';
+/* the gap expressed in the event's own units rather than a bare percentage */
+const DISTANCE = {'100 Metres':100,'200 Metres':200,'400 Metres':400,'800 Metres':800,
+  '1500 Metres':1500,'5000 Metres':5000,'10,000 Metres':10000,'Marathon':42195,
+  '110 Metres Hurdles':110,'100 Metres Hurdles':100,'400 Metres Hurdles':400,
+  '4x100 Metres Relay':400,'4x400 Metres Relay':1600};
+function gapLabel(M, pct){
+  const d = DISTANCE[M.card.discipline];
+  if (!d) return pct.toFixed(1) + '%';
+  const m = d * pct / 100;
+  return m >= 1000 ? (m/1000).toFixed(1) + ' km' : m.toFixed(m < 20 ? 1 : 0) + ' m';
 }
 
 /* ============================ the ghost race ============================ */
-let raceAnim = null;
-function drawRace(M){
-  const svg = document.getElementById('racesvg'), wrap = svg.parentElement;
+function drawRace(M, root){
+  const svg = root.querySelector('.racesvg'), wrap = svg.parentElement;
+  cancelAnimationFrame(root._raf);
   svg.innerHTML = '';
   const W = wrap.clientWidth, H = wrap.clientHeight;
   const padL = 30, padR = 150, padT = 14, padB = 16;
@@ -330,19 +471,18 @@ function drawRace(M){
   const fastest = runners[0].value, slowest = runners[runners.length-1].value;
   const rowH = laneH / Math.max(runners.length - 1, 1);
   const yOf = i => padT + i * rowH;
-  const unit = M.lower ? 'm' : '';
 
-  /* everyone finishes inside the last few metres, so once the leader lands the
-     lane zooms into the finish stretch — otherwise the whole field is one blob */
-  const gapM = 100 - 100 * fastest / slowest;
-  const zoomFrom = Math.max(0, 100 - gapM * 1.35);
+  /* everyone finishes inside the last stretch, so once the leader lands the lane
+     zooms into the finish — otherwise the whole field is one blob on the line */
+  const gapPct = 100 - 100 * fastest / slowest;
+  const zoomFrom = Math.max(0, 100 - gapPct * 1.35);
   let dMin = 0;
   const X = m => padL + (m - dMin) / (100 - dMin) * lane;
 
   const grid = el('g'); svg.appendChild(grid);
   const startLbl = el('text',{y: padT+laneH+16, class:'lbl'}); svg.appendChild(startLbl);
-  const finLbl = el('text',{y: padT+laneH+16, class:'lbl', 'text-anchor':'end'});
-  finLbl.textContent = 'finish'; svg.appendChild(finLbl);
+  const finLbl = txt(el('text',{y: padT+laneH+16, class:'lbl', 'text-anchor':'end'}), 'finish');
+  svg.appendChild(finLbl);
 
   function drawTrack(){
     grid.innerHTML = '';
@@ -353,7 +493,7 @@ function drawRace(M){
         'stroke-width': m===100 ? 1.5 : 1}));
     }
     startLbl.setAttribute('x', X(dMin));
-    startLbl.textContent = dMin < 1 ? 'start' : `${dMin.toFixed(0)} m`;
+    startLbl.textContent = dMin < 1 ? 'start' : `${dMin.toFixed(0)}%`;
     finLbl.setAttribute('x', X(100));
   }
 
@@ -371,23 +511,22 @@ function drawRace(M){
   marked.set(runners[0], ['var(--gold)', true]);
   marked.set(runners[runners.length-1], ['var(--muted)', false]);
   if (M.firstAuto){ const fa = runners.find(r => r.perf === M.firstAuto.perf);
-    if (fa && !marked.has(fa)) marked.set(fa, ['var(--muted-2)', false]); }
+    if (fa && !marked.has(fa) && runners.indexOf(fa) > 2) marked.set(fa, ['var(--muted-2)', false]); }
   const labels = [...marked].map(([r,[col,bold]]) => {
     const d = dots.find(x => x.r === r);
-    const t = el('text',{x:padL, y:d.y + 3.5, class:'runlbl',
-      style:`fill:${col}${bold?';font-weight:800':''}`});
-    t.textContent = `${r.perf} · ${r.date.getFullYear()}`;
+    const t = txt(el('text',{x:padL, y:d.y + 3.5, class:'runlbl',
+      style:`fill:${col}${bold?';font-weight:800':''}`}), `${r.perf} · ${r.date.getFullYear()}`);
     svg.appendChild(t);
     return {t, d};
   });
 
-  /* the gap bracket, revealed when the leader crosses */
+  /* the gap, revealed when the leader crosses */
   const gap = el('g',{opacity:0});
   const gapLine = el('line',{y1:padT-8, y2:padT+laneH+2, stroke:'rgba(255,255,255,.3)',
     'stroke-dasharray':'2 4'});
-  const gapTxt = el('text',{y:padT-12, class:'runlbl',
-    style:'fill:var(--ink);font-weight:800;font-size:11px'});
-  gapTxt.textContent = `${gapM.toFixed(1)} m back when ${short(M.cur.who)} finishes`;
+  const gapTxt = txt(el('text',{y:padT-12, class:'runlbl',
+    style:'fill:var(--ink);font-weight:800;font-size:11px'}),
+    `${gapLabel(M, gapPct)} back when ${short(M.cur.who)} finishes`);
   gap.appendChild(gapLine); gap.appendChild(gapTxt); svg.appendChild(gap);
 
   function place(){
@@ -397,14 +536,13 @@ function drawRace(M){
       d.streak.setAttribute('x1', Math.max(X(dMin), x - 14));
       d.streak.setAttribute('x2', x);
     });
-    labels.forEach(({t:txt, d}) => txt.setAttribute('x', +d.c.getAttribute('cx') + 9));
-    const gx = X(100 - gapM);
+    labels.forEach(({t, d}) => t.setAttribute('x', +d.c.getAttribute('cx') + 9));
+    const gx = X(100 - gapPct);
     gapLine.setAttribute('x1', gx); gapLine.setAttribute('x2', gx);
     gapTxt.setAttribute('x', gx + 6);
   }
 
   const RUN = 3400, ZOOM = 900;                     // wall-clock ms
-  cancelAnimationFrame(raceAnim);
   const t0 = performance.now();
   drawTrack(); place();
   function frame(now){
@@ -418,72 +556,268 @@ function drawRace(M){
       drawTrack();
     }
     place();
-    if (ms < RUN + ZOOM) raceAnim = requestAnimationFrame(frame);
+    if (ms < RUN + ZOOM) root._raf = requestAnimationFrame(frame);
   }
-  raceAnim = requestAnimationFrame(frame);
+  root._raf = requestAnimationFrame(frame);
 
   const oldest = runners[runners.length-1];
-  document.getElementById('racetitle').innerHTML =
+  root.querySelector('.racetitle').innerHTML =
     `The ghost race — every record mark run at once. When <b>${short(M.cur.who)}</b> hits the line, `
-    + `<b>${oldest.date.getFullYear()}</b> is still <b>${gapM.toFixed(1)} ${unit||'behind'}</b> back.`;
+    + `<b>${oldest.date.getFullYear()}</b> is still <b>${gapLabel(M, gapPct)}</b> back.`;
 }
 
-const short = n => { const p = n.split(' '); return p[p.length-1].replace(/^(.)(.*)$/, (m,a,b)=>a+b.toLowerCase()); };
+/* ============================ the opening card ============================ */
+function drawOpening(root, deck){
+  const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
+  svg.innerHTML = '';
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const colL = Math.min(186, W * .17), colR = Math.min(300, W * .27);
+  const pad = {t: 22, b: 6};
+  const iw = W - colL - colR, ih = H - pad.t - pad.b;
 
-/* ============================ chrome ============================ */
-function render(M){
+  const rows = deck.slice().sort((a,b) => b.cur.reign - a.cur.reign);
+  const rowH = ih / rows.length;
+  const oldest = rows[0].cur.date.getTime(), t1 = TODAY.getTime();
+  const t0 = oldest - (t1 - oldest) * 0.06;
+  const X = t => colL + (t - t0) / (t1 - t0) * iw;
+
+  /* decade gridlines */
+  for (let y = Math.ceil(new Date(t0).getFullYear()/10)*10; y <= TODAY.getFullYear(); y += 10){
+    const x = X(new Date(y,0,1).getTime());
+    svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-4, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x, y:pad.t-9, class:'axv', 'text-anchor':'middle'}), y));
+  }
+  svg.appendChild(el('line',{x1:X(t1), x2:X(t1), y1:pad.t-4, y2:pad.t+ih,
+    stroke:'rgba(242,193,78,.45)', 'stroke-width':1.4}));
+  svg.appendChild(txt(el('text',{x:X(t1), y:pad.t-9, class:'axv',
+    style:'fill:var(--gold);font-weight:800', 'text-anchor':'middle'}), 'today'));
+
+  const barH = Math.max(4, Math.min(rowH - 3, 15));
+  const tip = root.querySelector('.tip');
+  rows.forEach((M, i) => {
+    const y = pad.t + i * rowH, mid = y + rowH/2;
+    const x1 = X(M.cur.date.getTime()), x2 = X(t1);
+    const g = el('g',{class:'rowhit'});
+
+    g.appendChild(el('rect',{x:0, y, width:W, height:rowH, fill:'transparent'}));
+    g.appendChild(txt(el('text',{x:colL-12, y:mid+3.5, class:'rowname', 'text-anchor':'end'}),
+      M.card.discipline));
+    g.appendChild(el('rect',{x:x1, y:mid-barH/2, width:Math.max(2, x2-x1), height:barH, rx:2.5,
+      class:'rowbar', fill: M.card.gender === 'women' ? 'var(--women)' : 'var(--men)', opacity:.9}));
+    g.appendChild(txt(el('text',{x:x1-7, y:mid+3.5, class:'rowyrs', 'text-anchor':'end'}),
+      fmtYears(M.cur.reign).toFixed(1)));
+    g.appendChild(txt(el('text',{x:x2+12, y:mid+3.5, class:'rowmark'}), M.cur.perf));
+    const f = flagEmoji(M.cur.country);
+    g.appendChild(txt(el('text',{x:x2+12+Math.min(78, colR*.28), y:mid+3.5, class:'rowwho'}),
+      `${f ? f + ' ' : ''}${surnameOf(M.cur.who)}${f ? '' : ' · ' + M.cur.country}`));
+
+    g.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${M.cur.perf} <span class="m">${M.card.discipline} · ${M.card.gender}</span></div>`
+        + `<div class="n">${M.cur.who} <span class="m">${M.cur.country}</span></div>`
+        + `<div class="m">${M.cur.venue} · ${M.cur.dateStr}</div>`
+        + `<div class="m">unbeaten for ${fmtReign(M.cur.reign)}</div>`;
+      tip.style.opacity = 1;
+      const b = wrap.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, wrap.clientWidth - 280) + 'px';
+      tip.style.top = Math.min(mid + 8, wrap.clientHeight - 90) + 'px';
+    });
+    g.addEventListener('mouseleave', () => tip.style.opacity = 0);
+
+    const to = CARD_OF.get(M.card.gender + '|' + M.card.discipline);
+    if (to !== undefined) g.addEventListener('click', () => go(to));
+    else g.style.cursor = 'default';
+    svg.appendChild(g);
+  });
+}
+
+/* ============================ card chrome ============================ */
+function eventCardHTML(){
+  return `<div class="card__bg"></div><div class="ghostnum"></div>
+    <div class="inner">
+      <div class="head">
+        <div><div class="disc">World record progression</div>
+          <div class="title"><h1></h1><span class="sex"></span></div></div>
+        <div class="rec"><div class="v"></div><div class="who"></div><div class="w"></div></div>
+      </div>
+      <div class="statbar"></div>
+      <div class="nations"></div>
+      <div class="chartwrap"><svg></svg><div class="tip"></div></div>
+      <div class="race">
+        <div class="racehead"><div class="t racetitle">The ghost race</div>
+          <button class="btn replay">▶ Race the eras</button></div>
+        <div class="racewrap"><svg class="racesvg"></svg></div>
+      </div>
+      <div class="stories"></div>
+    </div>
+    <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+}
+
+function fillEventCard(root, M){
   const c = M.card;
-  document.getElementById('title').textContent = c.discipline;
-  document.getElementById('sex').textContent = c.gender === 'men' ? 'Men' : c.gender === 'women' ? 'Women' : c.gender;
-  document.getElementById('ghostnum').textContent = M.cur.perf;
-  document.getElementById('recv').innerHTML = M.cur.perf + (M.cur.wind ? `<small>${M.cur.wind}</small>` : '');
-  document.getElementById('recw').innerHTML =
-    `${M.cur.who} <b>${M.cur.country}</b> · ${M.cur.venue} · <b>${M.cur.dateStr}</b>`;
+  root.querySelector('.title h1').textContent = c.discipline;
+  root.querySelector('.sex').textContent = c.gender === 'men' ? 'Men' : c.gender === 'women' ? 'Women' : c.gender;
+  root.querySelector('.ghostnum').textContent = M.cur.perf;
+  root.querySelector('.rec .v').innerHTML = M.cur.perf + (M.cur.wind ? `<small>${M.cur.wind}</small>` : '');
+  root.querySelector('.rec .who').innerHTML = flagOf(M.cur.country) + nameHTML(M.cur.who);
+  const meet = meetName(c.competition, M.cur.venue);
+  root.querySelector('.rec .w').innerHTML =
+    (meet ? `<b>${meet}</b> · ` : '') + `${M.cur.venue} · <b>${M.cur.dateStr}</b>`;
 
   const st = [
     ['v hl', fmtReign(M.cur.reign), 'standing'],
     ['v', M.rows.length, 'records set'],
     ['v', M.spanYears.toFixed(0) + '<small>y</small>', 'of progression'],
-    ['v', '−' + (M.lower ? M.improvement.toFixed(2) + '<small>s</small>' : M.improvement.toFixed(2)),
+    ['v', (M.lower ? '−' : '+') + M.improvement.toFixed(2) + (M.lower ? '<small>s</small>' : ''),
           'total gain'],
-    ['v', M.improvementPct.toFixed(1) + '<small>%</small>', 'faster than 1st'],
+    ['v', M.improvementPct.toFixed(1) + '<small>%</small>', M.lower ? 'faster than 1st' : 'better than 1st'],
     ['v', M.byWho.size, 'athletes'],
     ['v', M.byCountry.size, 'nations'],
+    ['v', M.topCty[1] + `<small>/${M.rows.length}</small>`, `${M.topCty[0]} records`],
+    ['v', Math.round(M.heldDays[0][1] / M.totalDays * 100) + '<small>%</small>',
+          `${M.heldDays[0][0]} years owned`],
   ];
-  document.getElementById('statbar').innerHTML = st.map(([cl,v,k]) =>
+  root.querySelector('.statbar').innerHTML = st.map(([cl,v,k]) =>
     `<div class="stat"><div class="${cl}">${v}</div><div class="k">${k}</div></div>`).join('');
+
+  /* who has owned the record, by years held — the structural companion to "N nations" */
+  root.querySelector('.nations').innerHTML =
+    `<div class="nk">Years owned</div><div class="nbar">` +
+    M.heldDays.map(([c2, d], i) => {
+      const pct = d / M.totalDays * 100, yrs = d / 365.25;
+      const lab = pct > 6 ? `<i>${c2}</i><em>${yrs < 1 ? '<1' : Math.round(yrs)}y</em>` : '';
+      return `<span class="nseg${c2 === M.cur.country ? ' on' : ''}" style="flex:${pct};`
+        + `--tone:${Math.max(0.12, 0.5 - i * 0.045).toFixed(2)}" `
+        + `title="${c2} — ${yrs.toFixed(1)} years, ${M.byCountry.get(c2)} record${M.byCountry.get(c2)>1?'s':''}">`
+        + `${lab}</span>`;
+    }).join('') + '</div>';
 
   const stories = [];
   stories.push(`<span class="chip gold"><b>${M.cur.perf}</b> has stood since <b>${M.cur.date.getFullYear()}</b> — the longest wait in this event's history</span>`);
   if (M.busiest[1] > 1)
     stories.push(`<span class="chip"><b>${M.busiest[0]}</b> — the record fell <b>${M.busiest[1]} times</b> in one day</span>`);
   stories.push(`<span class="chip"><b>${M.top[0]}</b> set <b>${M.top[1]}</b> of them</span>`);
-  stories.push(`<span class="chip"><b>${M.topCty[0]}</b> holds <b>${M.topCty[1]}</b> of ${M.rows.length}</span>`);
   const handN = M.rows.filter(r => r.hand).length;
   if (handN) stories.push(`<span class="chip"><b>${handN}</b> hand-timed <span style="opacity:.7">(dashed — not comparable with electronic marks)</span></span>`);
-  document.getElementById('stories').innerHTML = stories.join('');
+  root.querySelector('.stories').innerHTML = stories.join('');
 
+  root.querySelector('.replay').addEventListener('click', () => drawRace(M, root));
+}
+
+function openingCardHTML(deck){
+  const ages = deck.map(M => fmtYears(M.cur.reign)).sort((a,b) => a-b);
+  const median = ages[Math.floor(ages.length/2)];
+  const pre2000 = deck.filter(M => M.cur.date.getFullYear() < 2000).length;
+  const last2 = deck.filter(M => fmtYears(M.cur.reign) <= 2).length;
+  const oldest = deck.slice().sort((a,b) => b.cur.reign - a.cur.reign)[0];
+  const st = [
+    ['v hl', fmtYears(oldest.cur.reign).toFixed(1) + '<small>y</small>', 'oldest standing'],
+    ['v', median.toFixed(1) + '<small>y</small>', 'median age'],
+    ['v', deck.length, 'records'],
+    ['v', pre2000, 'set last century'],
+    ['v', last2, 'set in two years'],
+  ];
+  return `<div class="card__bg"></div><div class="ghostnum">1983</div>
+    <div class="inner">
+      <div class="head">
+        <div><div class="disc">World record film · opening</div>
+          <div class="title"><h1>The Longest Wait</h1></div>
+          <div class="sub">Every standing world record in the sport, ranked by how long it has held.
+            Each bar starts the day the record was set and runs to today.</div></div>
+        <div class="legend">
+          <span><i style="background:var(--women)"></i>Women</span>
+          <span><i style="background:var(--men)"></i>Men</span>
+        </div>
+      </div>
+      <div class="statbar">${st.map(([cl,v,k]) =>
+        `<div class="stat"><div class="${cl}">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
+      <div class="chartwrap"><svg></svg><div class="tip"></div></div>
+    </div>
+    <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+}
+
+/* ============================ the film ============================ */
+let DECK = [], SLIDES = [], IDX = 0, TIMER = null;
+const CARD_OF = new Map();
+
+fetch('data/progressions.json').then(r => r.json()).then(d => {
+  DECK = d.cards.map(model);
+  const track = document.getElementById('track');
+
+  // opening card
+  const open = document.createElement('section');
+  open.className = 'card';
+  open.innerHTML = openingCardHTML(DECK);
+  track.appendChild(open);
+  SLIDES.push({el: open, paint: () => drawOpening(open, DECK)});
+
+  // event cards — timed events for now; field events need their own second panel
+  const events = DECK.filter(M => M.lower).sort((a,b) => b.cur.reign - a.cur.reign);
+  events.forEach(M => {
+    const s = document.createElement('section');
+    s.className = 'card';
+    s.innerHTML = eventCardHTML();
+    track.appendChild(s);
+    fillEventCard(s, M);
+    CARD_OF.set(M.card.gender + '|' + M.card.discipline, SLIDES.length);
+    SLIDES.push({el: s, M, paint: () => { drawStair(M, s); drawRace(M, s); }});
+  });
+
+  document.getElementById('ctot').textContent = SLIDES.length;
+  go(0);
+});
+
+function go(i){
+  IDX = (i + SLIDES.length) % SLIDES.length;
+  document.getElementById('track').style.transform = `translateX(${-IDX * 100}%)`;
+  document.getElementById('cnum').textContent = IDX + 1;
   paint();
 }
 
-/* the SVGs are sized from their flex containers, so only ever paint after layout */
-let CURRENT = null, pt = null;
+/* SVGs are sized from their flex containers, so only ever paint after layout */
+let pt = null;
 function paint(){
   clearTimeout(pt);
   pt = setTimeout(() => {
-    if (!CURRENT || document.getElementById('chartwrap').clientWidth < 80) return;
-    drawStair(CURRENT); drawRace(CURRENT);
+    const s = SLIDES[IDX];
+    if (s && s.el.querySelector('.chartwrap').clientWidth > 80) s.paint();
   }, 60);
 }
 
-fetch('data/progressions.json').then(r => r.json()).then(d => {
-  const card = d.cards.find(c => c.gender === 'men' && c.discipline === '100 Metres');
-  CURRENT = model(card);
-  render(CURRENT);
+const next = () => go(IDX + 1), prev = () => go(IDX - 1);
+function setPlaying(on){
+  clearInterval(TIMER);
+  TIMER = on ? setInterval(next, 11000) : null;
+  document.getElementById('playIcon').innerHTML = on
+    ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+    : '<path d="M7 5v14l12-7z"/>';
+}
+const openHelp  = () => { document.getElementById('help').hidden = false; setPlaying(false); };
+const closeHelp = () => { document.getElementById('help').hidden = true; };
+const toggleFS  = () => document.fullscreenElement
+  ? document.exitFullscreen()
+  : document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+
+document.getElementById('next').onclick = next;
+document.getElementById('prev').onclick = prev;
+document.getElementById('restart').onclick = () => go(0);
+document.getElementById('play').onclick = () => setPlaying(!TIMER);
+document.getElementById('helpbtn').onclick = openHelp;
+document.getElementById('fs').onclick = toggleFS;
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') return closeHelp();
+  if (!document.getElementById('help').hidden) return;
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') prev();
+  else if (e.key === ' ') { e.preventDefault(); setPlaying(!TIMER); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key.toLowerCase() === 'f') toggleFS();
+  else if (e.key.toLowerCase() === 'h') openHelp();
+  else if (e.key.toLowerCase() === 'r'){ const s = SLIDES[IDX]; if (s && s.M) drawRace(s.M, s.el); }
 });
 
-new ResizeObserver(paint).observe(document.getElementById('chartwrap'));
-document.getElementById('playbtn').addEventListener('click', () => CURRENT && drawRace(CURRENT));
+new ResizeObserver(paint).observe(document.getElementById('track'));
+document.addEventListener('fullscreenchange', () => setTimeout(paint, 140));
 </script>
 </body>
 </html>
