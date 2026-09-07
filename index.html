@@ -247,6 +247,12 @@
     the line, then zooms into the finish stretch — because a century of progress fits inside the last
     few metres.</p>
 
+    <h3>Equalled records</h3>
+    <p>A world record can be <b>matched</b> as well as beaten, and World Athletics ratifies both. Those
+    marks are drawn as smaller, fainter dots sitting on the flat of the step they matched, and they are
+    counted separately — <b>times improved</b> is how often the record actually moved. In the men's 100 m,
+    37 of the 58 ratified marks equalled the record rather than beat it.</p>
+
     <h3>Hand timing</h3>
     <p>Marks ending in <b>h</b> were taken by hand and are drawn dashed. They are not directly comparable
     with electronic marks, which is why some events step <i>backwards</i> in 1968, when automatic timing
@@ -360,12 +366,15 @@ function model(card){
   const heldDays = [...daysByCountry.entries()].sort((a,b)=>b[1]-a[1]);
   const totalDays = heldDays.reduce((a,[,d]) => a+d, 0);
   const byDay = new Map();
-  rows.forEach(r => byDay.set(r.dateStr,(byDay.get(r.dateStr)||0)+1));
-  const busiest = [...byDay.entries()].sort((a,b)=>b[1]-a[1])[0];
+  rows.forEach(r => { const d = byDay.get(r.dateStr) || {n:0, imp:0};
+    d.n++; if (!r.equal) d.imp++; byDay.set(r.dateStr, d); });
+  const busiest = [...byDay.entries()].sort((a,b) => b[1].n - a[1].n)[0];
+  // a mark flagged `equal` matched the standing record rather than beating it
+  const improvements = rows.filter(r => !r.equal).length;
   const firstAuto = rows.find(r => !r.hand && rows.some(x=>x.hand));
 
   return {card, lower, rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
-          heldDays, totalDays,
+          heldDays, totalDays, improvements, equalled: rows.length - improvements,
           improvement: Math.abs(cur.value - first.value),
           improvementPct: Math.abs(cur.value - first.value) / first.value * 100,
           firstYear: first.date.getFullYear(),
@@ -444,11 +453,13 @@ function drawStair(M, root){
   /* --- dots + hover --- */
   const tip = root.querySelector('.tip');
   M.rows.forEach(r => {
-    const c = el('circle',{cx:X(r.date.getTime()), cy:Y(r.q), r: r.who===M.cur.who?5:3,
+    const c = el('circle',{cx:X(r.date.getTime()), cy:Y(r.q),
+      r: r.who===M.cur.who ? 5 : r.equal ? 2.2 : 3.4,
       fill: r.who===M.cur.who ? 'var(--gold)' : 'var(--bg0)',
-      stroke: colourOf(r), 'stroke-width':1.6, class:'dot'});
+      stroke: colourOf(r), 'stroke-width':1.6, opacity: r.equal ? .6 : 1, class:'dot'});
     c.addEventListener('mouseenter', ev => {
-      tip.innerHTML = `<div class="p">${r.perf}${r.wind?` <span class="m">${r.wind}</span>`:''}</div>`
+      tip.innerHTML = `<div class="p">${r.perf}${r.wind?` <span class="m">${r.wind}</span>`:''}`
+        + `${r.equal?' <span class="m">equalled</span>':''}</div>`
         + `<div class="n">${r.who} <span class="m">${r.country}</span></div>`
         + `<div class="m">${r.venue}</div>`
         + `<div class="m">${r.dateStr} · stood ${fmtReign(r.reign)}</div>`;
@@ -700,7 +711,8 @@ function fillEventCard(root, M){
 
   const st = [
     ['v hl', fmtReign(M.cur.reign), 'standing'],
-    ['v', M.rows.length, 'records set'],
+    ['v', M.improvements, 'times improved'],
+    ...(M.equalled ? [['v', M.equalled, 'equalled']] : []),
     ['v', M.trackedYears.toFixed(0) + '<small>y</small>', `since ${M.firstYear}`],
     ['v', (M.lower ? '−' : '+') + M.improvement.toFixed(2) + (M.lower ? '<small>s</small>' : ''),
           'total gain'],
@@ -728,9 +740,14 @@ function fillEventCard(root, M){
 
   const stories = [];
   stories.push(`<span class="chip gold"><b>${M.cur.perf}</b> has stood since <b>${M.cur.date.getFullYear()}</b> — the longest wait in this event's history</span>`);
-  if (M.busiest[1] > 1)
-    stories.push(`<span class="chip"><b>${M.busiest[0]}</b> — the record fell <b>${M.busiest[1]} times</b> in one day</span>`);
-  stories.push(`<span class="chip"><b>${M.top[0]}</b> set <b>${M.top[1]}</b> of them</span>`);
+  const [day, d] = M.busiest;
+  if (d.n > 1){
+    const what = d.imp >= 2 ? `the record fell <b>${d.imp} times</b>`
+      : d.imp === 1 ? `the record fell once and was equalled <b>${d.n - 1} more time${d.n > 2 ? 's' : ''}</b>`
+      : `the record was equalled <b>${d.n} times</b>`;
+    stories.push(`<span class="chip"><b>${day}</b> — ${what} in a single day</span>`);
+  }
+  stories.push(`<span class="chip"><b>${M.top[0]}</b> — <b>${M.top[1]}</b> of the ${M.rows.length} marks</span>`);
   const handN = M.rows.filter(r => r.hand).length;
   if (handN) stories.push(`<span class="chip"><b>${handN}</b> hand-timed <span style="opacity:.7">(dashed — not comparable with electronic marks)</span></span>`);
   root.querySelector('.stories').innerHTML = stories.join('');
