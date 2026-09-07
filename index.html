@@ -196,6 +196,32 @@
   .sep{width:1px; height:24px; background:var(--line); margin:0 4px}
   @media (max-width:760px){ #fs, .controls .sep{display:none} }
 
+  /* ---------- stats overlay ---------- */
+  .stats{position:fixed; inset:0; z-index:70; background:var(--bg0);
+    display:flex; flex-direction:column; padding:clamp(16px,2.6vh,30px) clamp(18px,3.2vw,54px) clamp(16px,2.4vh,26px)}
+  .stats[hidden]{display:none}
+  .stats::before{content:""; position:absolute; inset:0; z-index:0;
+    background:radial-gradient(120% 95% at 84% 8%, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%)}
+  .stats__in{position:relative; z-index:1; display:flex; flex-direction:column; height:100%;
+    width:100%; max-width:1560px; margin:0 auto; gap:clamp(8px,1.4vh,16px)}
+  .stats__head{display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex:0 0 auto}
+  .stats__head h2{font-size:clamp(24px,3.6vh,40px); font-weight:800; letter-spacing:-.025em; margin-top:6px}
+  .stabs{display:flex; gap:7px; flex-wrap:wrap; flex:0 0 auto; padding-bottom:clamp(6px,1vh,12px);
+    border-bottom:1px solid var(--line)}
+  .stab{font-size:11px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; cursor:pointer;
+    padding:7px 15px; border-radius:999px; font-family:inherit; transition:.15s;
+    border:1px solid transparent; background:transparent; color:var(--muted-2)}
+  .stab:hover{color:var(--ink); background:rgba(255,255,255,.05)}
+  .stab.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
+  .stats__body{position:relative; flex:1 1 auto; min-height:0}
+  .stats__body svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+  .snote{flex:0 0 auto; font-size:12px; color:var(--muted-2); line-height:1.5; padding-top:8px;
+    border-top:1px solid var(--line)}
+  .snote b{color:var(--muted)}
+  .rowlbl{font-size:10.5px; font-weight:700; fill:var(--ink)}
+  .rowval{font-size:10.5px; font-weight:800; fill:var(--gold)}
+  .rowsub{font-size:10px; font-weight:700; fill:var(--muted-2)}
+
   /* ---------- help ---------- */
   .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
     padding:24px}
@@ -231,10 +257,27 @@
   <button id="next" title="Next (→)"><svg viewBox="0 0 24 24"><path d="M8.5 5v14l11-7z"/><rect x="5.1" y="5" width="2.4" height="14" rx="1"/></svg></button>
   <button class="counter" id="counter" title="Jump to a card"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">–</span></span><svg class="cchev" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg></button>
   <div class="sep"></div>
+  <button id="statsbtn" title="Stats (S)"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></button>
   <button id="helpbtn" title="Help (H)">?</button>
   <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
 </div>
 <div class="jumppop" id="jumppop" hidden><div class="jgrid" id="jgrid"></div></div>
+
+<div class="stats" id="stats" hidden>
+  <div class="stats__in">
+    <div class="stats__head">
+      <div>
+        <div class="kicker"><div class="disc">World record film · the whole sport</div></div>
+        <h2 id="statsTitle">Nations</h2>
+      </div>
+      <button class="mclose" style="position:static;font-size:30px" onclick="closeStats()" aria-label="Close">×</button>
+    </div>
+    <div class="stabs" id="stabs"></div>
+    <div class="statbar" id="statsKpi"></div>
+    <div class="stats__body"><svg id="statsSvg"></svg><div class="tip" id="statsTip"></div></div>
+    <div class="snote" id="statsNote"></div>
+  </div>
+</div>
 
 <div class="modal" id="help" hidden>
   <div class="modal__ov" onclick="closeHelp()"></div>
@@ -276,6 +319,7 @@
       <kbd>Space</kbd><span>Play / pause the film</span>
       <kbd>R</kbd><span>Replay the ghost race</span>
       <kbd>F</kbd><span>Fullscreen</span>
+      <kbd>S</kbd><span>Whole-sport stats</span>
       <kbd>H</kbd><span>This panel</span>
     </div>
 
@@ -842,6 +886,309 @@ function labelNations(root){
   });
 }
 
+/* ============================ whole-sport stats ============================ */
+/* These are cross-cutting — they describe the sport, not any one event — so they live on
+   their own surface rather than crowding the cards. Everything here comes from the same
+   progression data already on screen. */
+const isRelay = M => /Relay/.test(M.card.discipline);
+const NAT_HUES = ['#e2572f','#6f8fb8','#d9a94a','#8fb98a','#b98aa8','#6fa9b8','#c98a5c','#9a8fc4',
+  '#c0a05c','#7fb0a0','#cf7f6a','#8f9fd0'];
+let AGG = null, STAB = 'nations';
+
+function buildAgg(deck){
+  const marks = new Map(), days = new Map(), evs = new Map();
+  const cMarks = new Map(), cDays = new Map(), venues = new Map();
+  const done = [], alive = [];
+  const bump = (m,k,v) => m.set(k, (m.get(k) || 0) + v);
+
+  deck.forEach(M => {
+    M.rows.forEach((r, i) => {
+      // relay records belong to a nation, not an athlete — they'd otherwise top every athlete list
+      if (!isRelay(M)){
+        bump(marks, r.who, 1); bump(days, r.who, r.reign);
+        if (!evs.has(r.who)) evs.set(r.who, new Set());
+        evs.get(r.who).add(M.card.gender + '|' + M.card.discipline);
+      }
+      bump(cMarks, r.country, 1); bump(cDays, r.country, r.reign);
+      const v = r.venue.replace(/\s*\([A-Z]{3}\)\s*$/, '').trim();
+      if (!venues.has(v)) venues.set(v, []);
+      venues.get(v).push(r);
+      (i < M.rows.length - 1 ? done : alive).push(r.reign / 365.25);
+    });
+  });
+  done.sort((a, b) => a - b);
+  alive.sort((a, b) => b - a);
+
+  // who held each event's record, sampled once a year
+  const y1 = TODAY.getFullYear(), byYear = [];
+  for (let y = 1900; y <= y1; y++){
+    const d = new Date(y, 6, 1), c = new Map();
+    deck.forEach(M => { const r = M.rows.find(x => x.date <= d && d < x.until);
+      if (r) bump(c, r.country, 1); });
+    byYear.push({y, c, total: [...c.values()].reduce((a, b) => a + b, 0)});
+  }
+  // choose bands by peak simultaneous holdings, so a nation that dominated one era is named
+  // even if its all-time total is small — otherwise Kenya and Jamaica vanish into "Other"
+  const peak = new Map();
+  byYear.forEach(yr => yr.c.forEach((n, c) => peak.set(c, Math.max(peak.get(c) || 0, n))));
+  const topNations = [...peak.entries()].sort((a,b) => b[1]-a[1]).slice(0, 12).map(([k]) => k);
+  return {marks, days, evs, cMarks, cDays, venues, done, alive, byYear, topNations,
+          athletes: [...days.entries()].sort((a,b) => b[1]-a[1])};
+}
+
+const kpi = rows => document.getElementById('statsKpi').innerHTML = rows.map(([v,k]) =>
+  `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+const note = html => document.getElementById('statsNote').innerHTML = html;
+
+/* --- shared: a time axis across the century --- */
+function timeAxis(svg, x0, x1, top, h){
+  const Y0 = 1900, Y1 = TODAY.getFullYear();
+  const X = y => x0 + (y - Y0) / (Y1 - Y0) * (x1 - x0);
+  for (let y = 1900; y <= Y1; y += 20){
+    svg.appendChild(el('line',{x1:X(y), x2:X(y), y1:top, y2:top+h, stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x:X(y), y:top+h+16, class:'axv', 'text-anchor':'middle'}), y));
+  }
+  return X;
+}
+
+/* --- 1. nations: who has held the sport's records, year by year --- */
+function drawNations(svg, W, H){
+  const A = AGG, pad = {l: 8, r: 108, t: 16, b: 26};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const maxN = Math.max(...A.byYear.map(y => y.total));
+  const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
+  const Y = n => pad.t + ih - (n / maxN) * ih;
+
+  const keys = [...A.topNations, 'Other'];
+  const share = (yr, k) => k === 'Other'
+    ? [...yr.c].reduce((a,[c,n]) => a + (A.topNations.includes(c) ? 0 : n), 0)
+    : (yr.c.get(k) || 0);
+
+  // stack from the bottom in a fixed order so the bands stay readable over time
+  const below = A.byYear.map(() => 0);
+  keys.forEach((k, ki) => {
+    const top = [], bot = [];
+    A.byYear.forEach((yr, i) => {
+      const v = share(yr, k);
+      bot.push([X(yr.y), Y(below[i])]);
+      below[i] += v;
+      top.push([X(yr.y), Y(below[i])]);
+    });
+    const d = 'M ' + top.map(p => p.join(' ')).join(' L ')
+            + ' L ' + bot.reverse().map(p => p.join(' ')).join(' L ') + ' Z';
+    svg.appendChild(el('path',{d, fill: k === 'Other' ? 'rgba(150,140,135,.35)' : NAT_HUES[ki],
+      opacity: .88}));
+  });
+
+  // label each band where it is widest, and again at the right edge if it still holds records
+  const edge = [];
+  keys.forEach((k, ki) => {
+    let best = -1, bestI = 0;
+    A.byYear.forEach((yr, i) => { const v = share(yr, k); if (v > best){ best = v; bestI = i; } });
+    const col = k === 'Other' ? 'var(--muted-2)' : NAT_HUES[ki];
+    // a peak in the last few years would print on top of the right-edge label
+    const nearEdge = bestI > A.byYear.length - 9 && share(A.byYear[A.byYear.length-1], k) > 0;
+    if (best >= 2 && !nearEdge){
+      let under = 0;
+      keys.slice(0, ki).forEach(k2 => under += share(A.byYear[bestI], k2));
+      svg.appendChild(txt(el('text',{x: X(A.byYear[bestI].y), y: Y(under + best/2) + 3.5,
+        class:'rowlbl', 'text-anchor':'middle',
+        style:`fill:rgba(10,8,7,.82);font-weight:800;paint-order:stroke;stroke:${col};stroke-width:3px`}), k));
+    }
+    const now = share(A.byYear[A.byYear.length - 1], k);
+    if (now > 0){
+      let under = 0;
+      keys.slice(0, ki).forEach(k2 => under += share(A.byYear[A.byYear.length-1], k2));
+      edge.push({label:`${k} ${now}`, col, y: Y(under + now/2)});
+    }
+  });
+
+  // a one-record band is thinner than its own label, so space the edge labels out
+  edge.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < edge.length; i++)
+    if (edge[i].y - edge[i-1].y < 13) edge[i].y = edge[i-1].y + 13;
+  edge.forEach(e => svg.appendChild(txt(el('text',{x: pad.l+iw+10, y: e.y + 3.5,
+    class:'rowlbl', style:`fill:${e.col}`}), e.label)));
+  svg.appendChild(txt(el('text',{x: pad.l, y: pad.t - 4, class:'lbl'}),
+    `records held, of ${maxN} tracked events`));
+
+  const cy = [...A.cDays.entries()].sort((a,b) => b[1]-a[1]);
+  kpi([[cy.length, 'nations have held one'],
+       [cy[0][0], 'most record-years'],
+       [Math.round(cy[0][1]/365.25).toLocaleString(), `${cy[0][0]} record-years`],
+       [[...A.cMarks.entries()].sort((a,b)=>b[1]-a[1])[0][1], `${cy[0][0]} marks`]]);
+  note(`Each band is how many of the sport's world records that nation held in a given year, `
+    + `sampled every 1 July across all <b>${DECK.length}</b> events. The band widths are the `
+    + `sport's own history: the United States through the century, the Soviet and East German `
+    + `bloc swelling and then ending, Kenya and Ethiopia arriving in the distances.`);
+}
+
+/* --- 2. athletes: when they actually held a record --- */
+function drawAthletes(svg, W, H){
+  const A = AGG, pad = {l: 176, r: 96, t: 16, b: 26};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const list = A.athletes.slice(0, Math.max(8, Math.min(20, Math.floor(ih / 17))));
+  const rowH = ih / list.length;
+  const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
+  const tip = document.getElementById('statsTip');
+
+  list.forEach(([who, d], i) => {
+    const y = pad.t + i * rowH, mid = y + rowH / 2;
+    const h = Math.max(5, Math.min(rowH - 4, 15));
+    svg.appendChild(txt(el('text',{x: pad.l-12, y: mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
+      surnameOf(who)));
+    DECK.forEach(M => {
+      if (isRelay(M)) return;
+      M.rows.filter(r => r.who === who).forEach(r => {
+        const x1 = X(r.date.getFullYear() + (r.date.getMonth()/12));
+        const x2 = X(r.until.getFullYear() + (r.until.getMonth()/12));
+        const rect = el('rect',{x:x1, y:mid-h/2, width:Math.max(2, x2-x1), height:h, rx:2.5,
+          fill: M.card.gender === 'women' ? 'var(--women)' : 'var(--men)', opacity:.9});
+        rect.addEventListener('mouseenter', ev => {
+          tip.innerHTML = `<div class="p">${r.perf} <span class="m">${M.card.discipline}</span></div>`
+            + `<div class="n">${who}</div>`
+            + `<div class="m">${r.dateStr} · held ${fmtReign(r.reign)}</div>`;
+          tip.style.opacity = 1;
+          const b = svg.parentElement.getBoundingClientRect();
+          tip.style.left = Math.min(ev.clientX - b.left + 14, W - 260) + 'px';
+          tip.style.top = (mid + 8) + 'px';
+        });
+        rect.addEventListener('mouseleave', () => tip.style.opacity = 0);
+        svg.appendChild(rect);
+      });
+    });
+    svg.appendChild(txt(el('text',{x: pad.l+iw+10, y: mid+3.5, class:'rowval'}),
+      `${(d/365.25).toFixed(0)}y`));
+    svg.appendChild(txt(el('text',{x: pad.l+iw+52, y: mid+3.5, class:'rowsub'}),
+      plural(A.marks.get(who), 'mark')));
+  });
+
+  const top = A.athletes[0], mostMarks = [...A.marks.entries()].sort((a,b)=>b[1]-a[1])[0];
+  kpi([[surnameOf(top[0]), 'most record-years'],
+       [(top[1]/365.25).toFixed(0), 'record-years'],
+       [surnameOf(mostMarks[0]), 'most marks'],
+       [mostMarks[1], 'marks set or equalled']]);
+  note(`Each bar is a spell actually holding a world record, so the ink is the time and the `
+    + `gaps are real. Relay records are left out — they belong to a nation, not an athlete. `
+    + `Record-years count each event separately, so holding two records at once counts twice: `
+    + `Griffith Joyner's total is one 38-year spell in two events.`);
+}
+
+/* --- 3. venues --- */
+function drawVenues(svg, W, H){
+  const A = AGG, pad = {l: 210, r: 70, t: 16, b: 26};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const list = [...A.venues.entries()].sort((a,b) => b[1].length - a[1].length)
+    .slice(0, Math.max(8, Math.min(16, Math.floor(ih / 20))));
+  const rowH = ih / list.length;
+  const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
+  const tip = document.getElementById('statsTip');
+
+  list.forEach(([v, rs], i) => {
+    const mid = pad.t + i * rowH + rowH / 2;
+    svg.appendChild(txt(el('text',{x: pad.l-12, y: mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
+      v.length > 30 ? v.slice(0, 29) + '…' : v));
+    rs.forEach(r => {
+      const c = el('circle',{cx: X(r.date.getFullYear() + r.date.getMonth()/12), cy: mid, r: 3.4,
+        fill:'rgba(226,87,47,.75)', stroke:'var(--bg0)', 'stroke-width':.8});
+      c.addEventListener('mouseenter', ev => {
+        tip.innerHTML = `<div class="p">${r.perf}</div><div class="n">${r.who}</div>`
+          + `<div class="m">${r.dateStr}</div>`;
+        tip.style.opacity = 1;
+        const b = svg.parentElement.getBoundingClientRect();
+        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 240) + 'px';
+        tip.style.top = (mid + 8) + 'px';
+      });
+      c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+      svg.appendChild(c);
+    });
+    svg.appendChild(txt(el('text',{x: pad.l+iw+10, y: mid+3.5, class:'rowval'}), rs.length));
+  });
+
+  kpi([[A.venues.size, 'venues'], [list[0][0].split(',').pop().trim(), 'most records'],
+       [list[0][1].length, 'records there']]);
+  note(`One dot per world record, placed at the date it was set. Clusters are meets that `
+    + `produced a run of records — the tight column on Ciudad de México is October 1968, `
+    + `the Olympics held at 2,240 m of altitude.`);
+}
+
+/* --- 4. how long records last --- */
+function drawSurvival(svg, W, H){
+  const A = AGG, pad = {l: 46, r: 120, t: 16, b: 30};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const maxY = 45;
+  const X = t => pad.l + Math.min(t, maxY) / maxY * iw;
+  const Y = p => pad.t + (1 - p / 100) * ih;
+  const surv = t => A.done.filter(x => x >= t).length / A.done.length * 100;
+
+  for (let p = 0; p <= 100; p += 25){
+    svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw, y1:Y(p), y2:Y(p), stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x:pad.l-10, y:Y(p)+4, class:'axv', 'text-anchor':'end'}), p + '%'));
+  }
+  for (let t = 0; t <= maxY; t += 5){
+    svg.appendChild(txt(el('text',{x:X(t), y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}), t));
+  }
+  svg.appendChild(txt(el('text',{x:pad.l+iw/2, y:pad.t+ih+32, class:'lbl', 'text-anchor':'middle'}),
+    'years after the record was set'));
+
+  const pts = [];
+  for (let t = 0; t <= maxY; t += .25) pts.push([X(t), Y(surv(t))]);
+  svg.appendChild(el('path',{d:'M ' + pts.map(p => p.join(' ')).join(' L ') + ` L ${X(maxY)} ${Y(0)} L ${pad.l} ${Y(0)} Z`,
+    fill:'rgba(140,160,190,.10)'}));
+  svg.appendChild(el('path',{d:'M ' + pts.map(p => p.join(' ')).join(' L '),
+    fill:'none', stroke:'var(--steel, #7f96b8)', 'stroke-width':2.2}));
+
+  // where today's standing records sit on that curve
+  A.alive.forEach(t => {
+    svg.appendChild(el('circle',{cx:X(t), cy:Y(surv(t)), r:3.6, fill:'var(--gold)', opacity:.9}));
+  });
+  const med = A.done[Math.floor(A.done.length/2)];
+  [[med, 'median life'], [10, ''], [20, '']].forEach(([t, lab]) => {
+    if (!lab) return;
+    svg.appendChild(el('line',{x1:X(t), x2:X(t), y1:Y(surv(t)), y2:Y(0), stroke:'rgba(255,255,255,.18)',
+      'stroke-dasharray':'2 4'}));
+    svg.appendChild(txt(el('text',{x:X(t)+6, y:Y(0)-6, class:'lbl'}), `${lab} ${t.toFixed(1)}y`));
+  });
+  svg.appendChild(txt(el('text',{x:pad.l+iw+12, y:Y(surv(30))+4, class:'rowval'}),
+    `${A.alive.filter(t => t >= 30).length} of ${A.alive.length}`));
+  svg.appendChild(txt(el('text',{x:pad.l+iw+12, y:Y(surv(30))+17, class:'lbl'}), 'are past 30y'));
+
+  kpi([[med.toFixed(2) + '<small>y</small>', 'median record life'],
+       [surv(10).toFixed(1) + '<small>%</small>', 'ever reach 10 years'],
+       [surv(30).toFixed(1) + '<small>%</small>', 'ever reach 30 years'],
+       [A.alive.filter(t => t >= 30).length, 'standing records past 30y']]);
+  note(`The curve is every one of the <b>${A.done.length}</b> records that has been beaten: half `
+    + `of them lasted under <b>${med.toFixed(2)} years</b>, and only <b>${surv(30).toFixed(1)}%</b> `
+    + `ever reached thirty. The gold dots are today's <b>${A.alive.length}</b> standing records, `
+    + `placed at their current age. Note the comparison is not quite like for like — the curve is `
+    + `built from records that were beaten, while the gold ones are still running.`);
+}
+
+const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
+                   ['venues','Venues', drawVenues], ['survival','How long records last', drawSurvival]];
+
+function paintStats(){
+  const host = document.querySelector('.stats__body');
+  if (!AGG || document.getElementById('stats').hidden || host.clientWidth < 80) return;
+  const svg = document.getElementById('statsSvg');
+  svg.innerHTML = '';
+  const tab = STAT_TABS.find(t => t[0] === STAB);
+  document.getElementById('statsTitle').textContent = tab[1];
+  tab[2](svg, host.clientWidth, host.clientHeight);
+}
+function setTab(id){
+  STAB = id;
+  document.querySelectorAll('.stab').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+  paintStats();
+}
+function openStats(){
+  if (!AGG) AGG = buildAgg(DECK);
+  document.getElementById('stats').hidden = false;
+  setPlaying(false);
+  requestAnimationFrame(() => requestAnimationFrame(paintStats));
+}
+const closeStats = () => { document.getElementById('stats').hidden = true; };
+
 /* ============================ the film ============================ */
 let DECK = [], SLIDES = [], IDX = 0, TIMER = null, SEX = 'men';
 const CARD_OF = new Map(), FILMS = {};
@@ -874,6 +1221,9 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
     SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', paint: () => drawOpening(lw, DECK)});
   });
   document.querySelectorAll('.sx').forEach(b => b.onclick = () => switchSex(b.dataset.sex));
+  document.getElementById('stabs').innerHTML = STAT_TABS.map(([id, label], i) =>
+    `<button class="stab${i ? '' : ' on'}" data-tab="${id}">${label}</button>`).join('');
+  document.querySelectorAll('.stab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
   /* reload lands where you left off — the hash first (so cards are linkable),
      then the last card of the previous visit */
@@ -983,6 +1333,7 @@ document.getElementById('prev').onclick = prev;
 document.getElementById('restart').onclick = () => go(0);
 document.getElementById('play').onclick = () => setPlaying(!TIMER);
 document.getElementById('helpbtn').onclick = openHelp;
+document.getElementById('statsbtn').onclick = openStats;
 document.getElementById('counter').onclick = e => { e.stopPropagation(); toggleJump(); };
 document.addEventListener('click', e => {
   if (!e.target.closest('.jumppop') && !e.target.closest('#counter')) closeJump();
@@ -990,8 +1341,17 @@ document.addEventListener('click', e => {
 document.getElementById('fs').onclick = toggleFS;
 
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ closeJump(); return closeHelp(); }
+  if (e.key === 'Escape'){ closeJump(); closeStats(); return closeHelp(); }
+  const statsOpen = !document.getElementById('stats').hidden;
+  if (statsOpen){                       // arrows walk the stats tabs while it is open
+    const i = STAT_TABS.findIndex(t => t[0] === STAB);
+    if (e.key === 'ArrowRight') setTab(STAT_TABS[(i + 1) % STAT_TABS.length][0]);
+    else if (e.key === 'ArrowLeft') setTab(STAT_TABS[(i - 1 + STAT_TABS.length) % STAT_TABS.length][0]);
+    else if (e.key.toLowerCase() === 's') closeStats();
+    return;
+  }
   if (!document.getElementById('help').hidden) return;
+  if (e.key.toLowerCase() === 's') return openStats();
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
   else if (e.key === ' ') { e.preventDefault(); setPlaying(!TIMER); }
@@ -1002,6 +1362,7 @@ addEventListener('keydown', e => {
 });
 
 new ResizeObserver(paint).observe(document.getElementById('track'));
+new ResizeObserver(paintStats).observe(document.querySelector('.stats__body'));
 document.addEventListener('fullscreenchange', () => setTimeout(paint, 140));
 </script>
 </body>
