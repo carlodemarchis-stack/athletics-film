@@ -487,12 +487,15 @@ function drawStair(M, root){
   svg.appendChild(txt(el('text',{x: pad.l+iw, y: Y(M.cur.q) - 14, class:'plateaulbl',
     'text-anchor':'end'}), `${fmtReign(M.cur.reign).toUpperCase()} UNBEATEN`));
 
-  /* --- right-hand axis: today's mark at the top, where it started at the foot --- */
-  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.cur.q)+4, class:'axv',
+  /* --- right-hand axis: today's mark at the top, where it started at the foot.
+         Both hang off the card's right edge, shared with the header and the replay button. --- */
+  const axX = pad.l + iw + pad.r;
+  svg.appendChild(txt(el('text',{x: axX, y: Y(M.cur.q)+4, class:'axv', 'text-anchor':'end',
     style:'fill:var(--gold);font-weight:800'}), M.cur.perf));
-  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.cur.q)+17, class:'lbl'}), 'today'));
-  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.first.q)+4, class:'axv'}), M.first.perf));
-  svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: Y(M.first.q)+17, class:'lbl'}),
+  svg.appendChild(txt(el('text',{x: axX, y: Y(M.cur.q)+17, class:'lbl', 'text-anchor':'end'}), 'today'));
+  svg.appendChild(txt(el('text',{x: axX, y: Y(M.first.q)+4, class:'axv', 'text-anchor':'end'}),
+    M.first.perf));
+  svg.appendChild(txt(el('text',{x: axX, y: Y(M.first.q)+17, class:'lbl', 'text-anchor':'end'}),
     M.first.date.getFullYear()));
 }
 
@@ -534,21 +537,32 @@ function drawRace(M, root){
   const X = m => padL + (m - dMin) / (100 - dMin) * lane;
 
   const grid = el('g'); svg.appendChild(grid);
-  const startLbl = el('text',{y: padT+laneH+16, class:'lbl'}); svg.appendChild(startLbl);
-  const finLbl = txt(el('text',{y: padT+laneH+16, class:'lbl', 'text-anchor':'end'}), 'finish');
-  svg.appendChild(finLbl);
+
+  /* the track is measured in the event's own distance, not in percent of it */
+  const DIST = DISTANCE[M.card.discipline];
+  const tick = pct => {
+    if (!DIST) return pct.toFixed(0) + '%';
+    const m = DIST * pct / 100;
+    return m >= 1000 ? +(m / 1000).toFixed(1) + ' km' : Math.round(m) + ' m';
+  };
 
   function drawTrack(){
     grid.innerHTML = '';
     const step = (100 - dMin) > 40 ? 10 : (100 - dMin) > 12 ? 5 : 2;
-    for (let m = Math.ceil(dMin/step)*step; m <= 100; m += step){
+    const ms = [];
+    for (let m = Math.ceil(dMin / step) * step; m < 100; m += step) ms.push(m);
+    ms.push(100);
+    // thin the labels out so they never collide, always keeping the finish
+    const every = Math.max(1, Math.ceil(54 / (lane * step / (100 - dMin))));
+    ms.forEach((m, i) => {
       grid.appendChild(el('line',{x1:X(m), x2:X(m), y1:padT-6, y2:padT+laneH+6,
         stroke: m===100 ? 'rgba(242,193,78,.55)' : 'rgba(255,255,255,.06)',
         'stroke-width': m===100 ? 1.5 : 1}));
-    }
-    startLbl.setAttribute('x', X(dMin));
-    startLbl.textContent = dMin < 1 ? 'start' : `${dMin.toFixed(0)}%`;
-    finLbl.setAttribute('x', X(100));
+      if ((ms.length - 1 - i) % every) return;
+      grid.appendChild(txt(el('text',{x:X(m), y:padT+laneH+16, class:'lbl',
+        'text-anchor': m === 100 ? 'end' : m === 0 ? 'start' : 'middle'}),
+        m === 100 ? 'finish' : m === 0 ? 'start' : tick(m)));
+    });
   }
 
   const dots = runners.map((r,i) => {
@@ -599,14 +613,6 @@ function drawRace(M, root){
   const RUN = 3400, ZOOM = 900;                     // wall-clock ms
   const t0 = performance.now();
   drawTrack(); place();
-
-  /* right-align the replay button to where the leader's label ends, so the button
-     and the record/year below it share an edge */
-  const btn = root.querySelector('.replay');
-  if (btn){
-    const lw = labels[0].t.getBBox().width;
-    btn.style.marginRight = Math.max(0, Math.round(W - (padL + lane + 9 + lw))) + 'px';
-  }
   function frame(now){
     const ms = now - t0;
     const t = Math.min(ms / (RUN / fastest), fastest);   // race seconds, frozen at the leader's time
