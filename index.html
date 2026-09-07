@@ -29,6 +29,7 @@
   /* ---------- film viewport ---------- */
   .stage{position:fixed; inset:0; overflow:hidden}
   .track{display:flex; height:100%; width:100%; transition:transform .55s cubic-bezier(.7,0,.2,1)}
+  .track.notrans{transition:none}
   .card{flex:0 0 100%; height:100%; position:relative; display:flex; flex-direction:column;
     padding:clamp(14px,2.4vh,30px) clamp(18px,3.2vw,54px) clamp(74px,10vh,98px); overflow:hidden;
     content-visibility:auto; contain-intrinsic-size:100vw 100vh}
@@ -78,8 +79,10 @@
   .nk{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
     color:var(--muted-2); white-space:nowrap}
   .nbar{display:flex; flex:1 1 auto; gap:2px; height:17px; min-width:0}
-  .nseg{display:flex; align-items:center; gap:5px; padding:0 5px; border-radius:3px;
-    overflow:hidden; min-width:3px; background:rgba(196,210,230,var(--tone))}
+  .nseg{display:flex; align-items:center; justify-content:center; gap:5px; padding:0 5px;
+    border-radius:3px; overflow:hidden; min-width:22px; background:rgba(196,210,230,var(--tone))}
+  .nseg.tight{padding:0 2px; gap:0}
+  .nseg.tight i{font-size:8.5px; letter-spacing:0}
   .nseg.on{background:var(--gold)}
   .nseg i{font-style:normal; font-size:9.5px; font-weight:800; letter-spacing:.05em; color:rgba(10,8,7,.9)}
   .nseg em{font-style:normal; font-size:9.5px; font-weight:700; color:rgba(10,8,7,.55)}
@@ -146,18 +149,43 @@
     display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px;
     background:rgba(14,9,7,.86); border:1px solid var(--line); backdrop-filter:blur(12px);
     box-shadow:0 12px 40px rgba(0,0,0,.55)}
-  .controls button{border:0; background:transparent; color:var(--muted); cursor:pointer; border-radius:50%;
-    width:38px; height:38px; display:flex; align-items:center; justify-content:center; transition:.15s;
-    font-size:15px; font-weight:800; font-family:inherit}
-  .controls button:hover{color:var(--ink); background:rgba(255,255,255,.08)}
-  .controls button svg{width:18px; height:18px; fill:currentColor}
+  .controls > button:not(.counter){border:0; background:transparent; color:var(--muted); cursor:pointer;
+    border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
+    transition:.15s; font-size:15px; font-weight:800; font-family:inherit}
+  .controls > button:not(.counter):hover{color:var(--ink); background:rgba(255,255,255,.08)}
+  .controls > button svg{width:18px; height:18px; fill:currentColor}
   .controls .play{width:50px; height:50px; background:var(--ink); color:#160d09}
   .controls .play:hover{background:#fff; color:#160d09}
   .controls .play svg{width:21px; height:21px}
-  .counter{display:flex; align-items:center; gap:8px; padding:6px 14px; white-space:nowrap;
-    font-size:12px; font-weight:800; letter-spacing:.1em; color:var(--muted)}
+  .counter{display:flex; align-items:center; width:auto; height:auto;
+    gap:8px; padding:6px 10px 6px 14px; white-space:nowrap;
+    font-size:12px; font-weight:800; letter-spacing:.1em; color:var(--muted); cursor:pointer;
+    border-radius:999px; transition:.15s; border:0; background:transparent; font-family:inherit}
+  .counter:hover{color:var(--ink); background:rgba(255,255,255,.06)}
   .counter b{color:var(--gold); font-size:14px}
   .counter .lbl{color:var(--muted-2); letter-spacing:.16em}
+  .cchev{width:13px; height:13px; fill:var(--muted-2); transition:.18s}
+  body.jump-open .cchev{transform:rotate(180deg); fill:var(--gold)}
+
+  /* jump-to drop-up */
+  .jumppop{position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:41;
+    width:min(760px,92vw); max-height:58vh; overflow:auto; padding:10px;
+    background:#100a08; border:1px solid var(--line); border-radius:16px;
+    box-shadow:0 18px 50px rgba(0,0,0,.7)}
+  .jumppop[hidden]{display:none}
+  .jgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px}
+  @media (max-width:640px){ .jgrid{grid-template-columns:1fr} }
+  .jitem{display:flex; align-items:center; gap:9px; width:100%; text-align:left; cursor:pointer;
+    border:0; background:transparent; border-radius:9px; padding:7px 10px; color:var(--muted);
+    font-family:inherit; font-size:12.5px; font-weight:700; transition:.12s}
+  .jitem:hover{background:rgba(255,255,255,.07); color:var(--ink)}
+  .jitem.on{background:rgba(242,193,78,.13); color:var(--gold)}
+  .jitem .ji{font-size:10px; font-weight:800; color:var(--muted-2); min-width:20px; text-align:right}
+  .jitem.on .ji{color:var(--gold)}
+  .jitem .jd{width:8px; height:8px; border-radius:2px; flex:0 0 auto}
+  .jitem .jn{flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .jitem .jy{font-size:10.5px; font-weight:800; color:var(--muted-2); white-space:nowrap}
+  .jitem.on .jy{color:var(--gold)}
   .sep{width:1px; height:24px; background:var(--line); margin:0 4px}
   @media (max-width:760px){ #fs, .controls .sep{display:none} }
 
@@ -194,11 +222,12 @@
   <button id="prev" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15.5 5v14l-11-7z"/><rect x="16.5" y="5" width="2.4" height="14" rx="1"/></svg></button>
   <button class="play" id="play" title="Play / Pause (Space)"><svg id="playIcon" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></button>
   <button id="next" title="Next (→)"><svg viewBox="0 0 24 24"><path d="M8.5 5v14l11-7z"/><rect x="5.1" y="5" width="2.4" height="14" rx="1"/></svg></button>
-  <div class="counter"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">–</span></span></div>
+  <button class="counter" id="counter" title="Jump to a card"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">–</span></span><svg class="cchev" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg></button>
   <div class="sep"></div>
   <button id="helpbtn" title="Help (H)">?</button>
   <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
 </div>
+<div class="jumppop" id="jumppop" hidden><div class="jgrid" id="jgrid"></div></div>
 
 <div class="modal" id="help" hidden>
   <div class="modal__ov" onclick="closeHelp()"></div>
@@ -339,7 +368,8 @@ function model(card){
           heldDays, totalDays,
           improvement: Math.abs(cur.value - first.value),
           improvementPct: Math.abs(cur.value - first.value) / first.value * 100,
-          spanYears: fmtYears((cur.date - first.date) / 864e5)};
+          firstYear: first.date.getFullYear(),
+          trackedYears: fmtYears((TODAY - first.date) / 864e5)};
 }
 
 /* ============================ svg helpers ============================ */
@@ -671,7 +701,7 @@ function fillEventCard(root, M){
   const st = [
     ['v hl', fmtReign(M.cur.reign), 'standing'],
     ['v', M.rows.length, 'records set'],
-    ['v', M.spanYears.toFixed(0) + '<small>y</small>', 'of progression'],
+    ['v', M.trackedYears.toFixed(0) + '<small>y</small>', `since ${M.firstYear}`],
     ['v', (M.lower ? '−' : '+') + M.improvement.toFixed(2) + (M.lower ? '<small>s</small>' : ''),
           'total gain'],
     ['v', M.improvementPct.toFixed(1) + '<small>%</small>', M.lower ? 'faster than 1st' : 'better than 1st'],
@@ -689,11 +719,11 @@ function fillEventCard(root, M){
     `<div class="nk">Years owned</div><div class="nbar">` +
     M.heldDays.map(([c2, d], i) => {
       const pct = d / M.totalDays * 100, yrs = d / 365.25;
-      const lab = pct > 6 ? `<i>${c2}</i><em>${yrs < 1 ? '<1' : Math.round(yrs)}y</em>` : '';
       return `<span class="nseg${c2 === M.cur.country ? ' on' : ''}" style="flex:${pct};`
         + `--tone:${Math.max(0.12, 0.5 - i * 0.045).toFixed(2)}" `
+        + `data-c="${c2}" data-y="${yrs < 1 ? '<1' : Math.round(yrs)}y" `
         + `title="${c2} — ${yrs.toFixed(1)} years, ${M.byCountry.get(c2)} record${M.byCountry.get(c2)>1?'s':''}">`
-        + `${lab}</span>`;
+        + `</span>`;
     }).join('') + '</div>';
 
   const stories = [];
@@ -740,6 +770,16 @@ function openingCardHTML(deck){
     <div class="note">Data: World Athletics · A guy with a scarf</div>`;
 }
 
+/* the bar is flex-sized, so what fits in each block is only knowable after layout */
+function labelNations(root){
+  root.querySelectorAll('.nseg').forEach(sg => {
+    const w = sg.getBoundingClientRect().width;
+    const c = sg.dataset.c, y = sg.dataset.y;
+    sg.innerHTML = w >= 56 ? `<i>${c}</i><em>${y}</em>` : `<i>${c}</i>`;
+    sg.classList.toggle('tight', w < 56);
+  });
+}
+
 /* ============================ the film ============================ */
 let DECK = [], SLIDES = [], IDX = 0, TIMER = null;
 const CARD_OF = new Map();
@@ -753,7 +793,7 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
   open.className = 'card';
   open.innerHTML = openingCardHTML(DECK);
   track.appendChild(open);
-  SLIDES.push({el: open, paint: () => drawOpening(open, DECK)});
+  SLIDES.push({el: open, slug: 'opening', paint: () => drawOpening(open, DECK)});
 
   // event cards — timed events for now; field events need their own second panel
   const events = DECK.filter(M => M.lower).sort((a,b) => b.cur.reign - a.cur.reign);
@@ -764,19 +804,71 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
     track.appendChild(s);
     fillEventCard(s, M);
     CARD_OF.set(M.card.gender + '|' + M.card.discipline, SLIDES.length);
-    SLIDES.push({el: s, M, paint: () => { drawStair(M, s); drawRace(M, s); }});
+    SLIDES.push({el: s, M, slug: slugOf(M),
+      paint: () => { drawStair(M, s); drawRace(M, s); labelNations(s); }});
   });
 
   document.getElementById('ctot').textContent = SLIDES.length;
-  go(0);
+  buildJump();
+
+  /* reload lands where you left off — the hash first (so cards are linkable),
+     then the last card of the previous visit */
+  const want = decodeURIComponent(location.hash.slice(1)) || localStorage.getItem('wrf.card') || '';
+  const start = Math.max(0, SLIDES.findIndex(s => s.slug === want));
+  track.classList.add('notrans');
+  go(start);
+  requestAnimationFrame(() => requestAnimationFrame(() => track.classList.remove('notrans')));
+  if (localStorage.getItem('wrf.play') === '1') setPlaying(true);
 });
 
-function go(i){
+const slugOf = M => (M.card.gender + '-' + M.card.discipline)
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+function go(i, fromHash){
   IDX = (i + SLIDES.length) % SLIDES.length;
   document.getElementById('track').style.transform = `translateX(${-IDX * 100}%)`;
   document.getElementById('cnum').textContent = IDX + 1;
+  const slug = SLIDES[IDX].slug;
+  if (!fromHash) history.replaceState(null, '', '#' + slug);
+  try { localStorage.setItem('wrf.card', slug); } catch(e){}
+  markJump();
   paint();
 }
+
+addEventListener('hashchange', () => {
+  const i = SLIDES.findIndex(s => s.slug === decodeURIComponent(location.hash.slice(1)));
+  if (i >= 0 && i !== IDX) go(i, true);
+});
+
+/* ---- jump-to drop-up ---- */
+function buildJump(){
+  document.getElementById('jgrid').innerHTML = SLIDES.map((s, i) => {
+    const M = s.M;
+    const dot = M ? `var(--${M.card.gender === 'women' ? 'women' : 'men'})` : 'var(--gold)';
+    const name = M ? `${M.card.discipline} <span style="opacity:.55">· ${M.card.gender === 'women' ? 'W' : 'M'}</span>`
+                   : 'The Longest Wait';
+    const yrs = M ? fmtYears(M.cur.reign).toFixed(1) + 'y' : 'opening';
+    return `<button class="jitem" data-i="${i}"><span class="ji">${i+1}</span>`
+      + `<span class="jd" style="background:${dot}"></span>`
+      + `<span class="jn">${name}</span><span class="jy">${yrs}</span></button>`;
+  }).join('');
+  document.querySelectorAll('.jitem').forEach(b =>
+    b.onclick = () => { go(+b.dataset.i); closeJump(); });
+}
+function markJump(){
+  document.querySelectorAll('.jitem').forEach(b => b.classList.toggle('on', +b.dataset.i === IDX));
+}
+function openJump(){
+  document.getElementById('jumppop').hidden = false;
+  document.body.classList.add('jump-open');
+  const on = document.querySelector('.jitem.on');
+  if (on) on.scrollIntoView({block:'nearest'});
+}
+function closeJump(){
+  document.getElementById('jumppop').hidden = true;
+  document.body.classList.remove('jump-open');
+}
+const toggleJump = () => document.getElementById('jumppop').hidden ? openJump() : closeJump();
 
 /* SVGs are sized from their flex containers, so only ever paint after layout */
 let pt = null;
@@ -792,6 +884,7 @@ const next = () => go(IDX + 1), prev = () => go(IDX - 1);
 function setPlaying(on){
   clearInterval(TIMER);
   TIMER = on ? setInterval(next, 11000) : null;
+  try { localStorage.setItem('wrf.play', on ? '1' : '0'); } catch(e){}
   document.getElementById('playIcon').innerHTML = on
     ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     : '<path d="M7 5v14l12-7z"/>';
@@ -807,10 +900,14 @@ document.getElementById('prev').onclick = prev;
 document.getElementById('restart').onclick = () => go(0);
 document.getElementById('play').onclick = () => setPlaying(!TIMER);
 document.getElementById('helpbtn').onclick = openHelp;
+document.getElementById('counter').onclick = e => { e.stopPropagation(); toggleJump(); };
+document.addEventListener('click', e => {
+  if (!e.target.closest('.jumppop') && !e.target.closest('#counter')) closeJump();
+});
 document.getElementById('fs').onclick = toggleFS;
 
 addEventListener('keydown', e => {
-  if (e.key === 'Escape') return closeHelp();
+  if (e.key === 'Escape'){ closeJump(); return closeHelp(); }
   if (!document.getElementById('help').hidden) return;
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
