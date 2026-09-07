@@ -23,11 +23,18 @@ EVENTS = [
 ]
 
 
-def gql(query):
+def gql(query, tries=4):
     req = urllib.request.Request(
         EP, data=json.dumps({"query": query}).encode(),
         headers={"x-api-key": KEY, "Content-Type": "application/json"})
-    d = json.load(urllib.request.urlopen(req))
+    for n in range(tries):
+        try:
+            d = json.load(urllib.request.urlopen(req, timeout=30))
+            break
+        except urllib.error.URLError:          # transient DNS / network blip
+            if n == tries - 1:
+                raise
+            time.sleep(2 * (n + 1))
     if d.get("errors"):
         raise RuntimeError(d["errors"][0]["message"])
     return d["data"]
@@ -63,7 +70,7 @@ def progression(pid):
     return gql(
         "{getRecordsDetailByProgression(progressionId:%d){gender environment ageCategory "
         "discipline{name disciplineCode} entries{performance equal pending wind date venue "
-        "country competitor{id name urlSlug}}}}" % pid)["getRecordsDetailByProgression"]
+        "country competitor{id name urlSlug birthDate}}}}" % pid)["getRecordsDetailByProgression"]
 
 
 def competition_of(entry):

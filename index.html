@@ -343,6 +343,14 @@ const MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:
 const TODAY = new Date();
 
 const parseDate = s => { const [d,m,y] = s.split(' '); return new Date(+y, MONTHS[m.toUpperCase()], +d); };
+/* a handful of older athletes have only a birth year on file ("1907"), so this one
+   tolerates what parseDate would choke on and simply gives up instead */
+const parseDateSafe = s => {
+  const p = String(s || '').trim().split(/\s+/);
+  if (p.length !== 3 || !(p[1].toUpperCase() in MONTHS)) return null;
+  const d = new Date(+p[2], MONTHS[p[1].toUpperCase()], +p[0]);
+  return isNaN(d) ? null : d;
+};
 
 /* IOC → ISO2 for the flag emoji. Nations that no longer exist (URS, GDR, FRG, TCH, YUG)
    have no flag codepoint, so they fall back to the code itself — which is honest. */
@@ -398,8 +406,12 @@ function model(card){
   // API returns newest first — flip to chronological
   const rows = card.entries.map(e => {
     const m = parseMark(e.performance);
-    return {perf:e.performance, value:m.value, hand:m.hand, date:parseDate(e.date), dateStr:e.date,
-            who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal};
+    const date = parseDate(e.date);
+    const born = parseDateSafe(e.competitor.birthDate);
+    const age = born ? (date - born) / 864e5 / 365.25 : null;
+    return {perf:e.performance, value:m.value, hand:m.hand, date, dateStr:e.date,
+            who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal,
+            age: (age !== null && age > 10 && age < 60) ? age : null};
   }).reverse();
 
   // quality: always "bigger = better", so every card in the film climbs the same way
@@ -1164,8 +1176,86 @@ function drawSurvival(svg, W, H){
     + `built from records that were beaten, while the gold ones are still running.`);
 }
 
+/* --- 5. how old they were --- */
+function drawAge(svg, W, H){
+  const pad = {l: 150, r: 92, t: 18, b: 34};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const A0 = 15, A1 = 40;
+  const X = a => pad.l + (Math.min(Math.max(a, A0), A1) - A0) / (A1 - A0) * iw;
+  const med = xs => { const v = [...xs].sort((a,b) => a-b); return v[Math.floor(v.length/2)]; };
+
+  const groups = new Map();
+  const all = [];
+  DECK.forEach(M => {
+    if (isRelay(M)) return;                       // relay entries carry no birth date
+    M.rows.forEach(r => {
+      if (r.age === null) return;
+      const g = M.card.group || 'Other';
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push({r, M});
+      all.push({r, M});
+    });
+  });
+  const rows = [...groups.entries()].sort((a,b) =>
+    med(a[1].map(x => x.r.age)) - med(b[1].map(x => x.r.age)));
+  const rowH = ih / rows.length;
+  const tip = document.getElementById('statsTip');
+
+  for (let a = A0; a <= A1; a += 5){
+    svg.appendChild(el('line',{x1:X(a), x2:X(a), y1:pad.t, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x:X(a), y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}), a));
+  }
+  svg.appendChild(txt(el('text',{x:pad.l+iw/2, y:pad.t+ih+32, class:'lbl', 'text-anchor':'middle'}),
+    'age when the record was set'));
+
+  rows.forEach(([g, list], i) => {
+    const mid = pad.t + i * rowH + rowH / 2;
+    const band = Math.min(rowH - 8, 26);
+    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}), g));
+    list.forEach((x, k) => {
+      // deterministic jitter so the cloud does not reshuffle on every repaint
+      const j = ((Math.sin(k * 12.9898) * 43758.5453) % 1 + 1) % 1 - .5;
+      const c = el('circle',{cx:X(x.r.age), cy:mid + j * band, r:2.6,
+        fill: x.M.card.gender === 'women' ? 'var(--women)' : 'var(--men)', opacity:.5});
+      c.addEventListener('mouseenter', ev => {
+        tip.innerHTML = `<div class="p">${x.r.age.toFixed(1)} <span class="m">years old</span></div>`
+          + `<div class="n">${x.r.who}</div>`
+          + `<div class="m">${x.M.card.discipline} · ${x.r.perf} · ${x.r.dateStr}</div>`;
+        tip.style.opacity = 1;
+        const b = svg.parentElement.getBoundingClientRect();
+        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 280) + 'px';
+        tip.style.top = (mid + 10) + 'px';
+      });
+      c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+      svg.appendChild(c);
+    });
+    const m = med(list.map(x => x.r.age));
+    svg.appendChild(el('line',{x1:X(m), x2:X(m), y1:mid-band/2-3, y2:mid+band/2+3,
+      stroke:'var(--gold)', 'stroke-width':2}));
+    svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class:'rowval'}), m.toFixed(1)));
+    svg.appendChild(txt(el('text',{x:pad.l+iw+44, y:mid+3.5, class:'rowsub'}), `n=${list.length}`));
+  });
+
+  const sorted = [...all].sort((a,b) => a.r.age - b.r.age);
+  const young = sorted[0], old = sorted[sorted.length-1];
+  kpi([[med(all.map(x => x.r.age)).toFixed(1), 'median age'],
+       [young.r.age.toFixed(1), `youngest · ${surnameOf(young.r.who)}`],
+       [old.r.age.toFixed(1), `oldest · ${surnameOf(old.r.who)}`],
+       [all.length, 'marks with a birth date']]);
+
+  const era = lo => { const v = all.filter(x => x.r.date.getFullYear() >= lo && x.r.date.getFullYear() < lo+20)
+                                   .map(x => x.r.age); return v.length ? med(v) : null; };
+  note(`Every mark with a birth date on file — <b>${all.length}</b> of them, one dot each, the gold `
+    + `line the median. The spread is the story: sprinters and jumpers peak around <b>23</b>, while `
+    + `road running sits at <b>${med(groups.get('Road Running').map(x=>x.r.age)).toFixed(1)}</b>. `
+    + `Youngest is <b>${young.r.who}</b> at ${young.r.age.toFixed(1)}, oldest <b>${old.r.who}</b> at `
+    + `${old.r.age.toFixed(1)}. Record breakers have barely aged across the century — median `
+    + `${era(1920).toFixed(1)} in the 1920s-30s against ${era(2020).toFixed(1)} today.`);
+}
+
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
-                   ['venues','Venues', drawVenues], ['survival','How long records last', drawSurvival]];
+                   ['venues','Venues', drawVenues], ['age','Age', drawAge],
+                   ['survival','How long records last', drawSurvival]];
 
 function paintStats(){
   const host = document.querySelector('.stats__body');
