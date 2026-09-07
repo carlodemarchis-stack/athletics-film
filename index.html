@@ -530,7 +530,7 @@ function drawRace(M, root){
   cancelAnimationFrame(root._raf);
   svg.innerHTML = '';
   const W = wrap.clientWidth, H = wrap.clientHeight;
-  const padL = 30, padR = 150, padT = 14, padB = 16;
+  const padL = 30, padR = 74, padT = 14, padB = 16;   // padR matches the staircase's gutter
   const lane = W - padL - padR, laneH = H - padT - padB;
 
   // one runner per distinct mark, fastest in the top lane
@@ -594,11 +594,12 @@ function drawRace(M, root){
   if (M.firstAuto){ const fa = runners.find(r => r.perf === M.firstAuto.perf);
     if (fa && !marked.has(fa) && runners.indexOf(fa) > 2) marked.set(fa, ['var(--muted-2)', false]); }
   const labels = [...marked].map(([r,[col,bold]]) => {
-    const d = dots.find(x => x.r === r);
+    const d = dots.find(x => x.r === r), lead = r === M.cur;
     const t = txt(el('text',{x:padL, y:d.y + 3.5, class:'runlbl',
+      'text-anchor': lead ? 'end' : 'start',
       style:`fill:${col}${bold?';font-weight:800':''}`}), `${r.perf} · ${r.date.getFullYear()}`);
     svg.appendChild(t);
-    return {t, d};
+    return {t, d, lead};
   });
 
   /* the gap, revealed when the leader crosses */
@@ -617,7 +618,7 @@ function drawRace(M, root){
       d.streak.setAttribute('x1', Math.max(X(dMin), x - 14));
       d.streak.setAttribute('x2', x);
     });
-    labels.forEach(({t, d}) => t.setAttribute('x', +d.c.getAttribute('cx') + 9));
+    labels.forEach(({t, d, lead}) => t.setAttribute('x', +d.c.getAttribute('cx') + (lead ? -11 : 9)));
     const gx = X(100 - gapPct);
     gapLine.setAttribute('x1', gx); gapLine.setAttribute('x2', gx);
     gapTxt.setAttribute('x', gx + 6);
