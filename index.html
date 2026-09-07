@@ -267,7 +267,7 @@
   <div class="stats__in">
     <div class="stats__head">
       <div>
-        <div class="kicker"><div class="disc">World record film · the whole sport</div></div>
+        <div class="kicker"><div class="disc" id="statsScope">This event</div></div>
         <h2 id="statsTitle">Nations</h2>
       </div>
       <button class="mclose" style="position:static;font-size:30px" onclick="closeStats()" aria-label="Close">×</button>
@@ -856,6 +856,20 @@ function fillEventCard(root, M){
   root.querySelector('.replay').addEventListener('click', () => drawRace(M, root));
 }
 
+function statCardHTML(sex, title){
+  return `<div class="card__bg"></div>
+    <div class="inner">
+      <div class="head">
+        <div><div class="kicker"><div class="disc">World record film · the whole sport</div>${sexTabs(sex)}</div>
+          <div class="title"><h1>${title}</h1></div></div>
+      </div>
+      <div class="statbar"></div>
+      <div class="chartwrap"><svg></svg><div class="tip"></div></div>
+      <div class="snote"></div>
+    </div>
+    <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+}
+
 function openingCardHTML(deck, sex){
   const ages = deck.map(M => fmtYears(M.cur.reign)).sort((a,b) => a-b);
   const median = ages[Math.floor(ages.length/2)];
@@ -905,7 +919,7 @@ function labelNations(root){
 const isRelay = M => /Relay/.test(M.card.discipline);
 const NAT_HUES = ['#e2572f','#6f8fb8','#d9a94a','#8fb98a','#b98aa8','#6fa9b8','#c98a5c','#9a8fc4',
   '#c0a05c','#7fb0a0','#cf7f6a','#8f9fd0'];
-let AGG = null, STAB = 'nations';
+let STATS_AGG = null, STAB = 'nations';
 
 function buildAgg(deck){
   const marks = new Map(), days = new Map(), evs = new Map();
@@ -943,14 +957,28 @@ function buildAgg(deck){
   // even if its all-time total is small — otherwise Kenya and Jamaica vanish into "Other"
   const peak = new Map();
   byYear.forEach(yr => yr.c.forEach((n, c) => peak.set(c, Math.max(peak.get(c) || 0, n))));
-  const topNations = [...peak.entries()].sort((a,b) => b[1]-a[1]).slice(0, 12).map(([k]) => k);
-  return {marks, days, evs, cMarks, cDays, venues, done, alive, byYear, topNations,
+  const topNations = [...peak.entries()]
+    .sort((a,b) => b[1]-a[1] || (cDays.get(b[0])||0) - (cDays.get(a[0])||0))
+    .slice(0, 12).map(([k]) => k);
+  return {deck, marks, days, evs, cMarks, cDays, venues, done, alive, byYear, topNations,
           athletes: [...days.entries()].sort((a,b) => b[1]-a[1])};
 }
 
-const kpi = rows => document.getElementById('statsKpi').innerHTML = rows.map(([v,k]) =>
-  `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
-const note = html => document.getElementById('statsNote').innerHTML = html;
+/* the same five views render into the stats overlay or into a card, over the whole sport
+   or over one event — so they take their scope and their surface as arguments */
+const uiFor = root => ({
+  kpi: rows => root.querySelector('.statbar').innerHTML = rows.map(([v,k]) =>
+    `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join(''),
+  note: html => root.querySelector('.snote').innerHTML = html,
+  tip: root.querySelector('.tip')
+});
+const emptyState = (svg, W, H, ui, msg) => {
+  svg.appendChild(txt(el('text',{x:W/2, y:H/2, class:'lbl', 'text-anchor':'middle'}), msg));
+  ui.kpi([]); ui.note('');
+  return true;
+};
+let WHOLE_AGG = null;
+const wholeAgg = () => WHOLE_AGG || (WHOLE_AGG = buildAgg(DECK));
 
 /* --- shared: a time axis across the century --- */
 function timeAxis(svg, x0, x1, top, h){
@@ -964,10 +992,11 @@ function timeAxis(svg, x0, x1, top, h){
 }
 
 /* --- 1. nations: who has held the sport's records, year by year --- */
-function drawNations(svg, W, H){
-  const A = AGG, pad = {l: 8, r: 108, t: 16, b: 26};
+function drawNations(svg, W, H, A, ui){
+  const pad = {l: 8, r: 108, t: 16, b: 26};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const maxN = Math.max(...A.byYear.map(y => y.total));
+  if (!maxN) return emptyState(svg, W, H, ui, 'no holdings to show');
   const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
   const Y = n => pad.t + ih - (n / maxN) * ih;
 
@@ -1025,31 +1054,33 @@ function drawNations(svg, W, H){
     `records held, of ${maxN} tracked events`));
 
   const cy = [...A.cDays.entries()].sort((a,b) => b[1]-a[1]);
-  kpi([[cy.length, 'nations have held one'],
+  ui.kpi([[cy.length, 'nations have held one'],
        [cy[0][0], 'most record-years'],
        [Math.round(cy[0][1]/365.25).toLocaleString(), `${cy[0][0]} record-years`],
        [[...A.cMarks.entries()].sort((a,b)=>b[1]-a[1])[0][1], `${cy[0][0]} marks`]]);
-  note(`Each band is how many of the sport's world records that nation held in a given year, `
-    + `sampled every 1 July across all <b>${DECK.length}</b> events. The band widths are the `
+  ui.note(`Each band is how many of the sport's world records that nation held in a given year, `
+    + `sampled every 1 July across all <b>${A.deck.length}</b> events. The band widths are the `
     + `sport's own history: the United States through the century, the Soviet and East German `
     + `bloc swelling and then ending, Kenya and Ethiopia arriving in the distances.`);
 }
 
 /* --- 2. athletes: when they actually held a record --- */
-function drawAthletes(svg, W, H){
-  const A = AGG, pad = {l: 176, r: 96, t: 16, b: 26};
+function drawAthletes(svg, W, H, A, ui){
+  const pad = {l: 176, r: 96, t: 16, b: 26};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  if (!A.athletes.length)
+    return emptyState(svg, W, H, ui, 'relay records belong to a nation, not an athlete');
   const list = A.athletes.slice(0, Math.max(8, Math.min(20, Math.floor(ih / 17))));
   const rowH = ih / list.length;
   const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
-  const tip = document.getElementById('statsTip');
+  const tip = ui.tip;
 
   list.forEach(([who, d], i) => {
     const y = pad.t + i * rowH, mid = y + rowH / 2;
     const h = Math.max(5, Math.min(rowH - 4, 15));
     svg.appendChild(txt(el('text',{x: pad.l-12, y: mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
       surnameOf(who)));
-    DECK.forEach(M => {
+    A.deck.forEach(M => {
       if (isRelay(M)) return;
       M.rows.filter(r => r.who === who).forEach(r => {
         const x1 = X(r.date.getFullYear() + (r.date.getMonth()/12));
@@ -1076,25 +1107,26 @@ function drawAthletes(svg, W, H){
   });
 
   const top = A.athletes[0], mostMarks = [...A.marks.entries()].sort((a,b)=>b[1]-a[1])[0];
-  kpi([[surnameOf(top[0]), 'most record-years'],
+  ui.kpi([[surnameOf(top[0]), 'most record-years'],
        [(top[1]/365.25).toFixed(0), 'record-years'],
        [surnameOf(mostMarks[0]), 'most marks'],
        [mostMarks[1], 'marks set or equalled']]);
-  note(`Each bar is a spell actually holding a world record, so the ink is the time and the `
+  ui.note(`Each bar is a spell actually holding a world record, so the ink is the time and the `
     + `gaps are real. Relay records are left out — they belong to a nation, not an athlete. `
     + `Record-years count each event separately, so holding two records at once counts twice: `
     + `Griffith Joyner's total is one 38-year spell in two events.`);
 }
 
 /* --- 3. venues --- */
-function drawVenues(svg, W, H){
-  const A = AGG, pad = {l: 210, r: 70, t: 16, b: 26};
+function drawVenues(svg, W, H, A, ui){
+  const pad = {l: 210, r: 70, t: 16, b: 26};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  if (!A.venues.size) return emptyState(svg, W, H, ui, 'no venues on file');
   const list = [...A.venues.entries()].sort((a,b) => b[1].length - a[1].length)
     .slice(0, Math.max(8, Math.min(16, Math.floor(ih / 20))));
   const rowH = ih / list.length;
   const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
-  const tip = document.getElementById('statsTip');
+  const tip = ui.tip;
 
   list.forEach(([v, rs], i) => {
     const mid = pad.t + i * rowH + rowH / 2;
@@ -1117,17 +1149,18 @@ function drawVenues(svg, W, H){
     svg.appendChild(txt(el('text',{x: pad.l+iw+10, y: mid+3.5, class:'rowval'}), rs.length));
   });
 
-  kpi([[A.venues.size, 'venues'], [list[0][0].split(',').pop().trim(), 'most records'],
+  ui.kpi([[A.venues.size, 'venues'], [list[0][0].split(',').pop().trim(), 'most records'],
        [list[0][1].length, 'records there']]);
-  note(`One dot per world record, placed at the date it was set. Clusters are meets that `
+  ui.note(`One dot per world record, placed at the date it was set. Clusters are meets that `
     + `produced a run of records — the tight column on Ciudad de México is October 1968, `
     + `the Olympics held at 2,240 m of altitude.`);
 }
 
 /* --- 4. how long records last --- */
-function drawSurvival(svg, W, H){
-  const A = AGG, pad = {l: 46, r: 120, t: 16, b: 30};
+function drawSurvival(svg, W, H, A, ui){
+  const pad = {l: 46, r: 120, t: 16, b: 30};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  if (!A.done.length) return emptyState(svg, W, H, ui, 'this record has never been beaten');
   const maxY = 45;
   const X = t => pad.l + Math.min(t, maxY) / maxY * iw;
   const Y = p => pad.t + (1 - p / 100) * ih;
@@ -1165,11 +1198,11 @@ function drawSurvival(svg, W, H){
     `${A.alive.filter(t => t >= 30).length} of ${A.alive.length}`));
   svg.appendChild(txt(el('text',{x:pad.l+iw+12, y:Y(surv(30))+17, class:'lbl'}), 'are past 30y'));
 
-  kpi([[med.toFixed(2) + '<small>y</small>', 'median record life'],
+  ui.kpi([[med.toFixed(2) + '<small>y</small>', 'median record life'],
        [surv(10).toFixed(1) + '<small>%</small>', 'ever reach 10 years'],
        [surv(30).toFixed(1) + '<small>%</small>', 'ever reach 30 years'],
        [A.alive.filter(t => t >= 30).length, 'standing records past 30y']]);
-  note(`The curve is every one of the <b>${A.done.length}</b> records that has been beaten: half `
+  ui.note(`The curve is every one of the <b>${A.done.length}</b> records that has been beaten: half `
     + `of them lasted under <b>${med.toFixed(2)} years</b>, and only <b>${surv(30).toFixed(1)}%</b> `
     + `ever reached thirty. The gold dots are today's <b>${A.alive.length}</b> standing records, `
     + `placed at their current age. Note the comparison is not quite like for like — the curve is `
@@ -1177,7 +1210,7 @@ function drawSurvival(svg, W, H){
 }
 
 /* --- 5. how old they were --- */
-function drawAge(svg, W, H){
+function drawAge(svg, W, H, A, ui){
   const pad = {l: 150, r: 92, t: 18, b: 34};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const A0 = 15, A1 = 40;
@@ -1186,7 +1219,7 @@ function drawAge(svg, W, H){
 
   const groups = new Map();
   const all = [];
-  DECK.forEach(M => {
+  A.deck.forEach(M => {
     if (isRelay(M)) return;                       // relay entries carry no birth date
     M.rows.forEach(r => {
       if (r.age === null) return;
@@ -1199,7 +1232,7 @@ function drawAge(svg, W, H){
   const rows = [...groups.entries()].sort((a,b) =>
     med(a[1].map(x => x.r.age)) - med(b[1].map(x => x.r.age)));
   const rowH = ih / rows.length;
-  const tip = document.getElementById('statsTip');
+  const tip = ui.tip;
 
   for (let a = A0; a <= A1; a += 5){
     svg.appendChild(el('line',{x1:X(a), x2:X(a), y1:pad.t, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
@@ -1236,21 +1269,26 @@ function drawAge(svg, W, H){
     svg.appendChild(txt(el('text',{x:pad.l+iw+44, y:mid+3.5, class:'rowsub'}), `n=${list.length}`));
   });
 
+  if (!all.length) return emptyState(svg, W, H, ui, 'no birth dates on file for this event');
   const sorted = [...all].sort((a,b) => a.r.age - b.r.age);
   const young = sorted[0], old = sorted[sorted.length-1];
-  kpi([[med(all.map(x => x.r.age)).toFixed(1), 'median age'],
+  ui.kpi([[med(all.map(x => x.r.age)).toFixed(1), 'median age'],
        [young.r.age.toFixed(1), `youngest · ${surnameOf(young.r.who)}`],
        [old.r.age.toFixed(1), `oldest · ${surnameOf(old.r.who)}`],
        [all.length, 'marks with a birth date']]);
 
   const era = lo => { const v = all.filter(x => x.r.date.getFullYear() >= lo && x.r.date.getFullYear() < lo+20)
                                    .map(x => x.r.age); return v.length ? med(v) : null; };
-  note(`Every mark with a birth date on file — <b>${all.length}</b> of them, one dot each, the gold `
-    + `line the median. The spread is the story: sprinters and jumpers peak around <b>23</b>, while `
-    + `road running sits at <b>${med(groups.get('Road Running').map(x=>x.r.age)).toFixed(1)}</b>. `
-    + `Youngest is <b>${young.r.who}</b> at ${young.r.age.toFixed(1)}, oldest <b>${old.r.who}</b> at `
-    + `${old.r.age.toFixed(1)}. Record breakers have barely aged across the century — median `
-    + `${era(1920).toFixed(1)} in the 1920s-30s against ${era(2020).toFixed(1)} today.`);
+  const lo = rows[0], hi = rows[rows.length-1], e20 = era(1920), eNow = era(2020);
+  const spread = rows.length > 1
+    ? `The spread is the story: <b>${lo[0]}</b> peaks around <b>${med(lo[1].map(x=>x.r.age)).toFixed(1)}</b>, `
+      + `while <b>${hi[0]}</b> sits at <b>${med(hi[1].map(x=>x.r.age)).toFixed(1)}</b>. ` : '';
+  const drift = (e20 !== null && eNow !== null)
+    ? `Record breakers have barely aged across the century — median ${e20.toFixed(1)} in the `
+      + `1920s-30s against ${eNow.toFixed(1)} today.` : '';
+  ui.note(`Every mark with a birth date on file — <b>${all.length}</b> of them, one dot each, the gold `
+    + `line the median. ${spread}Youngest is <b>${young.r.who}</b> at ${young.r.age.toFixed(1)}, `
+    + `oldest <b>${old.r.who}</b> at ${old.r.age.toFixed(1)}. ${drift}`);
 }
 
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
@@ -1258,13 +1296,13 @@ const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', d
                    ['survival','How long records last', drawSurvival]];
 
 function paintStats(){
-  const host = document.querySelector('.stats__body');
-  if (!AGG || document.getElementById('stats').hidden || host.clientWidth < 80) return;
+  const root = document.getElementById('stats'), host = root.querySelector('.stats__body');
+  if (!STATS_AGG || root.hidden || host.clientWidth < 80) return;
   const svg = document.getElementById('statsSvg');
   svg.innerHTML = '';
   const tab = STAT_TABS.find(t => t[0] === STAB);
   document.getElementById('statsTitle').textContent = tab[1];
-  tab[2](svg, host.clientWidth, host.clientHeight);
+  tab[2](svg, host.clientWidth, host.clientHeight, STATS_AGG, uiFor(root));
 }
 function setTab(id){
   STAB = id;
@@ -1272,7 +1310,13 @@ function setTab(id){
   paintStats();
 }
 function openStats(){
-  if (!AGG) AGG = buildAgg(DECK);
+  // the overlay reads the card you are on; the whole-sport view has its own cards
+  const cur = SLIDES[IDX];
+  const scope = cur && cur.M ? [cur.M] : DECK;
+  STATS_AGG = buildAgg(scope);
+  document.getElementById('statsScope').textContent = cur && cur.M
+    ? `${cur.M.card.discipline} · ${cur.M.card.gender} · just this event`
+    : 'the whole sport';
   document.getElementById('stats').hidden = false;
   setPlaying(false);
   requestAnimationFrame(() => requestAnimationFrame(paintStats));
@@ -1292,7 +1336,7 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
   ['men','women'].forEach(sex => {
     const events = timed.filter(M => M.card.gender === sex)
                         .sort((a,b) => a.card.order - b.card.order);   // World Athletics' own order
-    FILMS[sex] = {start: SLIDES.length, len: events.length + 1};
+    FILMS[sex] = {start: SLIDES.length, len: 0};   // len is filled in once the reel is built
     events.forEach(M => {
       const s = document.createElement('section');
       s.className = 'card';
@@ -1300,7 +1344,7 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
       track.appendChild(s);
       fillEventCard(s, M);
       CARD_OF.set(M.card.gender + '|' + M.card.discipline, SLIDES.length);
-      SLIDES.push({el: s, M, sex, slug: slugOf(M),
+      SLIDES.push({el: s, M, sex, slug: slugOf(M), title: M.card.discipline,
         paint: () => { drawStair(M, s); drawRace(M, s); labelNations(s); }});
     });
     // the mixed men-and-women ranking closes both films
@@ -1308,7 +1352,22 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
     lw.className = 'card';
     lw.innerHTML = openingCardHTML(DECK, sex);
     track.appendChild(lw);
-    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', paint: () => drawOpening(lw, DECK)});
+    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', title: 'The Longest Wait',
+      paint: () => drawOpening(lw, DECK)});
+
+    // the whole-sport views close both films, men and women together
+    STAT_TABS.forEach(([id, label, fn]) => {
+      const sc = document.createElement('section');
+      sc.className = 'card';
+      sc.innerHTML = statCardHTML(sex, label);
+      track.appendChild(sc);
+      SLIDES.push({el: sc, sex, slug: sex + '-' + id, title: label, paint: () => {
+        const w = sc.querySelector('.chartwrap'), svg = w.querySelector('svg');
+        svg.innerHTML = '';
+        fn(svg, w.clientWidth, w.clientHeight, wholeAgg(), uiFor(sc));
+      }});
+    });
+    FILMS[sex].len = SLIDES.length - FILMS[sex].start;
   });
   document.querySelectorAll('.sx').forEach(b => b.onclick = () => switchSex(b.dataset.sex));
   document.getElementById('stabs').innerHTML = STAT_TABS.map(([id, label], i) =>
@@ -1354,8 +1413,7 @@ function buildJump(){
   document.getElementById('jgrid').innerHTML = SLIDES.slice(f.start, f.start + f.len).map((s, k) => {
     const M = s.M, i = f.start + k;
     const dot = `var(--${SEX === 'women' ? 'women' : 'men'})`;
-    const name = M ? `${M.card.discipline} <span style="opacity:.55">· ${M.card.group}</span>`
-                   : 'The Longest Wait';
+    const name = M ? `${s.title} <span style="opacity:.55">· ${M.card.group}</span>` : s.title;
     const yrs = M ? fmtYears(M.cur.reign).toFixed(1) + 'y' : 'all events';
     return `<button class="jitem" data-i="${i}"><span class="ji">${k+1}</span>`
       + `<span class="jd" style="background:${M ? dot : 'var(--gold)'}"></span>`
