@@ -260,10 +260,14 @@
     counted separately — <b>times improved</b> is how often the record actually moved. In the men's 100 m,
     37 of the 58 ratified marks equalled the record rather than beat it.</p>
 
-    <h3>Hand timing</h3>
+    <h3>Hand timing, and steps backwards</h3>
     <p>Marks ending in <b>h</b> were taken by hand and are drawn dashed. They are not directly comparable
-    with electronic marks, which is why some events step <i>backwards</i> in 1968, when automatic timing
-    became the standard. That kink is real, and it is left in.</p>
+    with electronic marks: a hand-timed 9.9 and an electronic 9.95 are not a tenth apart. So when
+    automatic timing became the standard the ratified record could get <i>slower on paper</i>.</p>
+    <p>Those backward steps are drawn as an <b style="color:var(--track)">orange riser</b>, and hovering
+    the mark says why. There are 17 of them across the film. Most are the timing change; a handful are
+    older lists carrying marks from lineages that were later dropped — the men's 400 m goes 47.8 in 1900
+    then 48.2 in 1912, when the IAAF ratified its first list. None of it is smoothed over.</p>
 
     <h3>Keys</h3>
     <div class="keys">
@@ -361,6 +365,13 @@ function model(card){
     const end = i < rows.length-1 ? rows[i+1].date : TODAY;
     r.reign = Math.round((end - r.date) / 864e5);
     r.until = end;
+    // the ratified mark is not monotonic: the timing standard changed in the 1960s-70s,
+    // and older lists carried marks from lineages that were later dropped
+    const prev = rows[i-1];
+    r.back = i > 0 && (lower ? r.value > prev.value : r.value < prev.value);
+    if (r.back) r.backNote = (prev.hand && !r.hand)
+      ? 'first electronic mark here — slower on paper than the hand times before it'
+      : 'the ratified record moved backwards here';
   });
 
   const cur = rows[rows.length-1], first = rows[0];
@@ -438,7 +449,8 @@ function drawStair(M, root){
     area.push(`L ${x1} ${y} L ${x2} ${y}`);
     if (i > 0){
       svg.appendChild(el('line',{x1, x2:x1, y1:Y(M.rows[i-1].q), y2:y,
-        stroke:colourOf(r), 'stroke-width':1.4, opacity:.55}));
+        stroke: r.back ? 'var(--track)' : colourOf(r),
+        'stroke-width': r.back ? 2.2 : 1.4, opacity: r.back ? .95 : .55}));
     }
     svg.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:colourOf(r),
       'stroke-width': r.who === M.cur.who ? 3.2 : 2,
@@ -472,7 +484,8 @@ function drawStair(M, root){
         + `${r.equal?' <span class="m">equalled</span>':''}</div>`
         + `<div class="n">${r.who} <span class="m">${r.country}</span></div>`
         + `<div class="m">${r.venue}</div>`
-        + `<div class="m">${r.dateStr} · stood ${fmtReign(r.reign)}</div>`;
+        + `<div class="m">${r.dateStr} · stood ${fmtReign(r.reign)}</div>`
+        + (r.back ? `<div class="m" style="color:var(--track)">↓ ${r.backNote}</div>` : '');
       tip.style.opacity = 1;
       const b = wrap.getBoundingClientRect();
       tip.style.left = Math.min(ev.clientX - b.left + 14, wrap.clientWidth - 260) + 'px';
