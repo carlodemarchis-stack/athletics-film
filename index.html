@@ -1217,16 +1217,15 @@ function drawVenues(svg, W, H, A, ui){
         svg.appendChild(txt(el('text',{x: px + 7, y: mid - 4, class:'rowsub',
           style:'fill:var(--gold);font-size:9.5px;font-weight:800'}), n));
       c.addEventListener('mouseenter', ev => {
-        const head = n > 1
-          ? `<div class="p">${n} records <span class="m">· ${group[0].r.dateStr}</span></div>`
-          : `<div class="p">${group[0].r.perf} <span class="m">${group[0].M.card.discipline}</span></div>`;
-        const body = n > 1
-          ? group.slice(0, 8).map(x =>
-              `<div class="m"><b style="color:var(--ink)">${x.r.perf}</b> ${x.M.card.discipline} `
-              + `· ${x.r.who}</div>`).join('')
-            + (n > 8 ? `<div class="m">…and ${n-8} more</div>` : '')
-          : `<div class="n">${group[0].r.who}</div><div class="m">${group[0].r.dateStr}</div>`;
-        tip.innerHTML = head + body;
+        tip.innerHTML = `<div class="p">${v}`
+          + (n > 1 ? ` <span class="m">· ${n} records</span>` : '') + `</div>`
+          + group.slice(0, 6).map(x => {
+              const meet = x.r.meet ? (meetName(x.r.meet, '') || x.r.meet) : null;
+              return `<div class="m" style="margin-top:4px"><b style="color:var(--ink)">${x.r.perf}</b> `
+                + `${x.M.card.discipline} · ${x.r.who} · ${x.r.dateStr}`
+                + (meet ? `<br><span style="color:${MEET_HUE[x.r.meetType]}">${meet}</span>` : '') + `</div>`;
+            }).join('')
+          + (n > 6 ? `<div class="m">…and ${n-6} more</div>` : '');
         tip.style.opacity = 1;
         const b = svg.parentElement.getBoundingClientRect();
         tip.style.left = Math.min(ev.clientX - b.left + 14, W - 300) + 'px';
@@ -1520,10 +1519,14 @@ function drawMeets(svg, W, H, A, ui){
         svg.appendChild(txt(el('text',{x:px+7, y:mid-4, class:'rowsub',
           style:'fill:var(--ink);font-size:9px;font-weight:800'}), g.length));
       c.addEventListener('mouseenter', ev => {
-        tip.innerHTML = `<div class="p">${M.card.discipline} <span class="m">${g[0].dateStr}</span></div>`
-          + (g[0].meet ? `<div class="n">${meetName(g[0].meet, '') || g[0].meet}</div>` : '')
-          + g.slice(0,6).map(r => `<div class="m"><b style="color:var(--ink)">${r.perf}</b> ${r.who}`
-              + `<span style="color:${MEET_HUE[r.meetType]}"> · ${MEET_NAME[r.meetType]}</span></div>`).join('')
+        tip.innerHTML = `<div class="p">${M.card.discipline}`
+          + (g.length > 1 ? ` <span class="m">· ${g.length} records</span>` : '') + `</div>`
+          + g.slice(0, 6).map(r => {
+              const meet = r.meet ? (meetName(r.meet, '') || r.meet) : null;
+              return `<div class="m" style="margin-top:4px"><b style="color:var(--ink)">${r.perf}</b> `
+                + `${r.who} · ${r.dateStr}<br>`
+                + `<span style="color:${MEET_HUE[r.meetType]}">${meet || 'meeting not on file'}</span></div>`;
+            }).join('')
           + (g.length > 6 ? `<div class="m">…and ${g.length-6} more</div>` : '');
         tip.style.opacity = 1;
         const b = svg.parentElement.getBoundingClientRect();
