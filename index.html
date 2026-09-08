@@ -1951,11 +1951,11 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
     both.innerHTML = openingCardHTML(DECK, sex, {
       mixed: true,
       kicker: 'World record film · men and women together',
-      title: 'One Ranking, Both Sexes',
+      title: 'One Ranking, Men and Women',
       sub: `Every standing world record in athletics, men's and women's in a single ranking by how `
          + `long it has held. The order is the only argument being made.`});
     track.appendChild(both);
-    SLIDES.push({el: both, sex, slug: sex + '-one-ranking', title: 'One Ranking, Both Sexes',
+    SLIDES.push({el: both, sex, slug: sex + '-one-ranking', title: 'One Ranking, Men and Women',
       paint: () => drawOpening(both, DECK)});
 
     FILMS[sex].len = SLIDES.length - FILMS[sex].start;
