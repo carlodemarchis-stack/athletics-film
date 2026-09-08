@@ -317,7 +317,8 @@
     <p>A race makes no sense for a jump, so field events get <b>the pit</b> instead: every record laid
     out at the distance it reached, filling in the order it happened, with the biggest single gain
     marked. In the men's long jump that is Bob Beamon, <b>55 cm in one jump</b> in 1968. High jump and
-    pole vault use the same scale but draw each mark as a crossbar at the height it was cleared.</p>
+    pole vault use the same scale but draw each mark as a crossbar at the height it was cleared, and
+    the combined events use it as a points scale.</p>
     <p>The men's javelin carries a second discontinuity of its own: the implement was redesigned in
     1986 to fly shorter, so the 34 marks thrown with the old one are drawn dashed and are not
     comparable with the record standing today. The furthest throw in the file, 104.80, is one of them.</p>
@@ -430,7 +431,7 @@ function meetName(comp, venue){
 /* "9.58" · "10.0h" · "1:53.28" · "2:09:56" · "9126" (points) · "8.95" (metres) */
 function parseMark(p){
   const hand = /h$/.test(p);
-  const s = p.replace(/h$/,'').replace(/[^\d:.]/g,'');
+  const s = String(p).split('(')[0].replace(/h$/,'').trim().replace(/[^\d:.]/g,'');
   const v = s.split(':').reduce((a,x)=>a*60+parseFloat(x), 0);
   return {value:v, hand};
 }
@@ -458,10 +459,12 @@ function model(card){
     const date = parseDate(e.date);
     const born = parseDateSafe(e.competitor.birthDate);
     const age = born ? (date - born) / 864e5 / 365.25 : null;
-    return {perf:e.performance, value:m.value, hand:m.hand, oldSpec:/\(o\)/.test(e.performance),
+    return {perf:e.performance, value:m.value, hand:m.hand, oldSpec:/\([^)]+\)/.test(e.performance),
             date, dateStr:e.date,
             who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal,
             meet: e.competition || null, meetType: meetType(e.competition),
+            // a bracketed qualifier means the mark was made under a different rule or table
+            spec: (String(e.performance).match(/\(([^)]+)\)/) || [])[1] || null,
             age: (age !== null && age > 10 && age < 60) ? age : null};
   }).reverse();
 
@@ -476,7 +479,9 @@ function model(card){
     // and older lists carried marks from lineages that were later dropped
     const prev = rows[i-1];
     r.back = i > 0 && (lower ? r.value > prev.value : r.value < prev.value);
-    if (r.back) r.backNote = (prev.hand && !r.hand)
+    if (r.back && prev.spec && !r.spec) r.backNote =
+      'the rules changed here — the marks before this were made under a different one';
+    else if (r.back) r.backNote = (prev.hand && !r.hand)
       ? 'first electronic mark here — slower on paper than the hand times before it'
       : (prev.oldSpec && !r.oldSpec)
       ? 'the javelin was redesigned to fly shorter — the marks before this are not comparable'
@@ -500,6 +505,15 @@ function model(card){
   // a mark flagged `equal` matched the standing record rather than beating it
   const improvements = rows.filter(r => !r.equal).length;
   const firstAuto = rows.find(r => !r.hand && rows.some(x=>x.hand));
+  // the javelin was redesigned to fly shorter — men 1986, women 1999 — and the marks before it
+  // are not comparable. Only the men's are flagged "(o)" in the data, so use the drop instead.
+  const eraSplit = /Javelin/.test(card.discipline) ? rows.findIndex(r => r.back) : -1;
+  if (eraSplit > 0){
+    rows.forEach((r, i) => { if (i < eraSplit) r.oldSpec = true; });
+    rows[eraSplit].backNote =
+      'the javelin was redesigned to fly shorter — the marks before this are not comparable';
+  }
+
   // the largest jump the record ever took in one go
   let biggest = null;
   rows.forEach((r, i) => {
@@ -510,7 +524,7 @@ function model(card){
   // the record standing today is not necessarily the one that stood longest
   const longestReign = rows.reduce((a,b) => b.reign > a.reign ? b : a);
 
-  return {card, lower, field: !lower, biggest,
+  return {card, lower, field: !lower, biggest, eraSplit,
           rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
           longestReign, heldDays, totalDays, improvements, equalled: rows.length - improvements,
           improvement: Math.abs(cur.value - first.value),
@@ -768,9 +782,11 @@ function drawRace(M, root){
 /* A race makes no sense for a jump, so the field events get the pit instead: every record laid
    out at the distance it reached, filling up in the order it happened. */
 const isVertical = M => /High Jump|Pole Vault/.test(M.card.discipline);
+const panelKind = M => M.card.group === 'Combined Events' ? 'points'
+                     : isVertical(M) ? 'bar' : 'pit';
 
 function drawPit(M, root){
-  const vert = isVertical(M);
+  const kind = panelKind(M), vert = kind === 'bar', pts = kind === 'points';
   const svg = root.querySelector('.racesvg'), wrap = svg.parentElement;
   cancelAnimationFrame(root._raf);
   svg.innerHTML = '';
@@ -798,7 +814,7 @@ function drawPit(M, root){
   for (let v = Math.ceil(A0/step)*step; v <= A1; v += step){
     svg.appendChild(el('line',{x1:X(v), x2:X(v), y1:padT, y2:padT+ih, stroke:'rgba(255,255,255,.06)'}));
     svg.appendChild(txt(el('text',{x:X(v), y:padT+ih+16, class:'axv', 'text-anchor':'middle'}),
-      v.toFixed(dp) + 'm'));
+      pts ? Math.round(v).toLocaleString() : v.toFixed(dp) + 'm'));
   }
 
   const tip = root.querySelector('.tip'), tipHost = root.querySelector('.chartwrap');
@@ -807,10 +823,10 @@ function drawPit(M, root){
     const on = r === M.cur;
     // a vertical event gets a crossbar at its height rather than a line down the runway
     const line = vert
-      ? el('line',{x1:x-9, x2:x+9, y1:(y0+y1)/2, y2:(y0+y1)/2, opacity:0,
+      ? el('line',{class:'pitmark', x1:x-9, x2:x+9, y1:(y0+y1)/2, y2:(y0+y1)/2, opacity:0,
           stroke: on ? 'var(--gold)' : r.equal ? 'rgba(190,205,225,.35)' : 'rgba(200,214,234,.6)',
           'stroke-width': on ? 4 : 2.4, 'stroke-linecap':'round'})
-      : el('line',{x1:x, x2:x, y1:y0, y2:y1, opacity:0,
+      : el('line',{class:'pitmark', x1:x, x2:x, y1:y0, y2:y1, opacity:0,
           stroke: on ? 'var(--gold)' : r.equal ? 'rgba(190,205,225,.35)' : 'rgba(200,214,234,.6)',
           'stroke-width': on ? 3 : 1.6, 'stroke-dasharray': r.oldSpec ? '4 3' : null});
     const dot = el('circle',{cx:x, cy:y1, r: on ? 5 : 3, opacity:0,
@@ -834,7 +850,8 @@ function drawPit(M, root){
   // the single biggest leap the record ever took
   const B = M.biggest, jump = el('g',{opacity:0});
   // a five-metre javelin gain is not "500 cm"
-  const gainTxt = g => g >= 1 ? '+' + g.toFixed(2) + ' m' : '+' + (g*100).toFixed(0) + ' cm';
+  const gainTxt = g => pts ? '+' + Math.round(g).toLocaleString() + ' pts'
+                    : g >= 1 ? '+' + g.toFixed(2) + ' m' : '+' + (g*100).toFixed(0) + ' cm';
   if (B){
     const x1 = X(B.prev.value), x2 = X(B.r.value), y = padT + 16;
     jump.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:'var(--track)', 'stroke-width':1.6}));
@@ -851,25 +868,38 @@ function drawPit(M, root){
   svg.appendChild(lab);
   svg.appendChild(txt(el('text',{x: padL+iw+12, y: padT+ih+11, class:'lbl'}), 'today'));
 
+  const split = M.eraSplit;
   const DUR = 3200;
   const t0 = performance.now();
   root._raf = requestAnimationFrame(function frame(now){
     const k = Math.min(1, (now - t0) / DUR);
     const shown = Math.round(k * marks.length);
-    marks.forEach((m, i) => { const v = i < shown ? 1 : 0; m.line.setAttribute('opacity', v ? (m.on ? .9 : .5) : 0);
-      m.dot.setAttribute('opacity', v); });
-    if (B) jump.setAttribute('opacity', Math.max(0, (k - .55) / .45));
+    // once the post-redesign marks start landing, the old ones step back
+    const intoNew = split > 0
+      ? Math.max(0, Math.min(1, (shown - split) / Math.max(1, marks.length - split))) : 0;
+    marks.forEach((m, i) => {
+      if (i >= shown){ m.line.setAttribute('opacity', 0); m.dot.setAttribute('opacity', 0); return; }
+      const fade = (split > 0 && i < split) ? 1 - .74 * intoNew : 1;
+      m.line.setAttribute('opacity', (m.on ? .9 : .5) * fade);
+      m.dot.setAttribute('opacity', fade);
+    });
+    if (B) jump.setAttribute('opacity', Math.max(0, (k - .55) / .45)
+      * (split > 0 && M.rows.indexOf(B.r) < split ? 1 - .74 * intoNew : 1));
     if (k < 1) root._raf = requestAnimationFrame(frame);
   });
 
   const oldN = M.rows.filter(r => r.oldSpec).length;
+  const specWhat = pts ? 'they were scored on the older points tables, which do not compare with today\'s'
+    : /Javelin/.test(M.card.discipline)
+      ? 'they were thrown with the old javelin, which flew further and is not comparable'
+      : 'they were made under a rule that no longer applies';
   root.querySelector('.racetitle').innerHTML =
-    (vert ? `The bar — every record at the height it was cleared, rising in the order it happened.`
+    (pts  ? `The score — every record at the points it was worth, in the order it happened.`
+     : vert ? `The bar — every record at the height it was cleared, rising in the order it happened.`
           : `The pit — every record laid out where it landed, filling in the order it happened.`)
     + (B ? ` The biggest single gain was <b>${B.r.who}</b>, <b>${gainTxt(B.gain)}</b> `
          + `in <b>${B.r.date.getFullYear()}</b>.` : '')
-    + (oldN ? ` <b>${oldN}</b> marks are dashed: they were thrown with the old javelin, which flew `
-            + `further and is not comparable.` : '');
+    + (oldN ? ` <b>${oldN}</b> marks are dashed: ${specWhat}.` : '');
 }
 
 /* ============================ the opening card ============================ */
@@ -1022,8 +1052,9 @@ function fillEventCard(root, M){
   root.querySelector('.stories').innerHTML = stories.join('');
 
   const panel = root.querySelector('.replay');
-  panel.textContent = M.field ? (isVertical(M) ? '▶ Raise the bar' : '▶ Fill the pit')
-                              : '▶ Race the eras';
+  panel.textContent = !M.field ? '▶ Race the eras'
+    : panelKind(M) === 'points' ? '▶ Run the scores'
+    : panelKind(M) === 'bar' ? '▶ Raise the bar' : '▶ Fill the pit';
   panel.addEventListener('click', () => (M.field ? drawPit : drawRace)(M, root));
 }
 
@@ -1714,8 +1745,13 @@ function drawMeets(svg, W, H, A, ui){
    meetings produced exactly one, and the tail of twos is 50-60 long, so three is where the list
    stops being a list of everything. */
 function drawBigMeets(svg, W, H, A, ui){
-  const pad = {l: 340, r: 74, t: 34, b: 16};
-  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const pad = {t: 34, b: 16};
+  const ih = H - pad.t - pad.b;
+  const COLS = W > 1000 ? 2 : 1, GAP = 46;
+  const colW = (W - GAP * (COLS - 1)) / COLS;
+  const nameW = Math.min(300, colW * .46);          // name, city and year live left of the dots
+  const countW = 34;
+  const iw = colW - nameW - countW;
   const tip = ui.tip;
 
   const meets = new Map();
@@ -1727,38 +1763,41 @@ function drawBigMeets(svg, W, H, A, ui){
   }));
   const all = [...meets.entries()].map(([k, v]) => ({name:k.split(' \u0000 ')[0], year:k.split(' \u0000 ')[1], v}));
   // take the lowest cut from three upwards whose list fits, so nothing is hidden behind a "top N"
-  const fits = Math.max(6, Math.floor(ih / 19));
+  const perCol = Math.max(6, Math.floor(ih / 19));
+  const fits = perCol * COLS;
   let MIN = 3;
   while (MIN < 9 && all.filter(x => x.v.length >= MIN).length > fits) MIN++;
   const big = all.filter(x => x.v.length >= MIN).sort((a,b) => b.v.length - a.v.length || a.year - b.year);
   if (!big.length) return emptyState(svg, W, H, ui, 'no meeting here produced several records');
 
   const rows = big.slice(0, fits);
-  const rowH = ih / rows.length;
+  const nPerCol = Math.ceil(rows.length / COLS);
+  const rowH = ih / nPerCol;
   const maxN = rows[0].v.length;
-  const step = Math.min(17, (iw - 40) / maxN);
+  const step = Math.min(15, (iw - 26) / maxN);
 
   ['olympics','worlds','other'].forEach((k, i) => {
-    const x = pad.l + i * 168;
+    const x = nameW + i * 168;
     svg.appendChild(el('circle',{cx:x+4, cy:pad.t-18, r:4, fill:MEET_HUE[k]}));
     svg.appendChild(txt(el('text',{x:x+14, y:pad.t-14, class:'lbl'}), MEET_NAME[k]));
   });
-  svg.appendChild(txt(el('text',{x:pad.l-12, y:pad.t-14, class:'lbl', 'text-anchor':'end'}),
+  svg.appendChild(txt(el('text',{x:nameW-12, y:pad.t-14, class:'lbl', 'text-anchor':'end'}),
     'one dot per record · hollow = equalled'));
 
   rows.forEach((m, i) => {
-    const mid = pad.t + i * rowH + rowH/2;
+    const col = Math.floor(i / nPerCol), x0 = col * (colW + GAP);
+    const mid = pad.t + (i % nPerCol) * rowH + rowH/2;
     const kind = meetType(m.v[0].r.meet);
-    svg.appendChild(txt(el('text',{x:pad.l-124, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
-      m.name.length > 32 ? m.name.slice(0, 31) + '…' : m.name));
+    svg.appendChild(txt(el('text',{x:x0+nameW-108, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
+      m.name.length > 28 ? m.name.slice(0, 27) + '…' : m.name));
     const city = cityOf(m.v[0].r.venue);
     if (city && !m.name.includes(city))
-      svg.appendChild(txt(el('text',{x:pad.l-56, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}),
-        city.length > 16 ? city.slice(0, 15) + '…' : city));
-    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}), m.year));
+      svg.appendChild(txt(el('text',{x:x0+nameW-46, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}),
+        city.length > 14 ? city.slice(0, 13) + '…' : city));
+    svg.appendChild(txt(el('text',{x:x0+nameW-10, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}), m.year));
 
     m.v.sort((a,b) => a.r.date - b.r.date).forEach((x, j) => {
-      const c = el('circle',{cx: pad.l + 8 + j*step, cy: mid, r: 5,
+      const c = el('circle',{cx: x0 + nameW + 8 + j*step, cy: mid, r: 4.6,
         fill: x.r.equal ? 'var(--bg0)' : MEET_HUE[kind],
         stroke: MEET_HUE[kind], 'stroke-width': 1.8});
       c.addEventListener('mouseenter', ev => {
@@ -1774,7 +1813,8 @@ function drawBigMeets(svg, W, H, A, ui){
       c.addEventListener('mouseleave', () => tip.style.opacity = 0);
       svg.appendChild(c);
     });
-    svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: mid+3.5, class:'rowval'}), m.v.length));
+    svg.appendChild(txt(el('text',{x: x0 + colW - 6, y: mid+3.5, class:'rowval',
+      'text-anchor':'end'}), m.v.length));
   });
 
   const top = big[0], atGames = big.filter(m => meetType(m.v[0].r.meet) === 'olympics').length;
@@ -1927,7 +1967,7 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
 
   // one film per sex — timed events for now; field events need their own second panel
   // the pit gives the field events a second panel, so long jump can join the running events
-  const HAS_PANEL = M => M.lower || ['Jumps','Throws'].includes(M.card.group);
+  const HAS_PANEL = M => M.lower || ['Jumps','Throws','Combined Events'].includes(M.card.group);
   const timed = DECK.filter(HAS_PANEL);
   ['men','women'].forEach(sex => {
     const events = timed.filter(M => M.card.gender === sex)
