@@ -2461,8 +2461,16 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
       track.appendChild(sc);
       SLIDES.push({el: sc, sex, slug: sex + '-' + id, title: label, paint: () => {
         const w = sc.querySelector('.chartwrap'), svg = w.querySelector('svg');
-        svg.innerHTML = '';
-        fn(svg, w.clientWidth, w.clientHeight, mixed ? bothAgg() : sexAgg(sex), uiFor(sc));
+        const agg = mixed ? bothAgg() : sexAgg(sex);
+        // the draw fills the KPI row, which changes the height the draw was handed: on a card's
+        // first paint the row is still empty, so the box measured is one that stops existing a
+        // moment later. Draw again when it moves — every later paint measures right and stops at one.
+        for (let pass = 0; pass < 2; pass++){
+          const h = w.clientHeight;
+          svg.innerHTML = '';
+          fn(svg, w.clientWidth, h, agg, uiFor(sc));
+          if (w.clientHeight === h) break;
+        }
       }});
     });
 
