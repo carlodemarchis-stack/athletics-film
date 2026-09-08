@@ -315,8 +315,12 @@
     record-holder crosses the line, then zooms into the finish stretch — because a century of progress
     fits inside the last few metres.</p>
     <p>A race makes no sense for a jump, so field events get <b>the pit</b> instead: every record laid
-    out at the distance it reached, filling in the order it happened, with the biggest single leap
-    marked. In the men's long jump that is Bob Beamon, <b>55 cm in one jump</b> in 1968.</p>
+    out at the distance it reached, filling in the order it happened, with the biggest single gain
+    marked. In the men's long jump that is Bob Beamon, <b>55 cm in one jump</b> in 1968. High jump and
+    pole vault use the same scale but draw each mark as a crossbar at the height it was cleared.</p>
+    <p>The men's javelin carries a second discontinuity of its own: the implement was redesigned in
+    1986 to fly shorter, so the 34 marks thrown with the old one are drawn dashed and are not
+    comparable with the record standing today. The furthest throw in the file, 104.80, is one of them.</p>
 
     <h3>Equalled records</h3>
     <p>A world record can be <b>matched</b> as well as beaten, and World Athletics ratifies both. Those
@@ -454,7 +458,8 @@ function model(card){
     const date = parseDate(e.date);
     const born = parseDateSafe(e.competitor.birthDate);
     const age = born ? (date - born) / 864e5 / 365.25 : null;
-    return {perf:e.performance, value:m.value, hand:m.hand, date, dateStr:e.date,
+    return {perf:e.performance, value:m.value, hand:m.hand, oldSpec:/\(o\)/.test(e.performance),
+            date, dateStr:e.date,
             who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal,
             meet: e.competition || null, meetType: meetType(e.competition),
             age: (age !== null && age > 10 && age < 60) ? age : null};
@@ -473,6 +478,8 @@ function model(card){
     r.back = i > 0 && (lower ? r.value > prev.value : r.value < prev.value);
     if (r.back) r.backNote = (prev.hand && !r.hand)
       ? 'first electronic mark here — slower on paper than the hand times before it'
+      : (prev.oldSpec && !r.oldSpec)
+      ? 'the javelin was redesigned to fly shorter — the marks before this are not comparable'
       : 'the ratified record moved backwards here';
   });
 
@@ -564,7 +571,7 @@ function drawStair(M, root){
     }
     svg.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:colourOf(r),
       'stroke-width': r.who === M.cur.who ? 3.2 : 2,
-      'stroke-dasharray': r.hand ? '5 3' : null, 'stroke-linecap':'round'}));
+      'stroke-dasharray': (r.hand || r.oldSpec) ? '5 3' : null, 'stroke-linecap':'round'}));
   });
   area.push(`L ${X(t1)} ${Y(q0)} Z`);
   const gid = 'sg' + Math.random().toString(36).slice(2,8);
@@ -760,7 +767,10 @@ function drawRace(M, root){
 
 /* A race makes no sense for a jump, so the field events get the pit instead: every record laid
    out at the distance it reached, filling up in the order it happened. */
+const isVertical = M => /High Jump|Pole Vault/.test(M.card.discipline);
+
 function drawPit(M, root){
+  const vert = isVertical(M);
   const svg = root.querySelector('.racesvg'), wrap = svg.parentElement;
   cancelAnimationFrame(root._raf);
   svg.innerHTML = '';
@@ -775,26 +785,34 @@ function drawPit(M, root){
 
   const sand = 'sand' + Math.random().toString(36).slice(2,7);
   const defs = el('defs'), g = el('linearGradient',{id:sand, x1:0, y1:0, x2:0, y2:1});
-  g.appendChild(el('stop',{offset:'0%',  'stop-color':'rgba(226,168,110,.16)'}));
-  g.appendChild(el('stop',{offset:'100%','stop-color':'rgba(226,168,110,.04)'}));
+  g.appendChild(el('stop',{offset:'0%',  'stop-color':vert?'rgba(140,170,210,.13)':'rgba(226,168,110,.16)'}));
+  g.appendChild(el('stop',{offset:'100%','stop-color':vert?'rgba(140,170,210,.03)':'rgba(226,168,110,.04)'}));
   defs.appendChild(g); svg.appendChild(defs);
   svg.appendChild(el('rect',{x:padL, y:padT, width:iw, height:ih, fill:`url(#${sand})`, rx:3}));
 
   const range = A1 - A0;
-  const step = range > 3 ? .5 : range > 1.2 ? .25 : .1;
+  // round the step UP to the next nice number, or the axis ends up with twice the ticks asked for
+  const raw = range / 8, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+  const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+  const dp = step >= 1 ? 0 : step >= .1 ? 1 : 2;
   for (let v = Math.ceil(A0/step)*step; v <= A1; v += step){
     svg.appendChild(el('line',{x1:X(v), x2:X(v), y1:padT, y2:padT+ih, stroke:'rgba(255,255,255,.06)'}));
     svg.appendChild(txt(el('text',{x:X(v), y:padT+ih+16, class:'axv', 'text-anchor':'middle'}),
-      unit(v) + 'm'));
+      v.toFixed(dp) + 'm'));
   }
 
   const tip = root.querySelector('.tip'), tipHost = root.querySelector('.chartwrap');
   const marks = M.rows.map((r, i) => {
     const x = X(r.value), y0 = padT + 6, y1 = padT + ih - 6;
     const on = r === M.cur;
-    const line = el('line',{x1:x, x2:x, y1:y0, y2:y1, opacity:0,
-      stroke: on ? 'var(--gold)' : r.equal ? 'rgba(190,205,225,.35)' : 'rgba(200,214,234,.6)',
-      'stroke-width': on ? 3 : 1.6});
+    // a vertical event gets a crossbar at its height rather than a line down the runway
+    const line = vert
+      ? el('line',{x1:x-9, x2:x+9, y1:(y0+y1)/2, y2:(y0+y1)/2, opacity:0,
+          stroke: on ? 'var(--gold)' : r.equal ? 'rgba(190,205,225,.35)' : 'rgba(200,214,234,.6)',
+          'stroke-width': on ? 4 : 2.4, 'stroke-linecap':'round'})
+      : el('line',{x1:x, x2:x, y1:y0, y2:y1, opacity:0,
+          stroke: on ? 'var(--gold)' : r.equal ? 'rgba(190,205,225,.35)' : 'rgba(200,214,234,.6)',
+          'stroke-width': on ? 3 : 1.6, 'stroke-dasharray': r.oldSpec ? '4 3' : null});
     const dot = el('circle',{cx:x, cy:y1, r: on ? 5 : 3, opacity:0,
       fill: on ? 'var(--gold)' : r.equal ? 'var(--bg0)' : 'rgba(200,214,234,.7)',
       stroke: on ? 'var(--gold)' : 'rgba(200,214,234,.7)', 'stroke-width':1.4});
@@ -815,6 +833,8 @@ function drawPit(M, root){
 
   // the single biggest leap the record ever took
   const B = M.biggest, jump = el('g',{opacity:0});
+  // a five-metre javelin gain is not "500 cm"
+  const gainTxt = g => g >= 1 ? '+' + g.toFixed(2) + ' m' : '+' + (g*100).toFixed(0) + ' cm';
   if (B){
     const x1 = X(B.prev.value), x2 = X(B.r.value), y = padT + 16;
     jump.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:'var(--track)', 'stroke-width':1.6}));
@@ -822,7 +842,7 @@ function drawPit(M, root){
       stroke:'var(--track)', 'stroke-width':1.6})));
     jump.appendChild(txt(el('text',{x:(x1+x2)/2, y:y-9, class:'runlbl', 'text-anchor':'middle',
       style:'fill:var(--track);font-weight:800'}),
-      `+${(B.gain*100).toFixed(0)} cm · ${surnameOf(B.r.who)} ${B.r.date.getFullYear()}`));
+      `${gainTxt(B.gain)} · ${surnameOf(B.r.who)} ${B.r.date.getFullYear()}`));
     svg.appendChild(jump);
   }
 
@@ -842,10 +862,14 @@ function drawPit(M, root){
     if (k < 1) root._raf = requestAnimationFrame(frame);
   });
 
+  const oldN = M.rows.filter(r => r.oldSpec).length;
   root.querySelector('.racetitle').innerHTML =
-    `The pit — every record laid out where it landed, filling in the order it happened.`
-    + (B ? ` The biggest leap was <b>${B.r.who}</b>, <b>+${(B.gain*100).toFixed(0)} cm</b> in one jump `
-         + `in <b>${B.r.date.getFullYear()}</b>.` : '');
+    (vert ? `The bar — every record at the height it was cleared, rising in the order it happened.`
+          : `The pit — every record laid out where it landed, filling in the order it happened.`)
+    + (B ? ` The biggest single gain was <b>${B.r.who}</b>, <b>${gainTxt(B.gain)}</b> `
+         + `in <b>${B.r.date.getFullYear()}</b>.` : '')
+    + (oldN ? ` <b>${oldN}</b> marks are dashed: they were thrown with the old javelin, which flew `
+            + `further and is not comparable.` : '');
 }
 
 /* ============================ the opening card ============================ */
@@ -998,7 +1022,8 @@ function fillEventCard(root, M){
   root.querySelector('.stories').innerHTML = stories.join('');
 
   const panel = root.querySelector('.replay');
-  panel.textContent = M.field ? '▶ Fill the pit' : '▶ Race the eras';
+  panel.textContent = M.field ? (isVertical(M) ? '▶ Raise the bar' : '▶ Fill the pit')
+                              : '▶ Race the eras';
   panel.addEventListener('click', () => (M.field ? drawPit : drawRace)(M, root));
 }
 
@@ -1902,7 +1927,7 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
 
   // one film per sex — timed events for now; field events need their own second panel
   // the pit gives the field events a second panel, so long jump can join the running events
-  const HAS_PANEL = M => M.lower || M.card.discipline === 'Long Jump';
+  const HAS_PANEL = M => M.lower || ['Jumps','Throws'].includes(M.card.group);
   const timed = DECK.filter(HAS_PANEL);
   ['men','women'].forEach(sex => {
     const events = timed.filter(M => M.card.gender === sex)
