@@ -2264,15 +2264,117 @@ function drawAgeByEvent(svg, W, H, A, ui){
   withSlider();
 }
 
+/* --- every record on the calendar: one dot per mark, stacked on the day it was set --- */
+/* The column is the day's tally and its own chronology at once: oldest at the top, so a column
+   that reaches down is a day the sport has kept coming back to. */
+function drawPerDay(svg, W, H, A, ui){
+  const pad = {l: 40, r: 24, t: 58, b: 14};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const MONTH = [31,29,31,30,31,30,31,31,30,31,30,31];   // a leap year, so 29 FEB has a slot
+  const MNAME = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const START = MONTH.reduce((a,n,i) => (a.push(a[i] + n), a), [1]);   // day-of-year of each 1st
+
+  const days = new Map();
+  A.deck.forEach(M => M.rows.forEach(r => {
+    const doy = START[r.date.getMonth()] + r.date.getDate() - 1;
+    if (!days.has(doy)) days.set(doy, []);
+    days.get(doy).push({r, M});
+  }));
+  if (!days.size) return emptyState(svg, W, H, ui, 'nothing to show');
+  days.forEach(list => list.sort((a,b) => a.r.date - b.r.date));    // oldest at the top of the column
+  const tall = Math.max(...[...days.values()].map(l => l.length));
+  const total = [...days.values()].reduce((a,l) => a + l.length, 0);
+
+  const X = d => pad.l + (d - 0.5) / 366 * iw;
+  const step = ih / tall;
+  const R = Math.max(1.8, Math.min(step * .34, iw / 366 * .95, 3.4));
+
+  MNAME.forEach((n, i) => {
+    const x0 = X(START[i]), x1 = X(START[i] + MONTH[i]);
+    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:pad.t-14, y2:pad.t+ih,
+      stroke:'rgba(255,255,255,.06)'}));
+    svg.appendChild(txt(el('text',{x:(x0+x1)/2, y:pad.t-6, class:'axv',
+      'text-anchor':'middle'}), n));
+  });
+
+  [['men','Men'],['women','Women']].forEach(([k, label], i) => {
+    const x = pad.l + i * 92;
+    svg.appendChild(el('circle',{cx:x+4, cy:pad.t-40, r:4, fill:`var(--${k})`}));
+    svg.appendChild(txt(el('text',{x:x+14, y:pad.t-36, class:'lbl'}), label));
+  });
+
+  const tip = ui.tip;
+  days.forEach((list, doy) => {
+    const cx = X(doy);
+    list.forEach((x, k) => {
+      const cy = pad.t + k * step + step/2;
+      const hue = x.M.card.gender === 'women' ? 'var(--women)' : 'var(--men)';
+      // a 3px transparent stroke widens the hit area without widening the dot
+      const c = el('circle',{cx, cy, r:R, fill: x.r.equal ? 'var(--bg0)' : hue,
+        stroke: x.r.equal ? hue : 'transparent', 'stroke-width': x.r.equal ? 1.3 : 3,
+        style:'pointer-events:all'});
+      c.addEventListener('mouseenter', ev => {
+        tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline} · `
+            + `${x.M.card.gender}</span></div>`
+          + `<div class="n">${x.r.who} <span class="m">${x.r.country}</span></div>`
+          + `<div class="m">${x.r.dateStr} · ${x.r.venue}</div>`
+          + `<div class="m">${x.r.equal ? 'equalled the record' : 'a new world record'}</div>`;
+        tip.style.opacity = 1;
+        const b = svg.parentElement.getBoundingClientRect();
+        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 300) + 'px';
+        tip.style.top = Math.min(cy + 12, H - 120) + 'px';
+      });
+      c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+      svg.appendChild(c);
+    });
+  });
+
+  const inSeason = [...days.entries()].filter(([d]) => d >= START[4] && d < START[9])
+    .reduce((a,[,l]) => a + l.length, 0);
+  const jun2aug = [...days.entries()].filter(([d]) => d >= START[5] && d < START[8])
+    .reduce((a,[,l]) => a + l.length, 0);
+  const jan = [...days.entries()].filter(([d]) => d < START[1]).reduce((a,[,l]) => a + l.length, 0);
+  const busiest = [...days.entries()].sort((a,b) => b[1].length - a[1].length)[0];
+  const bd = new Date(2000, 0, busiest[0]);
+  const bname = `${bd.getDate()} ${MNAME[bd.getMonth()]}`;
+  // the run of days that have every one of them produced a record, found rather than assumed
+  let best = {len:0}, run = 0;
+  for (let d = 1; d <= 366; d++){
+    run = days.has(d) ? run + 1 : 0;
+    if (run > best.len) best = {len:run, end:d};
+  }
+  const f = d => { const x = new Date(2000, 0, d); return `${x.getDate()} ${MNAME[x.getMonth()]}`; };
+
+  ui.kpi([[days.size + '<small>/366</small>', 'days that have seen one'],
+          [(jun2aug/total*100).toFixed(0) + '<small>%</small>', 'set in June, July, August'],
+          [busiest[1].length, 'most on one day · ' + bname],
+          [366 - days.size, 'days that never have'],
+          [jan, 'ever set in January']]);
+  ui.note(`<p>Every one of the <b>${total}</b> marks in the film, dropped on the day of the year it `
+    + `was set. A column is one calendar date across the whole of history, oldest at the top, so its `
+    + `depth is how often the sport has come back to that date.</p>`
+    + `<p>The season is the shape: <b>${(inSeason/total*100).toFixed(1)}%</b> of every world record `
+    + `in athletics was set between May and September, and <b>${(jun2aug/total*100).toFixed(1)}%</b> `
+    + `in June, July and August alone. Outside it the sport nearly stops — January has produced `
+    + `<b>${jan}</b> records in the whole of recorded history.</p>`
+    + `<p><b>${366 - days.size}</b> days of the year have never produced a world record, and almost `
+    + `all of them are winter. Inside the season the opposite holds: every single day from `
+    + `<b>${f(best.end - best.len + 1)}</b> to <b>${f(best.end)}</b> — ${best.len} days without a `
+    + `gap — has produced one at some point. The busiest single date is <b>${bname}</b>, with `
+    + `<b>${busiest[1].length}</b>.</p>`
+    + `<p>A hollow dot is a mark that equalled the record rather than beating it.</p>`);
+}
+
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
                    ['venues','Venues', drawVenues], ['meets','Where Records Fall', drawMeets],
                    ['bigmeets','The Biggest Meetings', drawBigMeets, true],
                    ['peryear','Records Per Year', drawPerYear],
+                   ['perday','Records Per Day', drawPerDay, true],
                    ['age','Age', drawAge],
                    ['agebyevent','Average Age by Event', drawAgeByEvent],
                    ['survival','How long records last', drawSurvival]];
 
-const EVENT_ONLY_SKIP = ['venues', 'meets', 'bigmeets', 'peryear', 'agebyevent'];
+const EVENT_ONLY_SKIP = ['venues', 'meets', 'bigmeets', 'peryear', 'perday', 'agebyevent'];
 const overlayTabs = () => STAT_TABS.filter(t =>
   !(STATS_AGG && STATS_AGG.single && EVENT_ONLY_SKIP.includes(t[0])));
 
