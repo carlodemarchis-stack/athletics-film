@@ -2297,7 +2297,8 @@ function drawPerDay(svg, W, H, A, ui){
       'text-anchor':'middle'}), n));
   });
 
-  [['men','Men'],['women','Women']].forEach(([k, label], i) => {
+  const sexes = [...new Set(A.deck.map(M => M.card.gender))];
+  if (sexes.length > 1) [['men','Men'],['women','Women']].forEach(([k, label], i) => {
     const x = pad.l + i * 92;
     svg.appendChild(el('circle',{cx:x+4, cy:pad.t-40, r:4, fill:`var(--${k})`}));
     svg.appendChild(txt(el('text',{x:x+14, y:pad.t-36, class:'lbl'}), label));
@@ -2314,8 +2315,8 @@ function drawPerDay(svg, W, H, A, ui){
         stroke: x.r.equal ? hue : 'transparent', 'stroke-width': x.r.equal ? 1.3 : 3,
         style:'pointer-events:all'});
       c.addEventListener('mouseenter', ev => {
-        tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline} · `
-            + `${x.M.card.gender}</span></div>`
+        tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline}`
+            + `${sexes.length > 1 ? ' · ' + x.M.card.gender : ''}</span></div>`
           + `<div class="n">${x.r.who} <span class="m">${x.r.country}</span></div>`
           + `<div class="m">${x.r.dateStr} · ${x.r.venue}</div>`
           + `<div class="m">${x.r.equal ? 'equalled the record' : 'a new world record'}</div>`;
@@ -2369,7 +2370,7 @@ const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', d
                    ['venues','Venues', drawVenues], ['meets','Where Records Fall', drawMeets],
                    ['bigmeets','The Biggest Meetings', drawBigMeets, true],
                    ['peryear','Records Per Year', drawPerYear],
-                   ['perday','Records Per Day', drawPerDay, true],
+                   ['perday','Records Per Day', drawPerDay],
                    ['age','Age', drawAge],
                    ['agebyevent','Average Age by Event', drawAgeByEvent],
                    ['survival','How long records last', drawSurvival]];
