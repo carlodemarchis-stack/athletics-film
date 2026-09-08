@@ -2268,7 +2268,7 @@ function drawAgeByEvent(svg, W, H, A, ui){
 /* The column is the day's tally and its own chronology at once: oldest at the top, so a column
    that reaches down is a day the sport has kept coming back to. */
 function drawPerDay(svg, W, H, A, ui){
-  const pad = {l: 40, r: 24, t: 58, b: 14};
+  const pad = {l: 40, r: 24, t: 26, b: 44};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const MONTH = [31,29,31,30,31,30,31,31,30,31,30,31];   // a leap year, so 29 FEB has a slot
   const MNAME = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -2286,29 +2286,38 @@ function drawPerDay(svg, W, H, A, ui){
   const total = [...days.values()].reduce((a,l) => a + l.length, 0);
 
   const X = d => pad.l + (d - 0.5) / 366 * iw;
-  const step = ih / tall;
-  const R = Math.max(1.8, Math.min(step * .34, iw / 366 * .95, 3.4));
+  // the dot is sized to the day it stands on, and the rows are packed to that size, so a column
+  // reads as one stack rather than a line of separate dots
+  const R = Math.max(1.8, Math.min(iw / 366 * 1.05, 3.6));
+  const step = 2 * R + 1.4;
+  const base = pad.t + ih;                      // columns stand on the month axis
+  const bandH = (tall - 1) * step + 2 * R;
 
+  // the gridlines frame the band rather than an empty box above it
+  const top = base - bandH - 22;
   MNAME.forEach((n, i) => {
     const x0 = X(START[i]), x1 = X(START[i] + MONTH[i]);
-    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:pad.t-14, y2:pad.t+ih,
+    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:top, y2:base+4,
       stroke:'rgba(255,255,255,.06)'}));
-    svg.appendChild(txt(el('text',{x:(x0+x1)/2, y:pad.t-6, class:'axv',
+    svg.appendChild(txt(el('text',{x:(x0+x1)/2, y:base+20, class:'axv',
       'text-anchor':'middle'}), n));
   });
+  svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw, y1:base+4, y2:base+4,
+    stroke:'rgba(255,255,255,.10)'}));
 
   const sexes = [...new Set(A.deck.map(M => M.card.gender))];
   if (sexes.length > 1) [['men','Men'],['women','Women']].forEach(([k, label], i) => {
     const x = pad.l + i * 92;
-    svg.appendChild(el('circle',{cx:x+4, cy:pad.t-40, r:4, fill:`var(--${k})`}));
-    svg.appendChild(txt(el('text',{x:x+14, y:pad.t-36, class:'lbl'}), label));
+    svg.appendChild(el('circle',{cx:x+4, cy:top-14, r:4, fill:`var(--${k})`}));
+    svg.appendChild(txt(el('text',{x:x+14, y:top-10, class:'lbl'}), label));
   });
 
   const tip = ui.tip;
   days.forEach((list, doy) => {
     const cx = X(doy);
     list.forEach((x, k) => {
-      const cy = pad.t + k * step + step/2;
+      // newest sits on the axis and the column grows upwards, so top is still oldest
+      const cy = base - R - 3 - (list.length - 1 - k) * step;
       const hue = x.M.card.gender === 'women' ? 'var(--women)' : 'var(--men)';
       // a 3px transparent stroke widens the hit area without widening the dot
       const c = el('circle',{cx, cy, r:R, fill: x.r.equal ? 'var(--bg0)' : hue,
