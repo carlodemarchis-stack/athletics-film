@@ -1204,7 +1204,7 @@ function drawVenues(svg, W, H, A, ui){
     svg.appendChild(txt(el('text',{x: pad.l+iw+10, y: mid+3.5, class:'rowval'}), rs.length));
   });
 
-  ui.kpi([[A.venues.size, 'venues'], [list[0][0].split(',').pop().trim(), 'most records'],
+  ui.kpi([[A.venues.size, 'venues'], [list[0][0].split(',')[0].trim(), 'most records'],
        [list[0][1].length, 'records there']]);
   ui.note(`One dot per world record, placed at the date it was set. Clusters are meets that `
     + `produced a run of records — the tight column on Ciudad de México is October 1968, `
@@ -1450,6 +1450,18 @@ const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', d
                    ['venues','Venues', drawVenues], ['age','Age', drawAge],
                    ['survival','How long records last', drawSurvival]];
 
+const EVENT_ONLY_SKIP = ['venues'];
+const overlayTabs = () => STAT_TABS.filter(t =>
+  !(STATS_AGG && STATS_AGG.single && EVENT_ONLY_SKIP.includes(t[0])));
+
+function buildStatTabs(){
+  const tabs = overlayTabs();
+  if (!tabs.some(t => t[0] === STAB)) STAB = tabs[0][0];
+  document.getElementById('stabs').innerHTML = tabs.map(([id, label]) =>
+    `<button class="stab${id === STAB ? ' on' : ''}" data-tab="${id}">${label}</button>`).join('');
+  document.querySelectorAll('.stab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
+}
+
 function paintStats(){
   const root = document.getElementById('stats'), host = root.querySelector('.stats__body');
   if (!STATS_AGG || root.hidden || host.clientWidth < 80) return;
@@ -1462,6 +1474,7 @@ function paintStats(){
 function setTab(id){
   STAB = id;
   document.querySelectorAll('.stab').forEach(b => b.classList.toggle('on', b.dataset.tab === id));
+  if (!document.querySelector('.stab.on')) buildStatTabs();
   paintStats();
 }
 function openStats(){
@@ -1469,6 +1482,7 @@ function openStats(){
   const cur = SLIDES[IDX];
   const scope = cur && cur.M ? [cur.M] : DECK;
   STATS_AGG = buildAgg(scope);
+  buildStatTabs();
   document.getElementById('statsScope').textContent = cur && cur.M
     ? `${cur.M.card.discipline} · ${cur.M.card.gender} · just this event`
     : 'the whole sport';
@@ -1525,9 +1539,6 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
     FILMS[sex].len = SLIDES.length - FILMS[sex].start;
   });
   document.querySelectorAll('.sx').forEach(b => b.onclick = () => switchSex(b.dataset.sex));
-  document.getElementById('stabs').innerHTML = STAT_TABS.map(([id, label], i) =>
-    `<button class="stab${i ? '' : ' on'}" data-tab="${id}">${label}</button>`).join('');
-  document.querySelectorAll('.stab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 
   /* reload lands where you left off — the hash first (so cards are linkable),
      then the last card of the previous visit */
@@ -1647,9 +1658,9 @@ addEventListener('keydown', e => {
   if (e.key === 'Escape'){ closeJump(); closeStats(); return closeHelp(); }
   const statsOpen = !document.getElementById('stats').hidden;
   if (statsOpen){                       // arrows walk the stats tabs while it is open
-    const i = STAT_TABS.findIndex(t => t[0] === STAB);
-    if (e.key === 'ArrowRight') setTab(STAT_TABS[(i + 1) % STAT_TABS.length][0]);
-    else if (e.key === 'ArrowLeft') setTab(STAT_TABS[(i - 1 + STAT_TABS.length) % STAT_TABS.length][0]);
+    const tabs = overlayTabs(), i = tabs.findIndex(t => t[0] === STAB);
+    if (e.key === 'ArrowRight') setTab(tabs[(i + 1) % tabs.length][0]);
+    else if (e.key === 'ArrowLeft') setTab(tabs[(i - 1 + tabs.length) % tabs.length][0]);
     else if (e.key.toLowerCase() === 's') closeStats();
     return;
   }
