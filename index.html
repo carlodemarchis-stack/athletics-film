@@ -217,6 +217,20 @@
   .stab.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
   .stats__body{position:relative; flex:1 1 auto; min-height:0}
   .stats__body svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+  .agefilter{margin-left:auto; display:flex; align-items:center; gap:10px; padding-bottom:3px}
+  .agefilter .k{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted-2); white-space:nowrap}
+  .agefilter .track{position:relative; display:flex; flex-direction:column; gap:2px}
+  .agefilter input[type=range]{width:clamp(140px,15vw,220px); accent-color:var(--gold);
+    background:transparent; cursor:pointer; margin:0; display:block}
+  .agefilter .ticks{display:flex; justify-content:space-between; padding:0 6px;
+    font-size:8.5px; font-weight:800; letter-spacing:.04em; color:var(--muted-2); pointer-events:none}
+  .agefilter .ticks span{position:relative; width:0; display:flex; justify-content:center}
+  .agefilter .ticks span::before{content:''; position:absolute; top:-3px; width:1px; height:4px;
+    background:var(--line)}
+  .agefilter .ticks span.on{color:var(--gold)}
+  .agefilter .ticks span.on::before{background:var(--gold)}
+  .agefilter b{font-size:14px; font-weight:800; color:var(--gold); white-space:nowrap; min-width:74px}
   .snote{display:none}                     /* read through the ? beside the title instead */
   .notebtn{width:22px; height:22px; flex:0 0 auto; border-radius:50%; border:1px solid var(--line);
     background:transparent; color:var(--muted-2); cursor:pointer; font-family:inherit;
@@ -1440,7 +1454,7 @@ function drawAthletes(svg, W, H, A, ui){
           fill: M.card.gender === 'women' ? 'var(--women)' : 'var(--men)', opacity:.9});
         rect.addEventListener('mouseenter', ev => {
           tip.innerHTML = `<div class="p">${r.perf} <span class="m">${M.card.discipline}</span></div>`
-            + `<div class="n">${who}</div>`
+            + `<div class="n">${who} <span class="m">${r.country}</span></div>`
             + `<div class="m">${r.dateStr} · held ${fmtReign(r.reign)}</div>`;
           tip.style.opacity = 1;
           const b = svg.parentElement.getBoundingClientRect();
@@ -1506,7 +1520,7 @@ function drawVenues(svg, W, H, A, ui){
           + group.slice(0, 6).map(x => {
               const meet = x.r.meet ? (meetName(x.r.meet, '') || x.r.meet) : null;
               return `<div class="m" style="margin-top:4px"><b style="color:var(--ink)">${x.r.perf}</b> `
-                + `${x.M.card.discipline} · ${x.r.who} · ${x.r.dateStr}`
+                + `${x.M.card.discipline} · ${x.r.who} ${x.r.country} · ${x.r.dateStr}`
                 + (meet ? `<br><span style="color:${MEET_HUE[x.r.meetType]}">${meet}</span>` : '') + `</div>`;
             }).join('')
           + (n > 6 ? `<div class="m">…and ${n-6} more</div>` : '');
@@ -1609,7 +1623,7 @@ function drawReignRanking(svg, W, H, A, ui){
       height:h, rx:2, fill: live ? 'var(--gold)' : 'rgba(190,205,225,.5)'});
     bar.addEventListener('mouseenter', ev => {
       tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline}</span></div>`
-        + `<div class="n">${x.r.who}</div>`
+        + `<div class="n">${x.r.who} <span class="m">${x.r.country}</span></div>`
         + `<div class="m">${x.r.dateStr} · stood ${fmtReign(x.r.reign)}`
         + `${live ? ' · still standing' : ''}</div>`;
       tip.style.opacity = 1;
@@ -1692,6 +1706,46 @@ function drawSurvival(svg, W, H, A, ui){
     + `built from records that were beaten, while the gold ones are still running.`);
 }
 
+/* the age cards can be narrowed to records set from a chosen decade onwards */
+function ageScope(root, A){
+  const from = +(root.dataset.ageFrom || 0);
+  if (!from) return A;
+  const deck = A.deck
+    .map(M => Object.assign(Object.create(Object.getPrototypeOf(M)), M,
+      {rows: M.rows.filter(r => r.date.getFullYear() >= from)}))
+    .filter(M => M.rows.length);
+  return Object.assign({}, A, {deck});
+}
+
+function decadeSlider(root, redraw){
+  const bar = root.querySelector('.statbar');
+  if (!bar || bar.querySelector('.agefilter')) return;
+  const from = +(root.dataset.ageFrom || 1900);
+  const box = document.createElement('div');
+  box.className = 'agefilter';
+  // a tick under every decade, so it is obvious the slider has stops rather than a smooth sweep
+  const decades = [];
+  for (let y = 1900; y <= 2020; y += 10) decades.push(y);
+  box.innerHTML = `<span class="k">records from</span>`
+    + `<span class="track"><input type="range" min="1900" max="2020" step="10" value="${from}">`
+    + `<span class="ticks">` + decades.map(y =>
+        `<span data-y="${y}">${y === 1900 ? 'all' : y % 20 === 0 ? `'${String(y).slice(2)}` : ''}</span>`
+      ).join('') + `</span></span>`
+    + `<b>${from <= 1900 ? 'all time' : from}</b>`;
+  const input = box.querySelector('input'), out = box.querySelector('b');
+  const mark = v => box.querySelectorAll('.ticks span')
+    .forEach(t => t.classList.toggle('on', +t.dataset.y === v));
+  mark(from);        // the highlighted tick has to agree with the handle on first paint
+  input.addEventListener('input', () => {
+    const v = +input.value;
+    out.textContent = v <= 1900 ? 'all time' : input.value;
+    root.dataset.ageFrom = v <= 1900 ? '' : input.value;
+    mark(v);
+    redraw();
+  });
+  bar.appendChild(box);
+}
+
 /* --- 5. how old they were --- */
 /* One event gives one row, which wastes the screen. Age against the year of the mark uses the
    height and answers a better question: has this event's record moved to older athletes? */
@@ -1729,7 +1783,8 @@ function drawEventAges(svg, W, H, A, ui){
       r: r === M.cur ? 6 : 4, fill: r === M.cur ? 'var(--gold)' : 'rgba(200,214,234,.6)'});
     c.addEventListener('mouseenter', ev => {
       tip.innerHTML = `<div class="p">${r.age.toFixed(1)} <span class="m">years old</span></div>`
-        + `<div class="n">${r.who}</div><div class="m">${r.perf} · ${r.dateStr}</div>`;
+        + `<div class="n">${r.who} <span class="m">${r.country}</span></div>`
+        + `<div class="m">${r.perf} · ${r.dateStr}</div>`;
       tip.style.opacity = 1;
       const b = svg.parentElement.getBoundingClientRect();
       tip.style.left = Math.min(ev.clientX - b.left + 14, W - 260) + 'px';
@@ -1750,6 +1805,10 @@ function drawEventAges(svg, W, H, A, ui){
 
 function drawAge(svg, W, H, A, ui){
   if (A.single) return drawEventAges(svg, W, H, A, ui);
+  const host = svg.closest('.card') || document.getElementById('stats');
+  const FULL = A;   // redraw from the unfiltered deck, or the filter compounds
+  const withSlider = () => decadeSlider(host, () => { svg.innerHTML=''; drawAge(svg, W, H, FULL, ui); });
+  A = ageScope(host, FULL);
   const pad = {l: 150, r: 92, t: 18, b: 34};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const A0 = 15, A1 = 40;
@@ -1791,7 +1850,7 @@ function drawAge(svg, W, H, A, ui){
         fill: x.M.card.gender === 'women' ? 'var(--women)' : 'var(--men)', opacity:.5});
       c.addEventListener('mouseenter', ev => {
         tip.innerHTML = `<div class="p">${x.r.age.toFixed(1)} <span class="m">years old</span></div>`
-          + `<div class="n">${x.r.who}</div>`
+          + `<div class="n">${x.r.who} <span class="m">${x.r.country}</span></div>`
           + `<div class="m">${x.M.card.discipline} · ${x.r.perf} · ${x.r.dateStr}</div>`;
         tip.style.opacity = 1;
         const b = svg.parentElement.getBoundingClientRect();
@@ -1808,7 +1867,7 @@ function drawAge(svg, W, H, A, ui){
     svg.appendChild(txt(el('text',{x:pad.l+iw+44, y:mid+3.5, class:'rowsub'}), `n=${list.length}`));
   });
 
-  if (!all.length) return emptyState(svg, W, H, ui, 'no birth dates on file for this event');
+  if (!all.length){ emptyState(svg, W, H, ui, 'no marks in this period'); return withSlider(); }
   const sorted = [...all].sort((a,b) => a.r.age - b.r.age);
   const young = sorted[0], old = sorted[sorted.length-1];
   ui.kpi([[med(all.map(x => x.r.age)).toFixed(1), 'median age'],
@@ -1828,6 +1887,7 @@ function drawAge(svg, W, H, A, ui){
   ui.note(`Every mark with a birth date on file — <b>${all.length}</b> of them, one dot each, the gold `
     + `line the median. ${spread}Youngest is <b>${young.r.who}</b> at ${young.r.age.toFixed(1)}, `
     + `oldest <b>${old.r.who}</b> at ${old.r.age.toFixed(1)}. ${drift}`);
+  withSlider();
 }
 
 /* every record as a dot: discipline down the side, the century across, coloured by the kind of
@@ -1875,7 +1935,7 @@ function drawMeets(svg, W, H, A, ui){
           + g.slice(0, 6).map(r => {
               const meet = r.meet ? (meetName(r.meet, '') || r.meet) : null;
               return `<div class="m" style="margin-top:4px"><b style="color:var(--ink)">${r.perf}</b> `
-                + `${r.who} · ${r.dateStr}<br>`
+                + `${r.who} ${r.country} · ${r.dateStr}<br>`
                 + `<span style="color:${MEET_HUE[r.meetType]}">${meet || 'meeting not on file'}</span></div>`;
             }).join('')
           + (g.length > 6 ? `<div class="m">…and ${g.length-6} more</div>` : '');
@@ -1963,7 +2023,7 @@ function drawBigMeets(svg, W, H, A, ui){
       c.addEventListener('mouseenter', ev => {
         tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline} `
           + `· ${x.M.card.gender}</span></div>`
-          + `<div class="n">${x.r.who}</div>`
+          + `<div class="n">${x.r.who} <span class="m">${x.r.country}</span></div>`
           + `<div class="m">${x.r.dateStr}${x.r.equal ? ' · equalled the record' : ''}</div>`;
         tip.style.opacity = 1;
         const b = svg.parentElement.getBoundingClientRect();
@@ -2070,6 +2130,11 @@ function drawPerYear(svg, W, H, A, ui){
 /* average age per event: a dot at the mean, a line across the range, so the spread is visible
    rather than hidden behind a single number */
 function drawAgeByEvent(svg, W, H, A, ui){
+  const host = svg.closest('.card') || document.getElementById('stats');
+  const FULL = A;
+  const withSlider = () => decadeSlider(host, () =>
+    { svg.innerHTML=''; drawAgeByEvent(svg, W, H, FULL, ui); });
+  A = ageScope(host, FULL);
   const pad = {l: 190, r: 96, t: 26, b: 34};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const rows = A.deck.map(M => {
@@ -2077,7 +2142,7 @@ function drawAgeByEvent(svg, W, H, A, ui){
     return ages.length ? {M, ages, mean: ages.reduce((a,b)=>a+b,0)/ages.length,
       lo: Math.min(...ages), hi: Math.max(...ages)} : null;
   }).filter(Boolean).sort((a,b) => b.mean - a.mean);
-  if (!rows.length) return emptyState(svg, W, H, ui, 'no birth dates on file');
+  if (!rows.length){ emptyState(svg, W, H, ui, 'no marks in this period'); return withSlider(); }
 
   const A0 = Math.floor(Math.min(...rows.map(r => r.lo)) - 1);
   const A1 = Math.ceil(Math.max(...rows.map(r => r.hi)) + 1);
@@ -2133,6 +2198,7 @@ function drawAgeByEvent(svg, W, H, A, ui){
     + `freak result does not read the same as one that is consistently old. <b>${old.M.card.discipline}</b> `
     + `averages <b>${old.mean.toFixed(1)}</b> against <b>${young.mean.toFixed(1)}</b> for `
     + `<b>${young.M.card.discipline}</b>, around a whole-sport average of <b>${grand.toFixed(1)}</b>.`);
+  withSlider();
 }
 
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
