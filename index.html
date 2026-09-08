@@ -488,7 +488,7 @@ function model(card){
     else if (r.back && card.group === 'Combined Events') r.backNote =
       'the scoring tables were revised — totals from different tables are not comparable';
     else if (r.back) r.backNote = (prev.hand && !r.hand)
-      ? 'first electronic mark here — slower on paper than the hand times before it'
+      ? 'an electronic mark replacing a hand time — slower on paper, not in fact'
       : (prev.oldSpec && !r.oldSpec)
       ? 'the javelin was redesigned to fly shorter — the marks before this are not comparable'
       : 'the ratified record moved backwards here';
@@ -1059,8 +1059,19 @@ function eventNote(M){
         : `specification, and are not directly comparable with the record standing today.`) + `</p>`);
   }
   const hand = M.rows.filter(r => r.hand).length;
-  if (hand) out.push(`<p><b>${hand}</b> marks were hand-timed, also drawn dashed. A hand time and an `
-    + `electronic one are not the same measurement, so the two eras do not line up.</p>`);
+  if (hand){
+    const crossings = M.rows.filter((r, i) => i && M.rows[i-1].hand && !r.hand).length;
+    const lastHand = M.rows.filter(r => r.hand).slice(-1)[0];
+    const allElecFrom = M.rows.find(r => r.date > lastHand.date && !r.hand);
+    out.push(`<p><b>${hand}</b> of the ${M.rows.length} marks were hand-timed, also drawn dashed. A `
+      + `hand time is taken on the eye and runs about a quarter of a second fast, so an honest `
+      + `electronic time is a bigger number for the same running.</p>`);
+    if (crossings > 1) out.push(`<p>That is why the line steps back <b>${crossings} times</b> here `
+      + `rather than once. The two were ratified side by side for years, and the list alternates `
+      + `between them`
+      + (allElecFrom ? `, until <b>${allElecFrom.date.getFullYear()}</b>, after which every mark on `
+          + `this card is electronic` : '') + `. Nobody ran slower.</p>`);
+  }
   const eq = M.rows.filter(r => r.equal).length;
   if (eq) out.push(`<p><b>${eq}</b> marks equalled the record rather than beat it. They are counted `
     + `as records, because they counted at the time, but they are drawn smaller and sit on the flat `
