@@ -954,7 +954,7 @@ function drawPit(M, root){
 }
 
 /* ============================ the opening card ============================ */
-function drawOpening(root, deck){
+function drawOpening(root, deck, gold){
   const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
   svg.innerHTML = '';
   const W = wrap.clientWidth, H = wrap.clientHeight;
@@ -989,9 +989,13 @@ function drawOpening(root, deck){
     g.appendChild(el('rect',{x:0, y, width:W, height:rowH, fill:'transparent'}));
     g.appendChild(txt(el('text',{x:colL-12, y:mid+3.5, class:'rowname', 'text-anchor':'end'}),
       M.card.discipline));
-    g.appendChild(el('rect',{x:x1, y:mid-barH/2, width:Math.max(2, x2-x1), height:barH, rx:2.5,
-      class:'rowbar', fill: M.card.gender === 'women' ? 'var(--women)' : 'var(--men)', opacity:.9}));
-    g.appendChild(txt(el('text',{x:x1-7, y:mid+3.5, class:'rowyrs', 'text-anchor':'end'}),
+    // a record set days ago still needs a visible bar, and the minimum has to eat leftwards:
+    // every bar ends on today, and a stub poking past that line would say the opposite
+    const bw = Math.max(2, x2 - x1), bx = x2 - bw;
+    g.appendChild(el('rect',{x:bx, y:mid-barH/2, width:bw, height:barH, rx:2.5,
+      class:'rowbar', opacity:.9,
+      fill: gold ? 'var(--gold)' : M.card.gender === 'women' ? 'var(--women)' : 'var(--men)'}));
+    g.appendChild(txt(el('text',{x:bx-7, y:mid+3.5, class:'rowyrs', 'text-anchor':'end'}),
       fmtYears(M.cur.reign).toFixed(1)));
     g.appendChild(txt(el('text',{x:x2+12, y:mid+3.5, class:'rowmark'}), M.cur.perf));
     const f = flagEmoji(M.cur.country);
@@ -2324,20 +2328,6 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
       SLIDES.push({el: s, M, sex, slug: slugOf(M), title: M.card.discipline,
         paint: () => { drawStair(M, s); (M.field ? drawPit : drawRace)(M, s); labelNations(s); }});
     });
-    // the mixed men-and-women ranking closes both films
-    // ranked by how long it has held — this film's own records
-    const own = DECK.filter(M => M.card.gender === sex);
-    const lw = document.createElement('section');
-    lw.className = 'card';
-    lw.innerHTML = openingCardHTML(own, sex, {
-      kicker: 'World record film · every event',
-      title: 'The Longest Wait',
-      sub: `Every standing ${sex === 'women' ? "women's" : "men's"} world record, ranked by how long it `
-         + `has held. Each bar starts the day the record was set and runs to today.`});
-    track.appendChild(lw);
-    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', title: 'The Longest Wait',
-      paint: () => drawOpening(lw, own)});
-
     // the whole-sport views close both films, men and women together
     STAT_TABS.forEach(([id, label, fn, mixed]) => {
       const sc = document.createElement('section');
@@ -2350,6 +2340,19 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
         fn(svg, w.clientWidth, w.clientHeight, mixed ? bothAgg() : sexAgg(sex), uiFor(sc));
       }});
     });
+
+    // the companion to the card before it: the same chart with every bar still running, so all gold
+    const own = DECK.filter(M => M.card.gender === sex);
+    const lw = document.createElement('section');
+    lw.className = 'card';
+    lw.innerHTML = openingCardHTML(own, sex, {
+      kicker: 'World record film · every event',
+      title: 'The Longest Wait',
+      sub: `Every standing ${sex === 'women' ? "women's" : "men's"} world record, ranked by how long it `
+         + `has held. Each bar starts the day the record was set and runs to today.`});
+    track.appendChild(lw);
+    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', title: 'The Longest Wait',
+      paint: () => drawOpening(lw, own, true)});
 
     // and the two sexes back together, closing the film
     const both = document.createElement('section');
