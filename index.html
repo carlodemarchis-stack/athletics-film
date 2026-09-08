@@ -1572,8 +1572,75 @@ function drawEventReigns(svg, W, H, A, ui){
     + `<b>${med < 1 ? Math.round(med*365.25) + ' days' : med.toFixed(1) + ' years'}</b>.`);
 }
 
+/* The whole-sport version of the same idea. Ranking every mark would be 1,300 rows, so it ranks
+   the longest reigns there have ever been; the distribution stats stay in the numbers and the note. */
+function drawReignRanking(svg, W, H, A, ui){
+  const pad = {l: 320, r: 92, t: 26, b: 34};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const all = [];
+  A.deck.forEach(M => M.rows.forEach(r => all.push({r, M})));
+  if (!all.length) return emptyState(svg, W, H, ui, 'nothing to show');
+  const rows = all.sort((a, b) => b.r.reign - a.r.reign).slice(0, Math.max(6, Math.floor(ih / 19)));
+  const rowH = ih / rows.length, maxR = rows[0].r.reign / 365.25;
+  const X = y => pad.l + (y / maxR) * iw;
+  const done = A.done, med = done[Math.floor(done.length / 2)];
+  const surv = t => done.filter(x => x >= t).length / done.length * 100;
+
+  for (let y = 0; y <= maxR; y += (maxR > 20 ? 5 : 2)){
+    svg.appendChild(el('line',{x1:X(y), x2:X(y), y1:pad.t-6, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x:X(y), y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}), y));
+  }
+  svg.appendChild(txt(el('text',{x:pad.l+iw/2, y:pad.t+ih+32, class:'lbl', 'text-anchor':'middle'}),
+    'years the record stood'));
+  svg.appendChild(el('line',{x1:X(med), x2:X(med), y1:pad.t-6, y2:pad.t+ih, stroke:'var(--gold)',
+    'stroke-width':1.4, 'stroke-dasharray':'3 4'}));
+  svg.appendChild(txt(el('text',{x:X(med)+6, y:pad.t-8, class:'lbl', style:'fill:var(--gold)'}),
+    `median ${med < 1 ? Math.round(med*365.25) + ' days' : med.toFixed(1) + 'y'}`));
+
+  const tip = ui.tip;
+  rows.forEach((x, i) => {
+    const mid = pad.t + i * rowH + rowH/2, live = x.r === x.M.cur;
+    const h = Math.max(3, Math.min(rowH - 3, 13));
+    svg.appendChild(txt(el('text',{x:pad.l-104, y:mid+3.5, class:'rowlbl', 'text-anchor':'end',
+      style: live ? 'fill:var(--gold)' : ''}), `${x.r.perf}  ${surnameOf(x.r.who)}`));
+    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}),
+      x.M.card.discipline.length > 15 ? x.M.card.discipline.slice(0,14) + '…' : x.M.card.discipline));
+    const bar = el('rect',{x:pad.l, y:mid-h/2, width:Math.max(1.5, X(x.r.reign/365.25)-pad.l),
+      height:h, rx:2, fill: live ? 'var(--gold)' : 'rgba(190,205,225,.5)'});
+    bar.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline}</span></div>`
+        + `<div class="n">${x.r.who}</div>`
+        + `<div class="m">${x.r.dateStr} · stood ${fmtReign(x.r.reign)}`
+        + `${live ? ' · still standing' : ''}</div>`;
+      tip.style.opacity = 1;
+      const b = svg.parentElement.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, W - 280) + 'px';
+      tip.style.top = Math.min(mid + 10, H - 110) + 'px';
+    });
+    bar.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    svg.appendChild(bar);
+    svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class: live ? 'rowval' : 'rowsub'}),
+      (x.r.reign/365.25).toFixed(1) + 'y'));
+  });
+
+  const stillStanding = rows.filter(x => x.r === x.M.cur).length;
+  ui.kpi([[med < 1 ? Math.round(med*365.25) + '<small>d</small>' : med.toFixed(1) + '<small>y</small>',
+           'median reign'],
+          [surv(10).toFixed(1) + '<small>%</small>', 'ever reach 10 years'],
+          [surv(30).toFixed(1) + '<small>%</small>', 'ever reach 30 years'],
+          [A.alive.filter(t => t >= 30).length, 'standing now past 30y'],
+          [stillStanding + '<small>/' + rows.length + '</small>', 'of these still standing']]);
+  ui.note(`The longest reigns there have ever been in ${A.label}, most first, with the records still `
+    + `standing in gold. Half of the <b>${done.length}</b> records that have been beaten lasted under `
+    + `<b>${med < 1 ? Math.round(med*365.25) + ' days' : med.toFixed(2) + ' years'}</b>, only `
+    + `<b>${surv(10).toFixed(1)}%</b> reached ten years and <b>${surv(30).toFixed(1)}%</b> reached `
+    + `thirty — which is what makes the top of this list unusual: <b>${stillStanding}</b> of the `
+    + `${rows.length} longest reigns on it have not ended yet.`);
+}
+
 function drawSurvival(svg, W, H, A, ui){
   if (A.single) return drawEventReigns(svg, W, H, A, ui);
+  return drawReignRanking(svg, W, H, A, ui);
   const pad = {l: 46, r: 120, t: 16, b: 30};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   if (!A.done.length) return emptyState(svg, W, H, ui, 'this record has never been beaten');
@@ -2000,14 +2067,83 @@ function drawPerYear(svg, W, H, A, ui){
     + `did at the time.`);
 }
 
+/* average age per event: a dot at the mean, a line across the range, so the spread is visible
+   rather than hidden behind a single number */
+function drawAgeByEvent(svg, W, H, A, ui){
+  const pad = {l: 190, r: 96, t: 26, b: 34};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const rows = A.deck.map(M => {
+    const ages = M.rows.filter(r => r.age !== null).map(r => r.age);
+    return ages.length ? {M, ages, mean: ages.reduce((a,b)=>a+b,0)/ages.length,
+      lo: Math.min(...ages), hi: Math.max(...ages)} : null;
+  }).filter(Boolean).sort((a,b) => b.mean - a.mean);
+  if (!rows.length) return emptyState(svg, W, H, ui, 'no birth dates on file');
+
+  const A0 = Math.floor(Math.min(...rows.map(r => r.lo)) - 1);
+  const A1 = Math.ceil(Math.max(...rows.map(r => r.hi)) + 1);
+  const X = a => pad.l + (a - A0) / (A1 - A0) * iw;
+  const rowH = ih / rows.length;
+  const tip = ui.tip;
+
+  for (let a = Math.ceil(A0/2)*2; a <= A1; a += 2){
+    svg.appendChild(el('line',{x1:X(a), x2:X(a), y1:pad.t-4, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x:X(a), y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}), a));
+  }
+  svg.appendChild(txt(el('text',{x:pad.l+iw/2, y:pad.t+ih+32, class:'lbl', 'text-anchor':'middle'}),
+    'age when the record was set'));
+  const allAges = rows.flatMap(r => r.ages);
+  const grand = allAges.reduce((a,b)=>a+b,0)/allAges.length;
+  svg.appendChild(el('line',{x1:X(grand), x2:X(grand), y1:pad.t-4, y2:pad.t+ih,
+    stroke:'var(--gold)', 'stroke-width':1.4, 'stroke-dasharray':'3 4'}));
+  svg.appendChild(txt(el('text',{x:X(grand)+6, y:pad.t-6, class:'lbl', style:'fill:var(--gold)'}),
+    `average ${grand.toFixed(1)}`));
+
+  rows.forEach((r, i) => {
+    const mid = pad.t + i * rowH + rowH/2;
+    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
+      r.M.card.discipline));
+    svg.appendChild(el('line',{x1:X(r.lo), x2:X(r.hi), y1:mid, y2:mid,
+      stroke:'rgba(190,205,225,.32)', 'stroke-width':Math.max(3, Math.min(rowH-6, 9)),
+      'stroke-linecap':'round'}));
+    const dot = el('circle',{cx:X(r.mean), cy:mid, r:4.6,
+      fill: r.M.card.gender === 'women' ? 'var(--women)' : 'var(--men)',
+      stroke:'var(--bg0)', 'stroke-width':1});
+    dot.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${r.mean.toFixed(1)} <span class="m">average</span></div>`
+        + `<div class="n">${r.M.card.discipline}</div>`
+        + `<div class="m">${r.ages.length} marks · youngest ${r.lo.toFixed(1)} · oldest ${r.hi.toFixed(1)}</div>`;
+      tip.style.opacity = 1;
+      const b = svg.parentElement.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, W - 260) + 'px';
+      tip.style.top = Math.min(mid + 10, H - 100) + 'px';
+    });
+    dot.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    svg.appendChild(dot);
+    svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class:'rowval'}), r.mean.toFixed(1)));
+    svg.appendChild(txt(el('text',{x:pad.l+iw+46, y:mid+3.5, class:'rowsub'}), `n=${r.ages.length}`));
+  });
+
+  const old = rows[0], young = rows[rows.length-1];
+  ui.kpi([[grand.toFixed(1), 'average, all events'],
+          [old.mean.toFixed(1), `oldest · ${old.M.card.discipline}`],
+          [young.mean.toFixed(1), `youngest · ${young.M.card.discipline}`],
+          [allAges.length, 'marks with a birth date']]);
+  ui.note(`The average age at which each event's world records were set, oldest event first. The dot `
+    + `is the average, the bar behind it the full range from youngest to oldest, so an event with one `
+    + `freak result does not read the same as one that is consistently old. <b>${old.M.card.discipline}</b> `
+    + `averages <b>${old.mean.toFixed(1)}</b> against <b>${young.mean.toFixed(1)}</b> for `
+    + `<b>${young.M.card.discipline}</b>, around a whole-sport average of <b>${grand.toFixed(1)}</b>.`);
+}
+
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
                    ['venues','Venues', drawVenues], ['meets','Where Records Fall', drawMeets],
                    ['bigmeets','The Biggest Meetings', drawBigMeets, true],
                    ['peryear','Records Per Year', drawPerYear],
                    ['age','Age', drawAge],
+                   ['agebyevent','Average Age by Event', drawAgeByEvent],
                    ['survival','How long records last', drawSurvival]];
 
-const EVENT_ONLY_SKIP = ['venues', 'meets', 'bigmeets', 'peryear'];
+const EVENT_ONLY_SKIP = ['venues', 'meets', 'bigmeets', 'peryear', 'agebyevent'];
 const overlayTabs = () => STAT_TABS.filter(t =>
   !(STATS_AGG && STATS_AGG.single && EVENT_ONLY_SKIP.includes(t[0])));
 
