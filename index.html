@@ -217,9 +217,15 @@
   .stab.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
   .stats__body{position:relative; flex:1 1 auto; min-height:0}
   .stats__body svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
-  .snote{flex:0 0 auto; font-size:12px; color:var(--muted-2); line-height:1.5; padding-top:8px;
-    border-top:1px solid var(--line)}
-  .snote b{color:var(--muted)}
+  .snote{display:none}                     /* read through the ? beside the title instead */
+  .notebtn{width:22px; height:22px; flex:0 0 auto; border-radius:50%; border:1px solid var(--line);
+    background:transparent; color:var(--muted-2); cursor:pointer; font-family:inherit;
+    font-size:11px; font-weight:800; line-height:1; padding:0; transition:.15s; align-self:center;
+    display:inline-flex; align-items:center; justify-content:center}
+  .notebtn:hover{color:var(--gold); border-color:rgba(242,193,78,.45); background:rgba(242,193,78,.1)}
+  #noteModal{z-index:80}
+  #noteBody{font-size:13.5px; line-height:1.65; color:var(--muted)}
+  #noteBody b{color:var(--ink)}
   .rowlbl{font-size:10.5px; font-weight:700; fill:var(--ink)}
   .rowval{font-size:10.5px; font-weight:800; fill:var(--gold)}
   .rowsub{font-size:10px; font-weight:700; fill:var(--muted-2)}
@@ -270,7 +276,7 @@
     <div class="stats__head">
       <div>
         <div class="kicker"><div class="disc" id="statsScope">This event</div></div>
-        <h2 id="statsTitle">Nations</h2>
+        <div class="title"><h2 id="statsTitle">Nations</h2><button class="notebtn" data-note title="About this chart">?</button></div>
       </div>
       <button class="mclose" style="position:static;font-size:30px" onclick="closeStats()" aria-label="Close">×</button>
     </div>
@@ -278,6 +284,16 @@
     <div class="statbar" id="statsKpi"></div>
     <div class="stats__body"><svg id="statsSvg"></svg><div class="tip" id="statsTip"></div></div>
     <div class="snote" id="statsNote"></div>
+  </div>
+</div>
+
+<div class="modal" id="noteModal" hidden>
+  <div class="modal__ov" onclick="closeNote()"></div>
+  <div class="modal__box" style="max-width:560px">
+    <button class="mclose" onclick="closeNote()" aria-label="Close">×</button>
+    <h2 id="noteTitle">About this chart</h2>
+    <div class="csub">World record film</div>
+    <div id="noteBody"></div>
   </div>
 </div>
 
@@ -878,7 +894,7 @@ function statCardHTML(sex, title){
     <div class="inner">
       <div class="head">
         <div><div class="kicker"><div class="disc">World record film · every ${sex === 'women' ? "women's" : "men's"} event</div>${sexTabs(sex)}</div>
-          <div class="title"><h1>${title}</h1></div></div>
+          <div class="title"><h1>${title}</h1><button class="notebtn" data-note title="About this chart">?</button></div></div>
       </div>
       <div class="statbar"></div>
       <div class="chartwrap"><svg></svg><div class="tip"></div></div>
@@ -1553,12 +1569,85 @@ function drawMeets(svg, W, H, A, ui){
     + `everything else, including the marks whose meeting is not on file.`);
 }
 
+/* one row per meeting that produced several records. The cut is at three: across the file 95% of
+   meetings produced exactly one, and the tail of twos is 50-60 long, so three is where the list
+   stops being a list of everything. */
+function drawBigMeets(svg, W, H, A, ui){
+  const pad = {l: 268, r: 74, t: 34, b: 16};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const tip = ui.tip;
+
+  const meets = new Map();
+  A.deck.forEach(M => M.rows.forEach(r => {
+    if (!r.meet) return;
+    const key = meetName(r.meet, '') + ' \u0000 ' + r.date.getFullYear();
+    if (!meets.has(key)) meets.set(key, []);
+    meets.get(key).push({r, M});
+  }));
+  const MIN = 3;
+  const all = [...meets.entries()].map(([k, v]) => ({name:k.split(' \u0000 ')[0], year:k.split(' \u0000 ')[1], v}));
+  const big = all.filter(x => x.v.length >= MIN).sort((a,b) => b.v.length - a.v.length || a.year - b.year);
+  if (!big.length) return emptyState(svg, W, H, ui, 'no meeting here produced three records');
+
+  const rows = big.slice(0, Math.max(6, Math.floor(ih / 19)));
+  const rowH = ih / rows.length;
+  const maxN = rows[0].v.length;
+  const step = Math.min(17, (iw - 40) / maxN);
+
+  ['olympics','worlds','other'].forEach((k, i) => {
+    const x = pad.l + i * 168;
+    svg.appendChild(el('circle',{cx:x+4, cy:pad.t-18, r:4, fill:MEET_HUE[k]}));
+    svg.appendChild(txt(el('text',{x:x+14, y:pad.t-14, class:'lbl'}), MEET_NAME[k]));
+  });
+  svg.appendChild(txt(el('text',{x:pad.l-12, y:pad.t-14, class:'lbl', 'text-anchor':'end'}),
+    'one dot per record · hollow = equalled'));
+
+  rows.forEach((m, i) => {
+    const mid = pad.t + i * rowH + rowH/2;
+    const kind = meetType(m.v[0].r.meet);
+    svg.appendChild(txt(el('text',{x:pad.l-52, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
+      m.name.length > 34 ? m.name.slice(0, 33) + '…' : m.name));
+    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}), m.year));
+
+    m.v.sort((a,b) => a.r.date - b.r.date).forEach((x, j) => {
+      const c = el('circle',{cx: pad.l + 8 + j*step, cy: mid, r: 5,
+        fill: x.r.equal ? 'var(--bg0)' : MEET_HUE[kind],
+        stroke: MEET_HUE[kind], 'stroke-width': 1.8});
+      c.addEventListener('mouseenter', ev => {
+        tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline}</span></div>`
+          + `<div class="n">${x.r.who}</div>`
+          + `<div class="m">${x.r.dateStr}${x.r.equal ? ' · equalled the record' : ''}</div>`;
+        tip.style.opacity = 1;
+        const b = svg.parentElement.getBoundingClientRect();
+        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 280) + 'px';
+        tip.style.top = Math.min(mid + 10, H - 110) + 'px';
+      });
+      c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+      svg.appendChild(c);
+    });
+    svg.appendChild(txt(el('text',{x: pad.l+iw+12, y: mid+3.5, class:'rowval'}), m.v.length));
+  });
+
+  const top = big[0], atGames = big.filter(m => meetType(m.v[0].r.meet) === 'olympics').length;
+  ui.kpi([[top.v.length, `most at one meeting`],
+          [top.year, top.name.length > 22 ? top.name.slice(0,21) + '…' : top.name],
+          [big.length, `meetings with ${MIN}+`],
+          [atGames, 'of them an Olympics']]);
+  ui.note(`Meetings that produced <b>${MIN} or more</b> world records in ${A.label}, most first. `
+    + `The cut is at three because the tail is so long: of <b>${all.length}</b> meetings in the file, `
+    + `<b>${all.filter(x=>x.v.length===1).length}</b> produced exactly one and `
+    + `<b>${all.filter(x=>x.v.length===2).length}</b> produced two. A hollow dot is a mark that `
+    + `equalled the record rather than beating it.`
+    + (big.length > rows.length ? ` Showing the top <b>${rows.length}</b> of ${big.length}.` : ''));
+}
+
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
                    ['venues','Venues', drawVenues], ['meets','Where Records Fall', drawMeets],
+                   ['bigmeets','The Biggest Meetings', drawBigMeets],
                    ['age','Age', drawAge],
                    ['survival','How long records last', drawSurvival]];
 
-const EVENT_ONLY_SKIP = ['venues', 'meets'];
+const EVENT_ONLY_SKIP = ['venues', 'meets', 'bigmeets'];
 const overlayTabs = () => STAT_TABS.filter(t =>
   !(STATS_AGG && STATS_AGG.single && EVENT_ONLY_SKIP.includes(t[0])));
 
@@ -1766,6 +1855,22 @@ function setPlaying(on){
     ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     : '<path d="M7 5v14l12-7z"/>';
 }
+/* the explanation used to sit under the chart, where it collided with the axis labels */
+function openNote(root){
+  const src = root.querySelector('.snote');
+  const h = root.querySelector('h1') || root.querySelector('h2');
+  document.getElementById('noteTitle').textContent = h ? h.textContent : 'About this chart';
+  document.getElementById('noteBody').innerHTML =
+    (src && src.innerHTML.trim()) || 'Nothing to add for this view.';
+  document.getElementById('noteModal').hidden = false;
+  setPlaying(false);
+}
+const closeNote = () => { document.getElementById('noteModal').hidden = true; };
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-note]');
+  if (b) openNote(b.closest('.card') || document.getElementById('stats'));
+});
+
 const openHelp  = () => { document.getElementById('help').hidden = false; setPlaying(false); };
 const closeHelp = () => { document.getElementById('help').hidden = true; };
 const toggleFS  = () => document.fullscreenElement
@@ -1785,7 +1890,10 @@ document.addEventListener('click', e => {
 document.getElementById('fs').onclick = toggleFS;
 
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ closeJump(); closeStats(); return closeHelp(); }
+  if (e.key === 'Escape'){
+    if (!document.getElementById('noteModal').hidden) return closeNote();
+    closeJump(); closeStats(); return closeHelp();
+  }
   const statsOpen = !document.getElementById('stats').hidden;
   if (statsOpen){                       // arrows walk the stats tabs while it is open
     const tabs = overlayTabs(), i = tabs.findIndex(t => t[0] === STAB);
