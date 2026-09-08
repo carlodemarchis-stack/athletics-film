@@ -141,6 +141,8 @@
   .legend i{width:16px; height:8px; border-radius:2px; display:inline-block}
   .sub{font-size:13.5px; color:var(--muted); margin-top:9px; max-width:660px; line-height:1.5}
   .rowname{font-size:10.5px; font-weight:700; fill:var(--ink)}
+  .rowname[data-sex="women"]{fill:var(--women)}
+  .rowname[data-sex="men"]{fill:var(--men)}
   .rowmark{font-size:11px; font-weight:800; fill:var(--gold)}
   .rowwho{font-size:10px; font-weight:700; fill:var(--muted)}
   .rowyrs{font-size:10px; font-weight:800; fill:var(--ink)}
@@ -987,8 +989,9 @@ function drawOpening(root, deck, gold){
     const g = el('g',{class:'rowhit'});
 
     g.appendChild(el('rect',{x:0, y, width:W, height:rowH, fill:'transparent'}));
-    g.appendChild(txt(el('text',{x:colL-12, y:mid+3.5, class:'rowname', 'text-anchor':'end'}),
-      M.card.discipline));
+    // where the bars carry a sex, the label carries it too: the row reads without crossing the chart
+    g.appendChild(txt(el('text',Object.assign({x:colL-12, y:mid+3.5, class:'rowname',
+      'text-anchor':'end'}, gold ? {} : {'data-sex': M.card.gender})), M.card.discipline));
     // a record set days ago still needs a visible bar, and the minimum has to eat leftwards:
     // every bar ends on today, and a stub poking past that line would say the opposite
     const bw = Math.max(2, x2 - x1), bx = x2 - bw;
