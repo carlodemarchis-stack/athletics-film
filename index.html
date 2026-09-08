@@ -160,6 +160,8 @@
     border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center;
     transition:.15s; font-size:15px; font-weight:800; font-family:inherit}
   .controls > button:not(.counter):hover{color:var(--ink); background:rgba(255,255,255,.08)}
+  .controls > button:disabled{opacity:.25; cursor:default}
+  .controls > button:disabled:hover{color:var(--muted); background:transparent}
   .controls > button svg{width:18px; height:18px; fill:currentColor}
   .controls .play{width:50px; height:50px; background:var(--ink); color:#160d09}
   .controls .play:hover{background:#fff; color:#160d09}
@@ -1478,14 +1480,13 @@ function setTab(id){
   paintStats();
 }
 function openStats(){
-  // the overlay reads the card you are on; the whole-sport view has its own cards
+  // the overlay reads one event; on the whole-sport cards there is nothing for it to scope to
   const cur = SLIDES[IDX];
-  const scope = cur && cur.M ? [cur.M] : DECK;
-  STATS_AGG = buildAgg(scope);
+  if (!cur || !cur.M) return;
+  STATS_AGG = buildAgg([cur.M]);
   buildStatTabs();
-  document.getElementById('statsScope').textContent = cur && cur.M
-    ? `${cur.M.card.discipline} · ${cur.M.card.gender} · just this event`
-    : 'the whole sport';
+  document.getElementById('statsScope').textContent =
+    `${cur.M.card.discipline} · ${cur.M.card.gender} · just this event`;
   document.getElementById('stats').hidden = false;
   setPlaying(false);
   requestAnimationFrame(() => requestAnimationFrame(paintStats));
@@ -1581,6 +1582,7 @@ function go(i, fromHash){
   document.getElementById('cnum').textContent = IDX - f.start + 1;
   document.getElementById('ctot').textContent = f.len;
   buildJump();
+  document.getElementById('statsbtn').disabled = !SLIDES[IDX].M;
   const slug = SLIDES[IDX].slug;
   if (!fromHash) history.replaceState(null, '', '#' + slug);
   try { localStorage.setItem('wrf.card', slug); } catch(e){}
@@ -1685,7 +1687,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (!document.getElementById('help').hidden) return;
-  if (e.key.toLowerCase() === 's') return openStats();
+  if (e.key.toLowerCase() === 's') return void openStats();
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
   else if (e.key === ' ') { e.preventDefault(); setPlaying(!TIMER); }
