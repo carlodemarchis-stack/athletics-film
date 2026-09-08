@@ -226,6 +226,10 @@
   #noteModal{z-index:80}
   #noteBody{font-size:13.5px; line-height:1.65; color:var(--muted)}
   #noteBody b{color:var(--ink)}
+  #noteBody p{margin:0 0 12px}
+  #noteBody .nrow{display:flex; gap:10px; padding:6px 0; border-top:1px solid var(--line);
+    font-size:12.5px; line-height:1.45}
+  #noteBody .nrow em{font-style:normal; color:var(--gold); font-weight:800; white-space:nowrap; min-width:88px}
   .rowlbl{font-size:10.5px; font-weight:700; fill:var(--ink)}
   .rowval{font-size:10.5px; font-weight:800; fill:var(--gold)}
   .rowsub{font-size:10px; font-weight:700; fill:var(--muted-2)}
@@ -481,6 +485,8 @@ function model(card){
     r.back = i > 0 && (lower ? r.value > prev.value : r.value < prev.value);
     if (r.back && prev.spec && !r.spec) r.backNote =
       'the rules changed here — the marks before this were made under a different one';
+    else if (r.back && card.group === 'Combined Events') r.backNote =
+      'the scoring tables were revised — totals from different tables are not comparable';
     else if (r.back) r.backNote = (prev.hand && !r.hand)
       ? 'first electronic mark here — slower on paper than the hand times before it'
       : (prev.oldSpec && !r.oldSpec)
@@ -976,7 +982,7 @@ function eventCardHTML(sex){
     <div class="inner">
       <div class="head">
         <div><div class="kicker"><div class="disc">World record progression</div>${sexTabs(sex)}</div>
-          <div class="title"><h1></h1></div></div>
+          <div class="title"><h1></h1><button class="notebtn" data-note title="About this chart">?</button></div></div>
         <div class="rec">
           <div class="recline"><div class="who"></div><div class="v"></div></div>
           <div class="w"></div>
@@ -991,8 +997,46 @@ function eventCardHTML(sex){
         <div class="racewrap"><svg class="racesvg"></svg></div>
       </div>
       <div class="stories"></div>
+      <div class="snote"></div>
     </div>
     <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+}
+
+/* Every quirk on a card, described from that card's own data rather than written by hand:
+   why the line drops, which marks are not comparable, which were only equalled. */
+function eventNote(M){
+  const out = [];
+  const backs = M.rows.filter(r => r.back);
+  if (backs.length){
+    out.push(`<p>The line drops <b>${backs.length === 1 ? 'once' : plural(backs.length, 'time')}</b>. `
+      + `A ratified record can go `
+      + `backwards: when the rules change, the marks made under the old ones stop counting as `
+      + `comparable, and the progression restarts lower.</p>`);
+    out.push(backs.map(r => {
+      const i = M.rows.indexOf(r);
+      return `<div class="nrow"><em>${r.date.getFullYear()}</em><span>`
+        + `<b>${M.rows[i-1].perf}</b> → <b>${r.perf}</b> · ${r.backNote}</span></div>`;
+    }).join(''));
+  }
+  const spec = M.rows.filter(r => r.spec);
+  if (spec.length){
+    const kinds = [...new Set(spec.map(r => r.spec))].map(k => `(${k})`).join(', ');
+    out.push(`<p><b>${spec.length}</b> of the ${M.rows.length} marks are drawn dashed. World `
+      + `Athletics tags them ${kinds} in the source, meaning they were made under a superseded `
+      + (M.card.group === 'Combined Events' ? `scoring table. Points from different tables are not `
+          + `directly comparable, which is why the totals do not rise in a straight line.`
+        : `specification, and are not directly comparable with the record standing today.`) + `</p>`);
+  }
+  const hand = M.rows.filter(r => r.hand).length;
+  if (hand) out.push(`<p><b>${hand}</b> marks were hand-timed, also drawn dashed. A hand time and an `
+    + `electronic one are not the same measurement, so the two eras do not line up.</p>`);
+  const eq = M.rows.filter(r => r.equal).length;
+  if (eq) out.push(`<p><b>${eq}</b> marks equalled the record rather than beat it. They are counted `
+    + `as records, because they counted at the time, but they are drawn smaller and sit on the flat `
+    + `of the step they matched.</p>`);
+  if (!out.length) out.push(`<p>Nothing irregular here: every mark improved on the one before it, `
+    + `under the same rules throughout.</p>`);
+  return out.join('');
 }
 
 function fillEventCard(root, M){
@@ -1050,6 +1094,7 @@ function fillEventCard(root, M){
   const handN = M.rows.filter(r => r.hand).length;
   if (handN) stories.push(`<span class="chip"><b>${handN}</b> of ${M.rows.length} hand-timed</span>`);
   root.querySelector('.stories').innerHTML = stories.join('');
+  root.querySelector('.snote').innerHTML = eventNote(M);
 
   const panel = root.querySelector('.replay');
   panel.textContent = !M.field ? '▶ Race the eras'
