@@ -1205,13 +1205,15 @@ function openingCardHTML(deck, sex, o){
     <div class="inner">
       <div class="head">
         <div><div class="kicker"><div class="disc">${o.kicker}</div>${sexTabs(sex)}</div>
-          <div class="title"><h1>${o.title}</h1></div>
-          <div class="sub">${o.sub}</div></div>
+          <div class="title"><h1>${o.title}</h1>${o.note
+            ? `<button class="notebtn" data-note title="About this chart">?</button>` : ''}</div>
+          ${o.note ? '' : `<div class="sub">${o.sub}</div>`}</div>
         ${legend}
       </div>
       <div class="statbar">${st.map(([cl,v,k]) =>
         `<div class="stat"><div class="${cl}">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
       <div class="chartwrap"><svg></svg><div class="tip"></div></div>
+      <div class="snote">${o.note || ''}</div>
     </div>
     <div class="note">Data: World Athletics · A guy with a scarf</div>`;
 }
@@ -2347,11 +2349,12 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
     lw.className = 'card';
     lw.innerHTML = openingCardHTML(own, sex, {
       kicker: 'World record film · every event',
-      title: 'The Longest Wait',
-      sub: `Every standing ${sex === 'women' ? "women's" : "men's"} world record, ranked by how long it `
-         + `has held. Each bar starts the day the record was set and runs to today.`});
+      title: 'Current Record Duration',
+      note: `<p>Every standing ${sex === 'women' ? "women's" : "men's"} world record, ranked by how `
+          + `long it has held. Each bar starts the day the record was set and runs to today.</p>`});
     track.appendChild(lw);
-    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', title: 'The Longest Wait',
+    // the slug stays as it was so a reload still lands where you left off
+    SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', title: 'Current Record Duration',
       paint: () => drawOpening(lw, own, true)});
 
     // and the two sexes back together, closing the film
