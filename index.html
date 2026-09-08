@@ -1044,9 +1044,15 @@ function eventNote(M){
       + `backwards: when the rules change, the marks made under the old ones stop counting as `
       + `comparable, and the progression restarts lower.</p>`);
     out.push(backs.map(r => {
-      const i = M.rows.indexOf(r);
+      const i = M.rows.indexOf(r), prev = M.rows[i-1];
+      const d = Math.abs(r.value - prev.value);          // how much the record gave back
+      const by = M.lower ? `+${d.toFixed(2)}s`
+        : M.card.group === 'Combined Events' ? `−${Math.round(d).toLocaleString()} pts`
+        : `−${d.toFixed(2)} m`;
+      const city = cityOf(r.venue);
       return `<div class="nrow"><em>${r.date.getFullYear()}</em><span>`
-        + `<b>${M.rows[i-1].perf}</b> → <b>${r.perf}</b> · ${r.backNote}</span></div>`;
+        + `<b>${prev.perf}</b> → <b>${r.perf}</b> <span style="color:var(--track)">${by}</span>`
+        + (city ? ` · ${city}` : '') + ` · ${r.backNote}</span></div>`;
     }).join(''));
   }
   const spec = M.rows.filter(r => r.spec);
