@@ -310,10 +310,13 @@
     survived</b>. The line always climbs — times are inverted so that better is up — and the flat gold
     tail on the right is how long the current record has stood untouched.</p>
 
-    <h3>The ghost race</h3>
-    <p>Every distinct record mark, run at once. It freezes the instant the current record-holder crosses
-    the line, then zooms into the finish stretch — because a century of progress fits inside the last
-    few metres.</p>
+    <h3>The ghost race, and the pit</h3>
+    <p>On a running event, every distinct record mark is run at once. It freezes the instant the current
+    record-holder crosses the line, then zooms into the finish stretch — because a century of progress
+    fits inside the last few metres.</p>
+    <p>A race makes no sense for a jump, so field events get <b>the pit</b> instead: every record laid
+    out at the distance it reached, filling in the order it happened, with the biggest single leap
+    marked. In the men's long jump that is Bob Beamon, <b>55 cm in one jump</b> in 1968.</p>
 
     <h3>Equalled records</h3>
     <p>A world record can be <b>matched</b> as well as beaten, and World Athletics ratifies both. Those
@@ -490,10 +493,18 @@ function model(card){
   // a mark flagged `equal` matched the standing record rather than beating it
   const improvements = rows.filter(r => !r.equal).length;
   const firstAuto = rows.find(r => !r.hand && rows.some(x=>x.hand));
+  // the largest jump the record ever took in one go
+  let biggest = null;
+  rows.forEach((r, i) => {
+    if (!i) return;
+    const gain = lower ? rows[i-1].value - r.value : r.value - rows[i-1].value;
+    if (gain > 0 && (!biggest || gain > biggest.gain)) biggest = {gain, r, prev: rows[i-1]};
+  });
   // the record standing today is not necessarily the one that stood longest
   const longestReign = rows.reduce((a,b) => b.reign > a.reign ? b : a);
 
-  return {card, lower, rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
+  return {card, lower, field: !lower, biggest,
+          rows, cur, first, byWho, byCountry, top, topCty, busiest, firstAuto,
           longestReign, heldDays, totalDays, improvements, equalled: rows.length - improvements,
           improvement: Math.abs(cur.value - first.value),
           improvementPct: Math.abs(cur.value - first.value) / first.value * 100,
@@ -747,6 +758,96 @@ function drawRace(M, root){
     + `<b>${oldest.date.getFullYear()}</b> is still <b>${gapLabel(M, gapPct)}</b> back.`;
 }
 
+/* A race makes no sense for a jump, so the field events get the pit instead: every record laid
+   out at the distance it reached, filling up in the order it happened. */
+function drawPit(M, root){
+  const svg = root.querySelector('.racesvg'), wrap = svg.parentElement;
+  cancelAnimationFrame(root._raf);
+  svg.innerHTML = '';
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const padL = 30, padR = 74, padT = 20, padB = 24;      // padR matches the staircase's gutter
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const vals = M.rows.map(r => r.value);
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+  const A0 = lo - span * .10, A1 = hi + span * .05;
+  const X = v => padL + (v - A0) / (A1 - A0) * iw;
+  const unit = v => v.toFixed(2);
+
+  const sand = 'sand' + Math.random().toString(36).slice(2,7);
+  const defs = el('defs'), g = el('linearGradient',{id:sand, x1:0, y1:0, x2:0, y2:1});
+  g.appendChild(el('stop',{offset:'0%',  'stop-color':'rgba(226,168,110,.16)'}));
+  g.appendChild(el('stop',{offset:'100%','stop-color':'rgba(226,168,110,.04)'}));
+  defs.appendChild(g); svg.appendChild(defs);
+  svg.appendChild(el('rect',{x:padL, y:padT, width:iw, height:ih, fill:`url(#${sand})`, rx:3}));
+
+  const range = A1 - A0;
+  const step = range > 3 ? .5 : range > 1.2 ? .25 : .1;
+  for (let v = Math.ceil(A0/step)*step; v <= A1; v += step){
+    svg.appendChild(el('line',{x1:X(v), x2:X(v), y1:padT, y2:padT+ih, stroke:'rgba(255,255,255,.06)'}));
+    svg.appendChild(txt(el('text',{x:X(v), y:padT+ih+16, class:'axv', 'text-anchor':'middle'}),
+      unit(v) + 'm'));
+  }
+
+  const tip = root.querySelector('.tip'), tipHost = root.querySelector('.chartwrap');
+  const marks = M.rows.map((r, i) => {
+    const x = X(r.value), y0 = padT + 6, y1 = padT + ih - 6;
+    const on = r === M.cur;
+    const line = el('line',{x1:x, x2:x, y1:y0, y2:y1, opacity:0,
+      stroke: on ? 'var(--gold)' : r.equal ? 'rgba(190,205,225,.35)' : 'rgba(200,214,234,.6)',
+      'stroke-width': on ? 3 : 1.6});
+    const dot = el('circle',{cx:x, cy:y1, r: on ? 5 : 3, opacity:0,
+      fill: on ? 'var(--gold)' : r.equal ? 'var(--bg0)' : 'rgba(200,214,234,.7)',
+      stroke: on ? 'var(--gold)' : 'rgba(200,214,234,.7)', 'stroke-width':1.4});
+    [line, dot].forEach(e => svg.appendChild(e));
+    dot.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${r.perf}${r.wind ? ` <span class="m">${r.wind}</span>` : ''}`
+        + `${r.equal ? ' <span class="m">equalled</span>' : ''}</div>`
+        + `<div class="n">${r.who} <span class="m">${r.country}</span></div>`
+        + `<div class="m">${r.venue}</div><div class="m">${r.dateStr} · stood ${fmtReign(r.reign)}</div>`;
+      tip.style.opacity = 1;
+      const b = tipHost.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, W - 270) + 'px';
+      tip.style.top = (ev.clientY - b.top + 14) + 'px';
+    });
+    dot.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    return {line, dot, on};
+  });
+
+  // the single biggest leap the record ever took
+  const B = M.biggest, jump = el('g',{opacity:0});
+  if (B){
+    const x1 = X(B.prev.value), x2 = X(B.r.value), y = padT + 16;
+    jump.appendChild(el('line',{x1, x2, y1:y, y2:y, stroke:'var(--track)', 'stroke-width':1.6}));
+    [x1, x2].forEach(x => jump.appendChild(el('line',{x1:x, x2:x, y1:y-5, y2:y+5,
+      stroke:'var(--track)', 'stroke-width':1.6})));
+    jump.appendChild(txt(el('text',{x:(x1+x2)/2, y:y-9, class:'runlbl', 'text-anchor':'middle',
+      style:'fill:var(--track);font-weight:800'}),
+      `+${(B.gain*100).toFixed(0)} cm · ${surnameOf(B.r.who)} ${B.r.date.getFullYear()}`));
+    svg.appendChild(jump);
+  }
+
+  const lab = txt(el('text',{x: padL+iw+12, y: padT+ih-2, class:'axv',
+    style:'fill:var(--gold);font-weight:800'}), M.cur.perf);
+  svg.appendChild(lab);
+  svg.appendChild(txt(el('text',{x: padL+iw+12, y: padT+ih+11, class:'lbl'}), 'today'));
+
+  const DUR = 3200;
+  const t0 = performance.now();
+  root._raf = requestAnimationFrame(function frame(now){
+    const k = Math.min(1, (now - t0) / DUR);
+    const shown = Math.round(k * marks.length);
+    marks.forEach((m, i) => { const v = i < shown ? 1 : 0; m.line.setAttribute('opacity', v ? (m.on ? .9 : .5) : 0);
+      m.dot.setAttribute('opacity', v); });
+    if (B) jump.setAttribute('opacity', Math.max(0, (k - .55) / .45));
+    if (k < 1) root._raf = requestAnimationFrame(frame);
+  });
+
+  root.querySelector('.racetitle').innerHTML =
+    `The pit — every record laid out where it landed, filling in the order it happened.`
+    + (B ? ` The biggest leap was <b>${B.r.who}</b>, <b>+${(B.gain*100).toFixed(0)} cm</b> in one jump `
+         + `in <b>${B.r.date.getFullYear()}</b>.` : '');
+}
+
 /* ============================ the opening card ============================ */
 function drawOpening(root, deck){
   const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
@@ -896,7 +997,9 @@ function fillEventCard(root, M){
   if (handN) stories.push(`<span class="chip"><b>${handN}</b> of ${M.rows.length} hand-timed</span>`);
   root.querySelector('.stories').innerHTML = stories.join('');
 
-  root.querySelector('.replay').addEventListener('click', () => drawRace(M, root));
+  const panel = root.querySelector('.replay');
+  panel.textContent = M.field ? '▶ Fill the pit' : '▶ Race the eras';
+  panel.addEventListener('click', () => (M.field ? drawPit : drawRace)(M, root));
 }
 
 function statCardHTML(sex, title, mixed){
@@ -1798,7 +1901,9 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
   const track = document.getElementById('track');
 
   // one film per sex — timed events for now; field events need their own second panel
-  const timed = DECK.filter(M => M.lower);
+  // the pit gives the field events a second panel, so long jump can join the running events
+  const HAS_PANEL = M => M.lower || M.card.discipline === 'Long Jump';
+  const timed = DECK.filter(HAS_PANEL);
   ['men','women'].forEach(sex => {
     const events = timed.filter(M => M.card.gender === sex)
                         .sort((a,b) => a.card.order - b.card.order);   // World Athletics' own order
@@ -1811,7 +1916,7 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
       fillEventCard(s, M);
       CARD_OF.set(M.card.gender + '|' + M.card.discipline, SLIDES.length);
       SLIDES.push({el: s, M, sex, slug: slugOf(M), title: M.card.discipline,
-        paint: () => { drawStair(M, s); drawRace(M, s); labelNations(s); }});
+        paint: () => { drawStair(M, s); (M.field ? drawPit : drawRace)(M, s); labelNations(s); }});
     });
     // the mixed men-and-women ranking closes both films
     // ranked by how long it has held — this film's own records
@@ -2009,7 +2114,8 @@ addEventListener('keydown', e => {
   else if (e.key === 'Home') go(0);
   else if (e.key.toLowerCase() === 'f') toggleFS();
   else if (e.key.toLowerCase() === 'h') openHelp();
-  else if (e.key.toLowerCase() === 'r'){ const s = SLIDES[IDX]; if (s && s.M) drawRace(s.M, s.el); }
+  else if (e.key.toLowerCase() === 'r'){ const s = SLIDES[IDX];
+    if (s && s.M) (s.M.field ? drawPit : drawRace)(s.M, s.el); }
 });
 
 new ResizeObserver(paint).observe(document.getElementById('track'));
