@@ -12,6 +12,9 @@ EP = "https://graphql-prod-4881.edge.aws.worldathletics.org/graphql"
 KEY = "da2-wbnmtmvlpbhifh3uc2xaxsue5i"          # shipped in worldathletics.org's public JS bundle
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# rarely contested, and the progression is two marks a year apart
+EXCLUDE = {("women", "Decathlon")}
+
 # the deck: core outdoor championship events, men + women
 EVENTS = [
     "100 Metres", "200 Metres", "400 Metres", "800 Metres", "1500 Metres",
@@ -48,7 +51,7 @@ def discipline_index():
         rank = 0
         for t in g["disciplineTypes"]:
             for x in t["disciplines"]:
-                if x["name"] in EVENTS:
+                if x["name"] in EVENTS and (g["gender"], x["name"]) not in EXCLUDE:
                     out.append({"gender": g["gender"], "discipline": x["name"],
                                 "eventId": int(x["eventId"]), "group": t["name"], "order": rank})
                     rank += 1
