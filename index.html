@@ -1588,53 +1588,69 @@ function drawEventReigns(svg, W, H, A, ui){
 
 /* The whole-sport version of the same idea. Ranking every mark would be 1,300 rows, so it ranks
    the longest reigns there have ever been; the distribution stats stay in the numbers and the note. */
+/* The same chart as One Ranking, Men and Women, and for the same reason: a reign is a span on the
+   century, not just a length. Each bar runs from the day the record was set to the day it fell,
+   which puts the gold ones — the reigns still running — in their proper company. */
 function drawReignRanking(svg, W, H, A, ui){
-  const pad = {l: 320, r: 92, t: 26, b: 34};
-  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const colL = Math.min(196, W * .17), colR = Math.min(300, W * .27);
+  const pad = {t: 26, b: 34};      // the last row has to clear the credit line
+  const iw = W - colL - colR, ih = H - pad.t - pad.b;
   const all = [];
   A.deck.forEach(M => M.rows.forEach(r => all.push({r, M})));
   if (!all.length) return emptyState(svg, W, H, ui, 'nothing to show');
   const rows = all.sort((a, b) => b.r.reign - a.r.reign).slice(0, Math.max(6, Math.floor(ih / 19)));
-  const rowH = ih / rows.length, maxR = rows[0].r.reign / 365.25;
-  const X = y => pad.l + (y / maxR) * iw;
+  const rowH = ih / rows.length;
   const done = A.done, med = done[Math.floor(done.length / 2)];
   const surv = t => done.filter(x => x >= t).length / done.length * 100;
 
-  for (let y = 0; y <= maxR; y += (maxR > 20 ? 5 : 2)){
-    svg.appendChild(el('line',{x1:X(y), x2:X(y), y1:pad.t-6, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
-    svg.appendChild(txt(el('text',{x:X(y), y:pad.t+ih+18, class:'axv', 'text-anchor':'middle'}), y));
-  }
-  svg.appendChild(txt(el('text',{x:pad.l+iw/2, y:pad.t+ih+32, class:'lbl', 'text-anchor':'middle'}),
-    'years the record stood'));
-  svg.appendChild(el('line',{x1:X(med), x2:X(med), y1:pad.t-6, y2:pad.t+ih, stroke:'var(--gold)',
-    'stroke-width':1.4, 'stroke-dasharray':'3 4'}));
-  svg.appendChild(txt(el('text',{x:X(med)+6, y:pad.t-8, class:'lbl', style:'fill:var(--gold)'}),
-    `median ${med < 1 ? Math.round(med*365.25) + ' days' : med.toFixed(1) + 'y'}`));
+  const t1 = TODAY.getTime();
+  const endOf = r => Math.min(t1, r.date.getTime() + r.reign * 864e5);
+  const first = Math.min(...rows.map(x => x.r.date.getTime()));
+  const t0 = first - (t1 - first) * 0.06;
+  const X = t => colL + (t - t0) / (t1 - t0) * iw;
 
+  const span = (t1 - t0) / 3.15576e10;                 // the run of the axis, in years
+  const step = span > 80 ? 20 : 10;
+  for (let y = Math.ceil(new Date(t0).getFullYear()/step)*step; y <= TODAY.getFullYear(); y += step){
+    const x = X(new Date(y,0,1).getTime());
+    svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-4, y2:pad.t+ih, stroke:'rgba(255,255,255,.05)'}));
+    svg.appendChild(txt(el('text',{x, y:pad.t-9, class:'axv', 'text-anchor':'middle'}), y));
+  }
+  svg.appendChild(el('line',{x1:X(t1), x2:X(t1), y1:pad.t-4, y2:pad.t+ih,
+    stroke:'rgba(242,193,78,.45)', 'stroke-width':1.4}));
+  svg.appendChild(txt(el('text',{x:X(t1), y:pad.t-9, class:'axv',
+    style:'fill:var(--gold);font-weight:800', 'text-anchor':'middle'}), 'today'));
+
+  const barH = Math.max(4, Math.min(rowH - 3, 15));
   const tip = ui.tip;
   rows.forEach((x, i) => {
-    const mid = pad.t + i * rowH + rowH/2, live = x.r === x.M.cur;
-    const h = Math.max(3, Math.min(rowH - 3, 13));
-    svg.appendChild(txt(el('text',{x:pad.l-104, y:mid+3.5, class:'rowlbl', 'text-anchor':'end',
-      style: live ? 'fill:var(--gold)' : ''}), `${x.r.perf}  ${surnameOf(x.r.who)}`));
-    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowsub', 'text-anchor':'end'}),
-      x.M.card.discipline.length > 15 ? x.M.card.discipline.slice(0,14) + '…' : x.M.card.discipline));
-    const bar = el('rect',{x:pad.l, y:mid-h/2, width:Math.max(1.5, X(x.r.reign/365.25)-pad.l),
-      height:h, rx:2, fill: live ? 'var(--gold)' : 'rgba(190,205,225,.5)'});
-    bar.addEventListener('mouseenter', ev => {
+    const y = pad.t + i * rowH, mid = y + rowH/2, live = x.r === x.M.cur;
+    const x1 = X(x.r.date.getTime()), x2 = X(endOf(x.r));
+    const g = el('g');
+    g.appendChild(el('rect',{x:0, y, width:W, height:rowH, fill:'transparent'}));
+    g.appendChild(txt(el('text',{x:colL-12, y:mid+3.5, class:'rowname', 'text-anchor':'end',
+      style: live ? 'fill:var(--gold)' : ''}), x.M.card.discipline));
+    g.appendChild(el('rect',{x:x1, y:mid-barH/2, width:Math.max(2, x2-x1), height:barH, rx:2.5,
+      fill: live ? 'var(--gold)' : 'rgba(190,205,225,.45)'}));
+    g.appendChild(txt(el('text',{x:x1-7, y:mid+3.5, class:'rowyrs', 'text-anchor':'end'}),
+      fmtYears(x.r.reign).toFixed(1)));
+    g.appendChild(txt(el('text',{x:colL+iw+12, y:mid+3.5, class:'rowmark',
+      style: live ? '' : 'fill:var(--muted)'}), x.r.perf));
+    const f = flagEmoji(x.r.country);
+    g.appendChild(txt(el('text',{x:colL+iw+12+Math.min(78, colR*.28), y:mid+3.5, class:'rowwho'}),
+      `${f ? f + ' ' : ''}${surnameOf(x.r.who)}${f ? '' : ' · ' + x.r.country}`));
+    g.addEventListener('mouseenter', ev => {
       tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline}</span></div>`
         + `<div class="n">${x.r.who} <span class="m">${x.r.country}</span></div>`
-        + `<div class="m">${x.r.dateStr} · stood ${fmtReign(x.r.reign)}`
-        + `${live ? ' · still standing' : ''}</div>`;
+        + `<div class="m">${x.r.dateStr} · stood ${fmtReign(x.r.reign)}</div>`
+        + `<div class="m">${live ? 'still standing' : 'beaten in ' + new Date(endOf(x.r)).getFullYear()}</div>`;
       tip.style.opacity = 1;
       const b = svg.parentElement.getBoundingClientRect();
       tip.style.left = Math.min(ev.clientX - b.left + 14, W - 280) + 'px';
       tip.style.top = Math.min(mid + 10, H - 110) + 'px';
     });
-    bar.addEventListener('mouseleave', () => tip.style.opacity = 0);
-    svg.appendChild(bar);
-    svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class: live ? 'rowval' : 'rowsub'}),
-      (x.r.reign/365.25).toFixed(1) + 'y'));
+    g.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    svg.appendChild(g);
   });
 
   const stillStanding = rows.filter(x => x.r === x.M.cur).length;
@@ -1644,8 +1660,9 @@ function drawReignRanking(svg, W, H, A, ui){
           [surv(30).toFixed(1) + '<small>%</small>', 'ever reach 30 years'],
           [A.alive.filter(t => t >= 30).length, 'standing now past 30y'],
           [stillStanding + '<small>/' + rows.length + '</small>', 'of these still standing']]);
-  ui.note(`The longest reigns there have ever been in ${A.label}, most first, with the records still `
-    + `standing in gold. Half of the <b>${done.length}</b> records that have been beaten lasted under `
+  ui.note(`The longest reigns there have ever been in ${A.label}, longest first, each bar running from `
+    + `the day the record was set to the day it fell — the gold ones have not fallen. Half of the `
+    + `<b>${done.length}</b> records that have been beaten lasted under `
     + `<b>${med < 1 ? Math.round(med*365.25) + ' days' : med.toFixed(2) + ' years'}</b>, only `
     + `<b>${surv(10).toFixed(1)}%</b> reached ten years and <b>${surv(30).toFixed(1)}%</b> reached `
     + `thirty — which is what makes the top of this list unusual: <b>${stillStanding}</b> of the `
