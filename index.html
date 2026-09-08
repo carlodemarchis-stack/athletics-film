@@ -373,11 +373,14 @@ const surnameOf = n => { const m = n.match(UPPER); return (m ? m[1] : n).trim();
 const short = n => { const s = surnameOf(n).split(' ').pop();
   return s.charAt(0) + s.slice(1).toLowerCase(); };
 
-/* Olympics and Worlds, told apart from everything else by the meet name. "Olympic Games" has to
-   be matched in full: "US Olympic Trials" is not the Olympics. "World Cup" is not the Worlds. */
+/* Olympics and Worlds, told apart from everything else by the meet name.
+   "Olympic Games" has to be matched in full — "US Olympic Trials" and "Olympic Test" are not the
+   Games — and "World Cup" is not the Worlds. World Athletics also names every Olympics
+   "The <roman numeral> Olympic Games", which catches their own misspelling of the 1912 edition
+   as "The V Oympic Games"; nothing else in the data uses that form. */
 function meetType(comp){
   if (!comp) return 'other';
-  if (/Olympic Games/i.test(comp)) return 'olympics';
+  if (/Olympic Games/i.test(comp) || /^The [IVXLC]+\b[^,]*\bGames\b/i.test(comp)) return 'olympics';
   if (/World[^,]*Championships/i.test(comp)) return 'worlds';
   return 'other';
 }
