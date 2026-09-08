@@ -221,7 +221,7 @@
   .agefilter .k{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
     color:var(--muted-2); white-space:nowrap}
   .agefilter .track{position:relative; display:flex; flex-direction:column; gap:2px}
-  .agefilter input[type=range]{width:clamp(140px,15vw,220px); accent-color:var(--gold);
+  .agefilter input[type=range]{width:clamp(260px,28vw,420px); accent-color:var(--gold);
     background:transparent; cursor:pointer; margin:0; display:block}
   .agefilter .ticks{display:flex; justify-content:space-between; padding:0 6px;
     font-size:8.5px; font-weight:800; letter-spacing:.04em; color:var(--muted-2); pointer-events:none}
@@ -1729,7 +1729,7 @@ function decadeSlider(root, redraw){
   box.innerHTML = `<span class="k">records from</span>`
     + `<span class="track"><input type="range" min="1900" max="2020" step="10" value="${from}">`
     + `<span class="ticks">` + decades.map(y =>
-        `<span data-y="${y}">${y === 1900 ? 'all' : y % 20 === 0 ? `'${String(y).slice(2)}` : ''}</span>`
+        `<span data-y="${y}">${y === 1900 ? 'all' : `'${String(y).slice(2)}`}</span>`
       ).join('') + `</span></span>`
     + `<b>${from <= 1900 ? 'all time' : from}</b>`;
   const input = box.querySelector('input'), out = box.querySelector('b');
@@ -1815,20 +1815,28 @@ function drawAge(svg, W, H, A, ui){
   const X = a => pad.l + (Math.min(Math.max(a, A0), A1) - A0) / (A1 - A0) * iw;
   const med = xs => { const v = [...xs].sort((a,b) => a-b); return v[Math.floor(v.length/2)]; };
 
-  const groups = new Map();
-  const all = [];
-  A.deck.forEach(M => {
-    if (isRelay(M)) return;                       // relay entries carry no birth date
-    M.rows.forEach(r => {
-      if (r.age === null) return;
-      const g = M.card.group || 'Other';
-      if (!groups.has(g)) groups.set(g, []);
-      groups.get(g).push({r, M});
-      all.push({r, M});
+  const groupsOf = deck => {
+    const g = new Map();
+    deck.forEach(M => {
+      if (isRelay(M)) return;                     // relay entries carry no birth date
+      M.rows.forEach(r => {
+        if (r.age === null) return;
+        const k = M.card.group || 'Other';
+        if (!g.has(k)) g.set(k, []);
+        g.get(k).push({r, M});
+      });
     });
-  });
-  const rows = [...groups.entries()].sort((a,b) =>
-    med(a[1].map(x => x.r.age)) - med(b[1].map(x => x.r.age)));
+    return g;
+  };
+  // the running order is settled once on the all-time medians, youngest at the top. Narrowing the
+  // years then moves the dots along rows that stay put, which is the only way to read the change.
+  const order = [...groupsOf(FULL.deck).entries()]
+    .sort((a,b) => med(a[1].map(x => x.r.age)) - med(b[1].map(x => x.r.age)))
+    .map(e => e[0]);
+  const groups = groupsOf(A.deck);
+  const rows = order.map(g => [g, groups.get(g) || []]);
+  const all = rows.flatMap(e => e[1]);
+  if (!all.length){ emptyState(svg, W, H, ui, 'no marks in this period'); return withSlider(); }
   const rowH = ih / rows.length;
   const tip = ui.tip;
 
@@ -1860,6 +1868,10 @@ function drawAge(svg, W, H, A, ui){
       c.addEventListener('mouseleave', () => tip.style.opacity = 0);
       svg.appendChild(c);
     });
+    if (!list.length){    // an empty decade keeps its row, so nothing shifts under the cursor
+      svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class:'rowsub'}), 'no marks'));
+      return;
+    }
     const m = med(list.map(x => x.r.age));
     svg.appendChild(el('line',{x1:X(m), x2:X(m), y1:mid-band/2-3, y2:mid+band/2+3,
       stroke:'var(--gold)', 'stroke-width':2}));
@@ -1867,7 +1879,6 @@ function drawAge(svg, W, H, A, ui){
     svg.appendChild(txt(el('text',{x:pad.l+iw+44, y:mid+3.5, class:'rowsub'}), `n=${list.length}`));
   });
 
-  if (!all.length){ emptyState(svg, W, H, ui, 'no marks in this period'); return withSlider(); }
   const sorted = [...all].sort((a,b) => a.r.age - b.r.age);
   const young = sorted[0], old = sorted[sorted.length-1];
   ui.kpi([[med(all.map(x => x.r.age)).toFixed(1), 'median age'],
@@ -1877,8 +1888,10 @@ function drawAge(svg, W, H, A, ui){
 
   const era = lo => { const v = all.filter(x => x.r.date.getFullYear() >= lo && x.r.date.getFullYear() < lo+20)
                                    .map(x => x.r.age); return v.length ? med(v) : null; };
-  const lo = rows[0], hi = rows[rows.length-1], e20 = era(1920), eNow = era(2020);
-  const spread = rows.length > 1
+  const byMed = rows.filter(e => e[1].length)
+    .sort((a,b) => med(a[1].map(x=>x.r.age)) - med(b[1].map(x=>x.r.age)));
+  const lo = byMed[0], hi = byMed[byMed.length-1], e20 = era(1920), eNow = era(2020);
+  const spread = byMed.length > 1
     ? `The spread is the story: <b>${lo[0]}</b> peaks around <b>${med(lo[1].map(x=>x.r.age)).toFixed(1)}</b>, `
       + `while <b>${hi[0]}</b> sits at <b>${med(hi[1].map(x=>x.r.age)).toFixed(1)}</b>. ` : '';
   const drift = (e20 !== null && eNow !== null)
@@ -1886,7 +1899,8 @@ function drawAge(svg, W, H, A, ui){
       + `1920s-30s against ${eNow.toFixed(1)} today.` : '';
   ui.note(`Every mark with a birth date on file — <b>${all.length}</b> of them, one dot each, the gold `
     + `line the median. ${spread}Youngest is <b>${young.r.who}</b> at ${young.r.age.toFixed(1)}, `
-    + `oldest <b>${old.r.who}</b> at ${old.r.age.toFixed(1)}. ${drift}`);
+    + `oldest <b>${old.r.who}</b> at ${old.r.age.toFixed(1)}. ${drift ? drift + ' ' : ''}The decade filter narrows `
+    + `the marks without re-ranking the rows, so what moves is the age and not the running order.`);
   withSlider();
 }
 
@@ -2137,15 +2151,23 @@ function drawAgeByEvent(svg, W, H, A, ui){
   A = ageScope(host, FULL);
   const pad = {l: 190, r: 96, t: 26, b: 34};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
-  const rows = A.deck.map(M => {
+  const statsOf = M => {
     const ages = M.rows.filter(r => r.age !== null).map(r => r.age);
     return ages.length ? {M, ages, mean: ages.reduce((a,b)=>a+b,0)/ages.length,
       lo: Math.min(...ages), hi: Math.max(...ages)} : null;
-  }).filter(Boolean).sort((a,b) => b.mean - a.mean);
-  if (!rows.length){ emptyState(svg, W, H, ui, 'no marks in this period'); return withSlider(); }
+  };
+  const keyOf = M => M.card.gender + '|' + M.card.discipline;
+  // ranked once, on the all-time averages, youngest event at the top. Every decade then draws the
+  // same list in the same order, so a dot that moves is a real change and not a re-sort.
+  const order = FULL.deck.map(statsOf).filter(Boolean).sort((a,b) => a.mean - b.mean);
+  const now = new Map(A.deck.map(statsOf).filter(Boolean).map(r => [keyOf(r.M), r]));
+  const rows = order.map(r => now.get(keyOf(r.M)) || {M: r.M, ages: []});
+  const live = rows.filter(r => r.ages.length);
+  if (!live.length){ emptyState(svg, W, H, ui, 'no marks in this period'); return withSlider(); }
 
-  const A0 = Math.floor(Math.min(...rows.map(r => r.lo)) - 1);
-  const A1 = Math.ceil(Math.max(...rows.map(r => r.hi)) + 1);
+  // the age axis is fixed on the all-time range too, or the same age lands somewhere new each decade
+  const A0 = Math.floor(Math.min(...order.map(r => r.lo)) - 1);
+  const A1 = Math.ceil(Math.max(...order.map(r => r.hi)) + 1);
   const X = a => pad.l + (a - A0) / (A1 - A0) * iw;
   const rowH = ih / rows.length;
   const tip = ui.tip;
@@ -2167,6 +2189,10 @@ function drawAgeByEvent(svg, W, H, A, ui){
     const mid = pad.t + i * rowH + rowH/2;
     svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
       r.M.card.discipline));
+    if (!r.ages.length){
+      svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class:'rowsub'}), 'no marks'));
+      return;
+    }
     svg.appendChild(el('line',{x1:X(r.lo), x2:X(r.hi), y1:mid, y2:mid,
       stroke:'rgba(190,205,225,.32)', 'stroke-width':Math.max(3, Math.min(rowH-6, 9)),
       'stroke-linecap':'round'}));
@@ -2188,16 +2214,19 @@ function drawAgeByEvent(svg, W, H, A, ui){
     svg.appendChild(txt(el('text',{x:pad.l+iw+46, y:mid+3.5, class:'rowsub'}), `n=${r.ages.length}`));
   });
 
-  const old = rows[0], young = rows[rows.length-1];
+  const byMean = [...live].sort((a,b) => a.mean - b.mean);
+  const young = byMean[0], old = byMean[byMean.length-1];
   ui.kpi([[grand.toFixed(1), 'average, all events'],
           [old.mean.toFixed(1), `oldest · ${old.M.card.discipline}`],
           [young.mean.toFixed(1), `youngest · ${young.M.card.discipline}`],
           [allAges.length, 'marks with a birth date']]);
-  ui.note(`The average age at which each event's world records were set, oldest event first. The dot `
+  ui.note(`The average age at which each event's world records were set, youngest event first. The dot `
     + `is the average, the bar behind it the full range from youngest to oldest, so an event with one `
     + `freak result does not read the same as one that is consistently old. <b>${old.M.card.discipline}</b> `
     + `averages <b>${old.mean.toFixed(1)}</b> against <b>${young.mean.toFixed(1)}</b> for `
-    + `<b>${young.M.card.discipline}</b>, around a whole-sport average of <b>${grand.toFixed(1)}</b>.`);
+    + `<b>${young.M.card.discipline}</b>, around a whole-sport average of <b>${grand.toFixed(1)}</b>. `
+    + `The decade filter keeps every event on its all-time row and the axis where it is, so a dot that `
+    + `moves is a real shift — an event with nothing set in the window reads "no marks".`);
   withSlider();
 }
 
