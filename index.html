@@ -862,7 +862,7 @@ function statCardHTML(sex, title){
   return `<div class="card__bg"></div>
     <div class="inner">
       <div class="head">
-        <div><div class="kicker"><div class="disc">World record film · the whole sport</div>${sexTabs(sex)}</div>
+        <div><div class="kicker"><div class="disc">World record film · every ${sex === 'women' ? "women's" : "men's"} event</div>${sexTabs(sex)}</div>
           <div class="title"><h1>${title}</h1></div></div>
       </div>
       <div class="statbar"></div>
@@ -923,7 +923,7 @@ const NAT_HUES = ['#e2572f','#6f8fb8','#d9a94a','#8fb98a','#b98aa8','#6fa9b8','#
   '#c0a05c','#7fb0a0','#cf7f6a','#8f9fd0'];
 let STATS_AGG = null, STAB = 'nations';
 
-function buildAgg(deck){
+function buildAgg(deck, label){
   const marks = new Map(), days = new Map(), evs = new Map();
   const cMarks = new Map(), cDays = new Map(), venues = new Map();
   const done = [], alive = [];
@@ -962,7 +962,7 @@ function buildAgg(deck){
   const topNations = [...peak.entries()]
     .sort((a,b) => b[1]-a[1] || (cDays.get(b[0])||0) - (cDays.get(a[0])||0))
     .slice(0, 12).map(([k]) => k);
-  return {deck, single: deck.length === 1,
+  return {deck, label: label || 'the sport', single: deck.length === 1,
           marks, days, evs, cMarks, cDays, venues, done, alive, byYear, topNations,
           athletes: [...days.entries()].sort((a,b) => b[1]-a[1])};
 }
@@ -980,8 +980,10 @@ const emptyState = (svg, W, H, ui, msg) => {
   ui.kpi([]); ui.note('');
   return true;
 };
-let WHOLE_AGG = null;
-const wholeAgg = () => WHOLE_AGG || (WHOLE_AGG = buildAgg(DECK));
+const AGG_BY_SEX = {};
+const sexAgg = sex => AGG_BY_SEX[sex] ||
+  (AGG_BY_SEX[sex] = buildAgg(DECK.filter(M => M.card.gender === sex),
+                              sex === 'women' ? "women's athletics" : "men's athletics"));
 
 /* --- shared: a time axis across the century --- */
 function timeAxis(svg, x0, x1, top, h){
@@ -1111,10 +1113,10 @@ function drawNations(svg, W, H, A, ui){
        [cy[0][0], 'most record-years'],
        [Math.round(cy[0][1]/365.25).toLocaleString(), `${cy[0][0]} record-years`],
        [[...A.cMarks.entries()].sort((a,b)=>b[1]-a[1])[0][1], `${cy[0][0]} marks`]]);
-  ui.note(`Each band is how many of the sport's world records that nation held in a given year, `
-    + `sampled every 1 July across all <b>${A.deck.length}</b> events. The band widths are the `
-    + `sport's own history: the United States through the century, the Soviet and East German `
-    + `bloc swelling and then ending, Kenya and Ethiopia arriving in the distances.`);
+  ui.note(`Each band is how many of ${A.label}'s world records that nation held in a given year, `
+    + `sampled every 1 July across all <b>${A.deck.length}</b> events in ${A.label}. The band `
+    + `widths are its own history: the United States through the century, the Soviet and East `
+    + `German bloc swelling and then ending, Kenya and Ethiopia arriving in the distances.`);
 }
 
 /* --- 2. athletes: when they actually held a record --- */
@@ -1540,7 +1542,7 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
       SLIDES.push({el: sc, sex, slug: sex + '-' + id, title: label, paint: () => {
         const w = sc.querySelector('.chartwrap'), svg = w.querySelector('svg');
         svg.innerHTML = '';
-        fn(svg, w.clientWidth, w.clientHeight, wholeAgg(), uiFor(sc));
+        fn(svg, w.clientWidth, w.clientHeight, sexAgg(sex), uiFor(sc));
       }});
     });
 
