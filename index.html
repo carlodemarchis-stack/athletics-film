@@ -870,7 +870,7 @@ function statCardHTML(sex, title){
     <div class="note">Data: World Athletics · A guy with a scarf</div>`;
 }
 
-function openingCardHTML(deck, sex){
+function openingCardHTML(deck, sex, o){
   const ages = deck.map(M => fmtYears(M.cur.reign)).sort((a,b) => a-b);
   const median = ages[Math.floor(ages.length/2)];
   const pre2000 = deck.filter(M => M.cur.date.getFullYear() < 2000).length;
@@ -883,17 +883,17 @@ function openingCardHTML(deck, sex){
     ['v', pre2000, 'set last century'],
     ['v', last2, 'set in two years'],
   ];
-  return `<div class="card__bg"></div><div class="ghostnum">1983</div>
-    <div class="inner">
-      <div class="head">
-        <div><div class="kicker"><div class="disc">World record film · every event</div>${sexTabs(sex)}</div>
-          <div class="title"><h1>The Longest Wait</h1></div>
-          <div class="sub">Every standing world record in the sport, ranked by how long it has held.
-            Each bar starts the day the record was set and runs to today.</div></div>
-        <div class="legend">
+  const legend = o.mixed ? `<div class="legend">
           <span><i style="background:var(--women)"></i>Women</span>
           <span><i style="background:var(--men)"></i>Men</span>
-        </div>
+        </div>` : '';
+  return `<div class="card__bg"></div><div class="ghostnum">${oldest.cur.date.getFullYear()}</div>
+    <div class="inner">
+      <div class="head">
+        <div><div class="kicker"><div class="disc">${o.kicker}</div>${sexTabs(sex)}</div>
+          <div class="title"><h1>${o.title}</h1></div>
+          <div class="sub">${o.sub}</div></div>
+        ${legend}
       </div>
       <div class="statbar">${st.map(([cl,v,k]) =>
         `<div class="stat"><div class="${cl}">${v}</div><div class="k">${k}</div></div>`).join('')}</div>
@@ -1517,12 +1517,18 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
         paint: () => { drawStair(M, s); drawRace(M, s); labelNations(s); }});
     });
     // the mixed men-and-women ranking closes both films
+    // ranked by how long it has held — this film's own records
+    const own = DECK.filter(M => M.card.gender === sex);
     const lw = document.createElement('section');
     lw.className = 'card';
-    lw.innerHTML = openingCardHTML(DECK, sex);
+    lw.innerHTML = openingCardHTML(own, sex, {
+      kicker: 'World record film · every event',
+      title: 'The Longest Wait',
+      sub: `Every standing ${sex === 'women' ? "women's" : "men's"} world record, ranked by how long it `
+         + `has held. Each bar starts the day the record was set and runs to today.`});
     track.appendChild(lw);
     SLIDES.push({el: lw, sex, slug: sex + '-longest-wait', title: 'The Longest Wait',
-      paint: () => drawOpening(lw, DECK)});
+      paint: () => drawOpening(lw, own)});
 
     // the whole-sport views close both films, men and women together
     STAT_TABS.forEach(([id, label, fn]) => {
@@ -1536,6 +1542,20 @@ fetch('data/progressions.json').then(r => r.json()).then(d => {
         fn(svg, w.clientWidth, w.clientHeight, wholeAgg(), uiFor(sc));
       }});
     });
+
+    // and the two sexes back together, closing the film
+    const both = document.createElement('section');
+    both.className = 'card';
+    both.innerHTML = openingCardHTML(DECK, sex, {
+      mixed: true,
+      kicker: 'World record film · men and women together',
+      title: 'One Ranking, Both Sexes',
+      sub: `Every standing world record in athletics, men's and women's in a single ranking by how `
+         + `long it has held. The order is the only argument being made.`});
+    track.appendChild(both);
+    SLIDES.push({el: both, sex, slug: sex + '-one-ranking', title: 'One Ranking, Both Sexes',
+      paint: () => drawOpening(both, DECK)});
+
     FILMS[sex].len = SLIDES.length - FILMS[sex].start;
   });
   document.querySelectorAll('.sx').forEach(b => b.onclick = () => switchSex(b.dataset.sex));
