@@ -602,11 +602,42 @@ function drawStair(M, root){
   defs.appendChild(g); svg.appendChild(defs);
   svg.insertBefore(el('path',{d: area.join(' '), fill:`url(#${gid})`, opacity:.5}), svg.firstChild);
 
-  /* --- the seam: when auto timing became the standard --- */
+  /* --- seams: name the rule change wherever the line steps backwards --- */
+  const seamAt = [];
+  const seamLabel = r => /javelin/i.test(r.backNote || '') ? 'new javelin'
+    : /scoring tables/i.test(r.backNote || '') ? 'new scoring tables'
+    : /electronic/i.test(r.backNote || '') ? 'electronic timing'
+    : 'rules changed';
+  // a rule change usually shows as a drop, but not always: the heptathlon's tables changed
+  // between two marks that both went up, so look for the tag ending as well
+  const specName = spec => /^\d+$/.test(spec || '') ? 'new scoring tables'
+    : spec === 'o' ? 'new javelin' : 'rules changed';
+  const changes = [];
+  M.rows.forEach((r, i) => {
+    const prev = M.rows[i-1];
+    if (r.back) changes.push({r, label: seamLabel(r)});
+    else if (prev && prev.spec && !r.spec) changes.push({r, label: specName(prev.spec)});
+  });
+  // mark every change, but say it once: the 110m hurdles crosses the timing boundary four times
+  const said = new Set(), labelled = [];
+  changes.forEach(({r, label}) => {
+    const x = X(r.date.getTime());
+    svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-6, y2:pad.t+ih,
+      stroke:'rgba(226,87,47,.45)', 'stroke-width':1, 'stroke-dasharray':'2 4'}));
+    seamAt.push(x);
+    if (said.has(label) || labelled.some(lx => Math.abs(lx - x) < 96)) return;
+    said.add(label); labelled.push(x);
+    const end = x > pad.l + iw * .72;
+    svg.appendChild(txt(el('text',{x: x + (end ? -6 : 6), y: pad.t+ih-5, class:'seamlbl',
+      'text-anchor': end ? 'end' : 'start', style:'fill:var(--track)'}), label));
+  });
+  // the timing change is worth marking even where the record did not go backwards
   if (M.firstAuto){
     const x = X(M.firstAuto.date.getTime());
-    svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-6, y2:pad.t+ih, class:'seam'}));
-    svg.appendChild(txt(el('text',{x:x+6, y:pad.t+ih-5, class:'seamlbl'}), 'electronic timing'));
+    if (!seamAt.some(sx => Math.abs(sx - x) < 24)){
+      svg.appendChild(el('line',{x1:x, x2:x, y1:pad.t-6, y2:pad.t+ih, class:'seam'}));
+      svg.appendChild(txt(el('text',{x:x+6, y:pad.t+ih-5, class:'seamlbl'}), 'electronic timing'));
+    }
   }
 
   /* --- dots + hover --- */
