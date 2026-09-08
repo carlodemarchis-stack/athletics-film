@@ -373,6 +373,17 @@ const surnameOf = n => { const m = n.match(UPPER); return (m ? m[1] : n).trim();
 const short = n => { const s = surnameOf(n).split(' ').pop();
   return s.charAt(0) + s.slice(1).toLowerCase(); };
 
+/* Olympics and Worlds, told apart from everything else by the meet name. "Olympic Games" has to
+   be matched in full: "US Olympic Trials" is not the Olympics. "World Cup" is not the Worlds. */
+function meetType(comp){
+  if (!comp) return 'other';
+  if (/Olympic Games/i.test(comp)) return 'olympics';
+  if (/World[^,]*Championships/i.test(comp)) return 'worlds';
+  return 'other';
+}
+const MEET_HUE = {olympics:'#f2c14e', worlds:'#5ec8d8', other:'rgba(170,178,190,.5)'};
+const MEET_NAME = {olympics:'Olympic Games', worlds:'World Championships', other:'Everywhere else'};
+
 /* the meet, minus the venue tail the API repeats and the " - Diamond Discipline" suffixes */
 function meetName(comp, venue){
   if (!comp) return '';
@@ -413,6 +424,7 @@ function model(card){
     const age = born ? (date - born) / 864e5 / 365.25 : null;
     return {perf:e.performance, value:m.value, hand:m.hand, date, dateStr:e.date,
             who:e.competitor.name, country:e.country, venue:e.venue, wind:e.wind, equal:e.equal,
+            meet: e.competition || null, meetType: meetType(e.competition),
             age: (age !== null && age > 10 && age < 60) ? age : null};
   }).reverse();
 
@@ -940,7 +952,7 @@ function buildAgg(deck, label){
       bump(cMarks, r.country, 1); bump(cDays, r.country, r.reign);
       const v = r.venue.replace(/\s*\([A-Z]{3}\)\s*$/, '').trim();
       if (!venues.has(v)) venues.set(v, []);
-      venues.get(v).push(r);
+      venues.get(v).push({r, M});
       (i < M.rows.length - 1 ? done : alive).push(r.reign / 365.25);
     });
   });
@@ -1187,20 +1199,38 @@ function drawVenues(svg, W, H, A, ui){
     const mid = pad.t + i * rowH + rowH / 2;
     svg.appendChild(txt(el('text',{x: pad.l-12, y: mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
       v.length > 30 ? v.slice(0, 29) + '…' : v));
-    // several marks on one day sit at the same x — stack them or they read as a single record
-    const seen = new Map();
-    rs.forEach(r => {
-      const x = X(r.date.getFullYear() + r.date.getMonth()/12);
-      const k = Math.round(x), n = seen.get(k) || 0; seen.set(k, n + 1);
-      const c = el('circle',{cx: x, cy: mid - n * 8, r: 3.6,
-        fill:'rgba(226,87,47,.8)', stroke:'var(--bg0)', 'stroke-width':.8});
+
+    // marks set at the same meeting land on the same x — one dot with a count reads better
+    // than a stack, and the tooltip carries the whole cluster
+    const clusters = new Map();
+    rs.forEach(x => {
+      const px = Math.round(X(x.r.date.getFullYear() + x.r.date.getMonth()/12));
+      if (!clusters.has(px)) clusters.set(px, []);
+      clusters.get(px).push(x);
+    });
+
+    [...clusters.entries()].forEach(([px, group]) => {
+      const n = group.length;
+      const c = el('circle',{cx: px, cy: mid, r: n > 1 ? 4.6 : 3.6,
+        fill:'rgba(226,87,47,.82)', stroke:'var(--bg0)', 'stroke-width':.8});
+      if (n > 1)
+        svg.appendChild(txt(el('text',{x: px + 7, y: mid - 4, class:'rowsub',
+          style:'fill:var(--gold);font-size:9.5px;font-weight:800'}), n));
       c.addEventListener('mouseenter', ev => {
-        tip.innerHTML = `<div class="p">${r.perf}</div><div class="n">${r.who}</div>`
-          + `<div class="m">${r.dateStr}</div>`;
+        const head = n > 1
+          ? `<div class="p">${n} records <span class="m">· ${group[0].r.dateStr}</span></div>`
+          : `<div class="p">${group[0].r.perf} <span class="m">${group[0].M.card.discipline}</span></div>`;
+        const body = n > 1
+          ? group.slice(0, 8).map(x =>
+              `<div class="m"><b style="color:var(--ink)">${x.r.perf}</b> ${x.M.card.discipline} `
+              + `· ${x.r.who}</div>`).join('')
+            + (n > 8 ? `<div class="m">…and ${n-8} more</div>` : '')
+          : `<div class="n">${group[0].r.who}</div><div class="m">${group[0].r.dateStr}</div>`;
+        tip.innerHTML = head + body;
         tip.style.opacity = 1;
         const b = svg.parentElement.getBoundingClientRect();
-        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 240) + 'px';
-        tip.style.top = (mid + 8) + 'px';
+        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 300) + 'px';
+        tip.style.top = Math.min(mid + 8, H - 120) + 'px';
       });
       c.addEventListener('mouseleave', () => tip.style.opacity = 0);
       svg.appendChild(c);
@@ -1210,9 +1240,9 @@ function drawVenues(svg, W, H, A, ui){
 
   ui.kpi([[A.venues.size, 'venues'], [list[0][0].split(',')[0].trim(), 'most records'],
        [list[0][1].length, 'records there']]);
-  ui.note(`One dot per world record, placed at the date it was set. Clusters are meets that `
-    + `produced a run of records — the tight column on Ciudad de México is October 1968, `
-    + `the Olympics held at 2,240 m of altitude.`);
+  ui.note(`One dot per meeting, placed at the date, with a number when a single meeting produced `
+    + `more than one record — hover for the list. The biggest of them is Ciudad de México in `
+    + `October 1968, the Olympics held at 2,240 m of altitude.`);
 }
 
 /* --- 4. how long records last --- */
@@ -1450,11 +1480,79 @@ function drawAge(svg, W, H, A, ui){
     + `oldest <b>${old.r.who}</b> at ${old.r.age.toFixed(1)}. ${drift}`);
 }
 
+/* every record as a dot: discipline down the side, the century across, coloured by the kind of
+   meeting it was set at */
+function drawMeets(svg, W, H, A, ui){
+  const pad = {l: 196, r: 84, t: 30, b: 28};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const events = [...A.deck].sort((a,b) => a.card.order - b.card.order);
+  if (!events.length) return emptyState(svg, W, H, ui, 'nothing to show');
+  const rowH = ih / events.length;
+  const X = timeAxis(svg, pad.l, pad.l + iw, pad.t, ih);
+  const tip = ui.tip;
+  const count = {olympics:0, worlds:0, other:0};
+
+  // legend
+  ['olympics','worlds','other'].forEach((k, i) => {
+    const x = pad.l + i * 168;
+    svg.appendChild(el('circle',{cx:x + 4, cy:pad.t - 16, r:4, fill:MEET_HUE[k]}));
+    svg.appendChild(txt(el('text',{x:x + 14, y:pad.t - 12, class:'lbl'}), MEET_NAME[k]));
+  });
+
+  events.forEach((M, i) => {
+    const mid = pad.t + i * rowH + rowH/2;
+    svg.appendChild(txt(el('text',{x:pad.l-12, y:mid+3.5, class:'rowlbl', 'text-anchor':'end'}),
+      M.card.discipline));
+    // marks from the same meeting share an x — one dot, with a count
+    const cl = new Map();
+    M.rows.forEach(r => {
+      count[r.meetType]++;
+      const px = Math.round(X(r.date.getFullYear() + r.date.getMonth()/12));
+      if (!cl.has(px)) cl.set(px, []);
+      cl.get(px).push(r);
+    });
+    [...cl.entries()].forEach(([px, g]) => {
+      const rank = {olympics:3, worlds:2, other:1};
+      const kind = g.slice().sort((a,b) => rank[b.meetType] - rank[a.meetType])[0].meetType;
+      const c = el('circle',{cx:px, cy:mid, r: g.length > 1 ? 5 : 3.6, fill:MEET_HUE[kind],
+        stroke:'var(--bg0)', 'stroke-width':.7});
+      if (g.length > 1)
+        svg.appendChild(txt(el('text',{x:px+7, y:mid-4, class:'rowsub',
+          style:'fill:var(--ink);font-size:9px;font-weight:800'}), g.length));
+      c.addEventListener('mouseenter', ev => {
+        tip.innerHTML = `<div class="p">${M.card.discipline} <span class="m">${g[0].dateStr}</span></div>`
+          + (g[0].meet ? `<div class="n">${meetName(g[0].meet, '') || g[0].meet}</div>` : '')
+          + g.slice(0,6).map(r => `<div class="m"><b style="color:var(--ink)">${r.perf}</b> ${r.who}`
+              + `<span style="color:${MEET_HUE[r.meetType]}"> · ${MEET_NAME[r.meetType]}</span></div>`).join('')
+          + (g.length > 6 ? `<div class="m">…and ${g.length-6} more</div>` : '');
+        tip.style.opacity = 1;
+        const b = svg.parentElement.getBoundingClientRect();
+        tip.style.left = Math.min(ev.clientX - b.left + 14, W - 320) + 'px';
+        tip.style.top = Math.min(mid + 8, H - 130) + 'px';
+      });
+      c.addEventListener('mouseleave', () => tip.style.opacity = 0);
+      svg.appendChild(c);
+    });
+    svg.appendChild(txt(el('text',{x:pad.l+iw+10, y:mid+3.5, class:'rowsub'}), M.rows.length));
+  });
+
+  const tot = count.olympics + count.worlds + count.other;
+  ui.kpi([[tot, 'marks'],
+          [count.olympics, 'at the Olympics'],
+          [count.worlds, 'at the Worlds'],
+          [Math.round((count.olympics + count.worlds) / tot * 100) + '<small>%</small>',
+           'at a major']]);
+  ui.note(`Every world record in ${A.label}, by discipline and date, coloured by the kind of meeting `
+    + `it was set at. A number means one meeting produced several — hover for the list. Grey covers `
+    + `everything else, including the marks whose meeting is not on file.`);
+}
+
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
-                   ['venues','Venues', drawVenues], ['age','Age', drawAge],
+                   ['venues','Venues', drawVenues], ['meets','Where Records Fall', drawMeets],
+                   ['age','Age', drawAge],
                    ['survival','How long records last', drawSurvival]];
 
-const EVENT_ONLY_SKIP = ['venues'];
+const EVENT_ONLY_SKIP = ['venues', 'meets'];
 const overlayTabs = () => STAT_TABS.filter(t =>
   !(STATS_AGG && STATS_AGG.single && EVENT_ONLY_SKIP.includes(t[0])));
 
@@ -1499,7 +1597,9 @@ const closeStats = () => { document.getElementById('stats').hidden = true; };
 let DECK = [], SLIDES = [], IDX = 0, TIMER = null, SEX = 'men';
 const CARD_OF = new Map(), FILMS = {};
 
-fetch('data/progressions.json').then(r => r.json()).then(d => {
+/* revalidate rather than trusting the cache: a returning visitor would otherwise run new code
+   against the data file they cached on their last visit */
+fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d => {
   DECK = d.cards.map(model);
   const track = document.getElementById('track');
 

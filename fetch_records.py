@@ -73,19 +73,29 @@ def progression(pid):
         "country competitor{id name urlSlug birthDate}}}}" % pid)["getRecordsDetailByProgression"]
 
 
+_SEASON_CACHE = {}
+
+
+def _season(cid, year):
+    """An athlete's results for one season, fetched once and kept."""
+    key = (cid, year)
+    if key not in _SEASON_CACHE:
+        try:
+            d = gql('{getSingleCompetitorResultsDate(id:%d,resultsByYear:%d,resultsByYearOrderBy:"date")'
+                    '{resultsByDate{date competition mark}}}' % (cid, year))
+            _SEASON_CACHE[key] = (d["getSingleCompetitorResultsDate"] or {}).get("resultsByDate") or []
+        except Exception:
+            _SEASON_CACHE[key] = []
+    return _SEASON_CACHE[key]
+
+
 def competition_of(entry):
     """The meet a record was set at. The progression payload doesn't carry it, so look it up
     in the athlete's own results for that year and match on date + mark."""
     cid = (entry.get("competitor") or {}).get("id")
     if not cid:
         return None                                     # relay teams have no competitor id
-    year = int(entry["date"].split()[-1])
-    try:
-        d = gql('{getSingleCompetitorResultsDate(id:%d,resultsByYear:%d,resultsByYearOrderBy:"date")'
-                '{resultsByDate{date competition mark}}}' % (cid, year))
-        rows = (d["getSingleCompetitorResultsDate"] or {}).get("resultsByDate") or []
-    except Exception:
-        return None
+    rows = _season(cid, int(entry["date"].split()[-1]))
     same_day = [r for r in rows if r["date"] == entry["date"]]
     for r in same_day:
         if r["mark"] == entry["performance"]:
@@ -103,7 +113,9 @@ def main():
             print(f"  !! no World Records progression for {gender} {name}", file=sys.stderr)
             continue
         p = progression(pid)
-        meet = competition_of(p["entries"][0])          # the meet of the standing record
+        for ent in p["entries"]:                        # the meet behind every mark, not just the record
+            ent["competition"] = competition_of(ent)
+        meet = p["entries"][0]["competition"]
         cards.append({"gender": gender, "discipline": name, "eventId": eid,
                       "progressionId": pid, "environment": p["environment"],
                       "disciplineCode": p["discipline"]["disciplineCode"],
