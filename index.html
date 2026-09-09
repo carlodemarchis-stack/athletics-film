@@ -2190,11 +2190,21 @@ function drawPerYear(svg, W, H, A, ui){
     hit.addEventListener('mouseenter', ev => {
       const kinds = ['olympics','worlds','other'].filter(k => b[k])
         .map(k => `<span style="color:${MEET_HUE[k]}">${b[k]} ${MEET_NAME[k].toLowerCase()}</span>`).join(' · ');
-      const list = b.all.slice(0, 6).map(x =>
-        `<div class="m"><b style="color:var(--ink)">${x.r.perf}</b> ${x.M.card.discipline}</div>`).join('');
+      // which events churned, not the first six marks in deck order — that only ever listed the
+      // same event several times over and named neither the athlete nor the day
+      const evs = [...b.all.reduce((m, x) => m.set(x.M.card.discipline,
+        (m.get(x.M.card.discipline) || 0) + 1), new Map()).entries()]
+        .sort((p, q) => q[1] - p[1] || p[0].localeCompare(q[0]));
+      const shown = evs.slice(0, 5).map(([n, c]) =>
+        `${n}${c > 1 ? ` <b style="color:var(--ink)">×${c}</b>` : ''}`).join(' · ');
+      const eq = b.all.filter(x => x.r.equal).length;
+      const rest = b.all.length - evs.slice(0, 5).reduce((n, [, c]) => n + c, 0);
+      const tail = [evs.length > 5 ? `and ${rest} more in ${plural(evs.length - 5, 'other event')}` : '',
+                    eq ? `${eq} only equalled the record` : ''].filter(Boolean).join(' · ');
       tip.innerHTML = `<div class="p">${y} <span class="m">· ${plural(b.all.length,'record')}</span></div>`
-        + `<div class="m">${kinds}</div>` + list
-        + (b.all.length > 6 ? `<div class="m">…and ${b.all.length-6} more</div>` : '');
+        + `<div class="m">${kinds}</div>`
+        + `<div class="m" style="margin-top:5px">${shown}</div>`
+        + (tail ? `<div class="m">${tail}</div>` : '');
       tip.style.opacity = 1;
       const bb = svg.parentElement.getBoundingClientRect();
       tip.style.left = Math.min(ev.clientX - bb.left + 14, W - 280) + 'px';
