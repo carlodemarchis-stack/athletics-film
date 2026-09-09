@@ -198,7 +198,9 @@
   .jitem .jy{font-size:10.5px; font-weight:800; color:var(--muted-2); white-space:nowrap}
   .jitem.on .jy{color:var(--gold)}
   .sep{width:1px; height:24px; background:var(--line); margin:0 4px}
-  @media (max-width:760px){ #fs, .controls .sep{display:none} }
+  /* the whole bar is 489px wide, so it only has to shed anything on a phone. 760px was hiding
+     fullscreen on every tablet and narrow laptop window for no reason. */
+  @media (max-width:520px){ #fs, .controls .sep{display:none} }
 
   /* ---------- stats overlay ---------- */
   .stats{position:fixed; inset:0; z-index:70; background:var(--bg0);
