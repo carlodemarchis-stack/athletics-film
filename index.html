@@ -2333,12 +2333,13 @@ function drawPerDay(svg, W, H, A, ui){
   const total = [...days.values()].reduce((a,l) => a + l.length, 0);
 
   const X = d => pad.l + (d - 0.5) / 366 * iw;
-  // the dot is sized to the day it stands on, and the rows are packed to that size, so a column
-  // reads as one stack rather than a line of separate dots
-  const R = Math.max(1.8, Math.min(iw / 366 * 1.05, 3.6));
-  const step = 2 * R + 1.4;
+  // a day owns about 3.5px of width. A round dot had to fill that to stay legible, so neighbouring
+  // days ran into each other; a skinny bar keeps the gap, and its height is free of the day's width.
+  const dayW = iw / 366;
+  const BW = Math.max(1.5, Math.min(dayW * .6, 3));
+  const SH = 6.5, step = SH + 2.2;              // one mark, and the air above it
   const base = pad.t + ih;                      // columns stand on the month axis
-  const bandH = (tall - 1) * step + 2 * R;
+  const bandH = (tall - 1) * step + SH;
 
   // the gridlines frame the band rather than an empty box above it
   const top = base - bandH - 22;
@@ -2361,14 +2362,14 @@ function drawPerDay(svg, W, H, A, ui){
 
   const tip = ui.tip;
   days.forEach((list, doy) => {
-    const cx = X(doy);
+    const bx = X(doy) - BW / 2;
     list.forEach((x, k) => {
       // newest sits on the axis and the column grows upwards, so top is still oldest
-      const cy = base - R - 3 - (list.length - 1 - k) * step;
+      const by = base - 4 - SH - (list.length - 1 - k) * step;
       const hue = x.M.card.gender === 'women' ? 'var(--women)' : 'var(--men)';
-      // a 3px transparent stroke widens the hit area without widening the dot
-      const c = el('circle',{cx, cy, r:R, fill: x.r.equal ? 'var(--bg0)' : hue,
-        stroke: x.r.equal ? hue : 'transparent', 'stroke-width': x.r.equal ? 1.3 : 3,
+      // a transparent stroke widens the hit area without widening the bar
+      const c = el('rect',{x:bx, y:by, width:BW, height:SH, rx:Math.min(BW/2, 1.4), fill:hue,
+        opacity: x.r.equal ? .42 : 1, stroke:'transparent', 'stroke-width':3.4,
         style:'pointer-events:all'});
       c.addEventListener('mouseenter', ev => {
         tip.innerHTML = `<div class="p">${x.r.perf} <span class="m">${x.M.card.discipline}`
@@ -2379,7 +2380,7 @@ function drawPerDay(svg, W, H, A, ui){
         tip.style.opacity = 1;
         const b = svg.parentElement.getBoundingClientRect();
         tip.style.left = Math.min(ev.clientX - b.left + 14, W - 300) + 'px';
-        tip.style.top = Math.min(cy + 12, H - 120) + 'px';
+        tip.style.top = Math.min(by + 14, H - 120) + 'px';
       });
       c.addEventListener('mouseleave', () => tip.style.opacity = 0);
       svg.appendChild(c);
@@ -2407,9 +2408,9 @@ function drawPerDay(svg, W, H, A, ui){
           [busiest[1].length, 'most on one day · ' + bname],
           [366 - days.size, 'days that never have'],
           [jan, 'ever set in January']]);
-  ui.note(`<p>Every one of the <b>${total}</b> marks in the film, dropped on the day of the year it `
-    + `was set. A column is one calendar date across the whole of history, oldest at the top, so its `
-    + `depth is how often the sport has come back to that date.</p>`
+  ui.note(`<p>Every one of the <b>${total}</b> marks in the film, one bar each, stacked on the day `
+    + `of the year it was set. A column is one calendar date across the whole of history, oldest at `
+    + `the top, so its height is how often the sport has come back to that date.</p>`
     + `<p>The season is the shape: <b>${(inSeason/total*100).toFixed(1)}%</b> of every world record `
     + `in athletics was set between May and September, and <b>${(jun2aug/total*100).toFixed(1)}%</b> `
     + `in June, July and August alone. Outside it the sport nearly stops — January has produced `
@@ -2419,7 +2420,7 @@ function drawPerDay(svg, W, H, A, ui){
     + `<b>${f(best.end - best.len + 1)}</b> to <b>${f(best.end)}</b> — ${best.len} days without a `
     + `gap — has produced one at some point. The busiest single date is <b>${bname}</b>, with `
     + `<b>${busiest[1].length}</b>.</p>`
-    + `<p>A hollow dot is a mark that equalled the record rather than beating it.</p>`);
+    + `<p>A faded bar is a mark that equalled the record rather than beating it.</p>`);
 }
 
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
