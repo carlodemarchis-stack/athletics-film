@@ -273,6 +273,19 @@
   .mclose{position:absolute; top:14px; right:16px; background:transparent; border:0; color:var(--muted-2);
     font-size:26px; cursor:pointer; line-height:1}
   .mclose:hover{color:var(--ink)}
+  .morebtn{font-size:20px; font-weight:700}
+  .applist{display:flex; flex-direction:column; gap:2px; margin-top:2px}
+  .applist a{display:flex; align-items:center; gap:12px; padding:10px 10px; border-radius:10px;
+    text-decoration:none; color:inherit; border:1px solid transparent}
+  .applist a:hover{background:rgba(255,255,255,.05); border-color:var(--line)}
+  .applist i{flex:0 0 auto; width:9px; height:9px; border-radius:50%}
+  .applist .t{display:flex; flex-direction:column; gap:1px; min-width:0}
+  .applist .n{font-size:13.5px; font-weight:800; color:var(--ink)}
+  .applist .k{font-size:11px; font-weight:700; color:var(--muted-2)}
+  .applist .go{margin-left:auto; color:var(--muted-2); font-size:14px; font-weight:700}
+  .applist a:hover .go{color:var(--gold)}
+  .allapps{margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:12px;
+    font-weight:700; color:var(--muted-2)}
 </style>
 </head>
 <body>
@@ -288,6 +301,7 @@
   <button id="statsbtn" title="Stats (S)"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></button>
   <button id="helpbtn" title="Help (H)">?</button>
   <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
+  <button id="morebtn" class="morebtn" title="More sports experiences">+</button>
 </div>
 <div class="jumppop" id="jumppop" hidden><div class="jgrid" id="jgrid"></div></div>
 
@@ -314,6 +328,37 @@
     <h2 id="noteTitle">About this chart</h2>
     <div class="csub">World record film</div>
     <div id="noteBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="more" hidden>
+  <div class="modal__ov" onclick="closeMore()"></div>
+  <div class="modal__box" style="max-width:400px">
+    <button class="mclose" onclick="closeMore()" aria-label="Close">&times;</button>
+    <h2>More sports experiences</h2>
+    <div class="csub">A guy with a scarf</div>
+    <div class="applist">
+      <a href="https://f1.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#00d7b6"></i>
+        <span class="t"><span class="n">Formula 1</span><span class="k">A season read lap by lap</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://tennis.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#f2c14e"></i>
+        <span class="t"><span class="n">Tennis</span><span class="k">The season, one player at a time</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://top5.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#3fbe72"></i>
+        <span class="t"><span class="n">Top 5 Leagues</span><span class="k">Wins up, losses down</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://nfl.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#4d94e0"></i>
+        <span class="t"><span class="n">NFL</span><span class="k">The season as a tower</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://worldcupbracket.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#8f7ad6"></i>
+        <span class="t"><span class="n">World Cup</span><span class="k">Road to the Final</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://golf.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#57a34a"></i>
+        <span class="t"><span class="n">PGA TOUR</span><span class="k">Season Film</span></span>
+        <span class="go">&#8599;</span></a>
+    </div>
+    <div class="allapps"><a href="https://dataviz.aguywithascarf.com/" target="_blank"
+      rel="noopener noreferrer">See them all &rarr;</a></div>
   </div>
 </div>
 
@@ -2620,6 +2665,8 @@ document.addEventListener('click', e => {
 
 const openHelp  = () => { document.getElementById('help').hidden = false; setPlaying(false); };
 const closeHelp = () => { document.getElementById('help').hidden = true; };
+const openMore  = () => { document.getElementById('more').hidden = false; setPlaying(false); };
+const closeMore = () => { document.getElementById('more').hidden = true; };
 const toggleFS  = () => document.fullscreenElement
   ? document.exitFullscreen()
   : document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
@@ -2635,10 +2682,12 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.jumppop') && !e.target.closest('#counter')) closeJump();
 });
 document.getElementById('fs').onclick = toggleFS;
+document.getElementById('morebtn').onclick = openMore;
 
 addEventListener('keydown', e => {
   if (e.key === 'Escape'){
     if (!document.getElementById('noteModal').hidden) return closeNote();
+    if (!document.getElementById('more').hidden) return closeMore();
     closeJump(); closeStats(); return closeHelp();
   }
   const statsOpen = !document.getElementById('stats').hidden;
