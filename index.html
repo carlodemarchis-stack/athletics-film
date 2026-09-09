@@ -2339,22 +2339,26 @@ function drawPerDay(svg, W, H, A, ui){
   const BW = Math.max(1.5, Math.min(dayW * .6, 3));
   // one mark, and the air above it. The bar's height is free of the day's width, so it takes the
   // room the dots could never use — capped so the tallest column still fits a short window.
-  const SH = Math.max(3, Math.min(19.5, (ih - 12) / tall - 2.2));
+  // two panels on one x axis: the day-by-day above, the month totals below, half the height each
+  const GAP = 30;
+  const half = (ih - GAP) / 2;
+  const base = pad.t + half;                    // the daily columns stand here
+  const mTop = base + GAP, mBase = pad.t + ih;  // and the monthly ones between here and the axis
+  const SH = Math.max(3, Math.min(19.5, (half - 12) / tall - 2.2));
   const step = SH + 2.2;
-  const base = pad.t + ih;                      // columns stand on the month axis
   const bandH = (tall - 1) * step + SH;
 
   const top = base - bandH - 22;              // the legend sits just clear of the tallest column
-  // a rule on the 1st of each month, full height, so the year is read in months and not by eye
+  // a rule on the 1st of each month, running through both panels so they read as one axis
   MNAME.forEach((n, i) => {
     const x0 = X(START[i]), x1 = X(START[i] + MONTH[i]);
-    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:pad.t, y2:base+4,
+    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:pad.t, y2:mBase+4,
       stroke:'rgba(255,255,255,.09)'}));
-    svg.appendChild(txt(el('text',{x:(x0+x1)/2, y:base+20, class:'axv',
+    svg.appendChild(txt(el('text',{x:(x0+x1)/2, y:mBase+20, class:'axv',
       'text-anchor':'middle'}), n));
   });
-  svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw, y1:base+4, y2:base+4,
-    stroke:'rgba(255,255,255,.10)'}));
+  [base + 4, mBase + 4].forEach(y => svg.appendChild(el('line',{x1:pad.l, x2:pad.l+iw, y1:y, y2:y,
+    stroke:'rgba(255,255,255,.10)'})));
 
   const sexes = [...new Set(A.deck.map(M => M.card.gender))];
   if (sexes.length > 1) [['men','Men'],['women','Women']].forEach(([k, label], i) => {
@@ -2364,6 +2368,43 @@ function drawPerDay(svg, W, H, A, ui){
   });
 
   const tip = ui.tip;
+
+  // the month totals, on the same x scale: each column spans exactly its own month
+  const hue1 = A.deck[0] && A.deck[0].card.gender === 'women' ? 'var(--women)' : 'var(--men)';
+  const months = MNAME.map((n, i) => {
+    const list = [];
+    for (let d = START[i]; d < START[i] + MONTH[i]; d++) if (days.has(d)) list.push(...days.get(d));
+    return {n, i, list};
+  });
+  const mMax = Math.max(...months.map(m => m.list.length));
+  const CH = (mBase - mTop) - 16;               // the count sits above the column
+  months.forEach(m => {
+    if (!m.list.length) return;
+    const x0 = X(START[m.i]), x1 = X(START[m.i] + MONTH[m.i]);
+    const w = (x1 - x0) * .68, cx = (x0 + x1) / 2;
+    const h = m.list.length / mMax * CH, y = mBase - h;
+    const eq = m.list.filter(x => x.r.equal).length;
+    const busiest = [...new Set(m.list.map(x => x.r.dateStr))]
+      .map(d => ({d, n: m.list.filter(x => x.r.dateStr === d).length}))
+      .sort((a,b) => b.n - a.n)[0];
+    const r = el('rect',{x:cx - w/2, y, width:w, height:h, rx:3,
+      fill: sexes.length > 1 ? 'rgba(190,205,225,.5)' : hue1, opacity:.62});
+    r.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${m.list.length} <span class="m">in ${m.n}</span></div>`
+        + `<div class="n">${(m.list.length / total * 100).toFixed(1)}% of every record ever set</div>`
+        + `<div class="m">${eq ? eq + ' of them equalled the record · ' : ''}busiest day `
+        + `${busiest.d} with ${busiest.n}</div>`;
+      tip.style.opacity = 1;
+      const b = svg.parentElement.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, W - 300) + 'px';
+      tip.style.top = Math.min(y + 14, H - 120) + 'px';
+    });
+    r.addEventListener('mouseleave', () => tip.style.opacity = 0);
+    svg.appendChild(r);
+    svg.appendChild(txt(el('text',{x:cx, y:y - 5, class:'axv', 'text-anchor':'middle'}),
+      m.list.length));
+  });
+
   days.forEach((list, doy) => {
     const bx = X(doy) - BW / 2;
     list.forEach((x, k) => {
@@ -2423,7 +2464,9 @@ function drawPerDay(svg, W, H, A, ui){
     + `<b>${f(best.end - best.len + 1)}</b> to <b>${f(best.end)}</b> — ${best.len} days without a `
     + `gap — has produced one at some point. The busiest single date is <b>${bname}</b>, with `
     + `<b>${busiest[1].length}</b>.</p>`
-    + `<p>A faded bar is a mark that equalled the record rather than beating it.</p>`);
+    + `<p>The lower chart is the same records totalled by month, on the same axis, for the shape `
+    + `without the day-to-day noise. A faded bar in the upper one is a mark that equalled the `
+    + `record rather than beating it.</p>`);
 }
 
 const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
