@@ -2337,16 +2337,19 @@ function drawPerDay(svg, W, H, A, ui){
   // days ran into each other; a skinny bar keeps the gap, and its height is free of the day's width.
   const dayW = iw / 366;
   const BW = Math.max(1.5, Math.min(dayW * .6, 3));
-  const SH = 6.5, step = SH + 2.2;              // one mark, and the air above it
+  // one mark, and the air above it. The bar's height is free of the day's width, so it takes the
+  // room the dots could never use — capped so the tallest column still fits a short window.
+  const SH = Math.max(3, Math.min(19.5, (ih - 12) / tall - 2.2));
+  const step = SH + 2.2;
   const base = pad.t + ih;                      // columns stand on the month axis
   const bandH = (tall - 1) * step + SH;
 
-  // the gridlines frame the band rather than an empty box above it
-  const top = base - bandH - 22;
+  const top = base - bandH - 22;              // the legend sits just clear of the tallest column
+  // a rule on the 1st of each month, full height, so the year is read in months and not by eye
   MNAME.forEach((n, i) => {
     const x0 = X(START[i]), x1 = X(START[i] + MONTH[i]);
-    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:top, y2:base+4,
-      stroke:'rgba(255,255,255,.06)'}));
+    if (i) svg.appendChild(el('line',{x1:x0, x2:x0, y1:pad.t, y2:base+4,
+      stroke:'rgba(255,255,255,.09)'}));
     svg.appendChild(txt(el('text',{x:(x0+x1)/2, y:base+20, class:'axv',
       'text-anchor':'middle'}), n));
   });
