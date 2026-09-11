@@ -64,10 +64,11 @@ def main():
         except Exception as e:
             print(f'  ! {event}: {e}')
         time.sleep(.3)
-    # the whole-sport stats cards have no event of their own
+    # the whole-sport stats cards have no event of their own. NOT an underscore name:
+    # GitHub Pages runs Jekyll, which refuses to publish anything starting with one.
     generic = os.path.join(OUT, 'marathon.jpg')
     if os.path.exists(generic):
-        Image.open(generic).save(os.path.join(OUT, '_all.jpg'), quality=88, optimize=True)
+        Image.open(generic).save(os.path.join(OUT, 'all.jpg'), quality=88, optimize=True)
     print(f'{n} event backgrounds in img/event/')
 
 if __name__ == '__main__':

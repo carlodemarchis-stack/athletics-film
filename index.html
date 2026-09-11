@@ -27,7 +27,7 @@
 <meta name="agwas:cta"      content="Full interactive athletics experience below">
 <meta name="agwas:tags"     content="athletics dataviz worldrecords trackandfield">
 <meta name="agwas:mentions" content="worldathletics">
-<meta name="agwas:bg"       content="https://athletics.aguywithascarf.com/img/event/_all.jpg">
+<meta name="agwas:bg"       content="https://athletics.aguywithascarf.com/img/event/all.jpg">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0807'/><g stroke='%23e2572f' stroke-width='2.2' stroke-linecap='round'><path d='M5 11h22M5 21h22'/></g><path d='M24 3.5v25' stroke='%23f2c14e' stroke-width='2.6'/></svg>">
 <style>
   :root{
@@ -2665,7 +2665,7 @@ function updateSocialMeta(){
     socMeta('agwas:cta', `${who} — full interactive athletics experience below`);
     socMeta('agwas:tags', 'athletics dataviz worldrecords'
       + (M ? ' ' + socTag(M.card.discipline) : ' trackandfield'));
-    socMeta('agwas:bg', SOC_BASE + (M ? socSlug(M.card.discipline) : '_all') + '.jpg');
+    socMeta('agwas:bg', SOC_BASE + (M ? socSlug(M.card.discipline) : 'all') + '.jpg');
   } catch(e){}
 }
 
