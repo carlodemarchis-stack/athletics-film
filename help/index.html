@@ -81,6 +81,18 @@
   figure{margin:22px 0}
   figure img{width:100%;display:block;border-radius:14px;border:1px solid var(--line);
     box-shadow:0 24px 60px -30px #000}
+  /* every shot is a doorway: it opens the card it is a picture of */
+  a.shot{display:block;position:relative;line-height:0;border-radius:14px;text-decoration:none}
+  a.shot img{transition:.16s}
+  a.shot:hover img{border-color:var(--gold);transform:translateY(-2px);
+    box-shadow:0 28px 70px -28px #000,0 0 0 1px rgba(242,193,78,.35)}
+  a.shot::after{content:attr(data-go) " \2197";position:absolute;right:12px;bottom:12px;
+    font-size:11.5px;font-weight:800;letter-spacing:.04em;line-height:1;
+    color:#0a0807;background:var(--gold);border-radius:7px;padding:7px 10px;
+    opacity:0;transform:translateY(4px);transition:.16s;pointer-events:none;white-space:nowrap}
+  a.shot:hover::after{opacity:1;transform:translateY(0)}
+  .herobanner a.shot img{aspect-ratio:16/9;object-fit:cover}
+  @media(hover:none){a.shot::after{opacity:1;transform:none}}
   figcaption{margin-top:9px;font-size:12.5px;color:var(--muted2);text-align:center;line-height:1.55}
   figcaption b{color:var(--muted)}
   .duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -127,7 +139,7 @@
 
 <div class="wrap">
 
-  <figure class="herobanner"><img src="img/hero.jpg" alt="The men's 100 metres card: the staircase of every ratified world record from 1912 to Usain Bolt's 9.58, with the ghost race below it"></figure>
+  <figure class="herobanner"><a class="shot hero" href="../#men-100-metres" title="Open the 100 metres card" data-go="Open the 100 metres card"><img src="img/hero.jpg" alt="The men's 100 metres card: the staircase of every ratified world record from 1912 to Usain Bolt's 9.58, with the ghost race below it"></a></figure>
 
   <div class="hero">
     <div class="kick">Guide · How it works</div>
@@ -169,7 +181,7 @@
   </ul>
 
   <figure>
-    <img src="img/05-jump.jpg" alt="The jump menu open over the 100 metres card, listing every card in the film with how long each record has stood" loading="lazy">
+    <a class="shot" href="../#men-100-metres" title="Open the card, then click the counter" data-go="Open the card, then click the counter"><img src="img/05-jump.jpg" alt="The jump menu open over the 100 metres card, listing every card in the film with how long each record has stood" loading="lazy"></a>
     <figcaption>Clicking the counter opens the jump menu: all 33 cards, each with its event group and how long the current record has stood. <b>17.1y</b> against the 100 Metres, <b>40.0y</b> against the hammer.</figcaption>
   </figure>
 
@@ -186,7 +198,7 @@
   <p>Each event gets one card. The top bar names the record that stands today; the staircase underneath is every mark that ever held it.</p>
 
   <figure>
-    <img src="img/01-card.jpg" alt="The men's 100 metres card in full, showing the top bar, the KPI row, the nations bar and the staircase" loading="lazy">
+    <a class="shot" href="../#men-100-metres" title="Open the 100 metres card" data-go="Open the 100 metres card"><img src="img/01-card.jpg" alt="The men's 100 metres card in full, showing the top bar, the KPI row, the nations bar and the staircase" loading="lazy"></a>
     <figcaption>The men's 100 metres. <b>Top right:</b> the standing record, who set it, where and when. <b>The row beneath:</b> how long it has stood, how many times the record was improved, how many times only equalled, the total gain since the first ratified mark, and who has held it.</figcaption>
   </figure>
 
@@ -203,7 +215,7 @@
   <p>The bar above the chart is <strong>who owned the record, and for how long</strong> — the 100 metres belonged to the United States for 77 of its 114 years. The pills below are the anecdotes: the longest wait, the day the record fell more than once, the athlete who set the most of them.</p>
 
   <figure>
-    <img src="img/06-women.jpg" alt="The women's 100 metres card, reached through the women tab" loading="lazy">
+    <a class="shot" href="../#women-100-metres" title="Open the women's 100 metres" data-go="Open the women's 100 metres"><img src="img/06-women.jpg" alt="The women's 100 metres card, reached through the women tab" loading="lazy"></a>
     <figcaption>The same event in the other film. The two films are independent — the <b>women</b> tab keeps you on the same event where one exists, and the record here has stood since 1988.</figcaption>
   </figure>
 </div></section>
@@ -219,7 +231,7 @@
 
   <h3>The pit — jumps and throws</h3>
   <figure>
-    <img src="img/02-pit.jpg" alt="The long jump card, with the pit chart showing every record mark laid out by distance" loading="lazy">
+    <a class="shot" href="../#men-long-jump" title="Open the long jump card" data-go="Open the long jump card"><img src="img/02-pit.jpg" alt="The long jump card, with the pit chart showing every record mark laid out by distance" loading="lazy"></a>
     <figcaption>For field events the race becomes a <b>pit</b>: every record laid out at the distance it actually went, oldest at the back. The same idea — the whole history in one physical space — for a sport measured in metres rather than seconds.</figcaption>
   </figure>
 
@@ -235,7 +247,7 @@
   <p>A world record progression looks like it should only ever improve. It doesn't, and the reasons are the interesting part — so every card writes its own explanation from its own data, behind the <strong>?</strong> beside the title.</p>
 
   <figure>
-    <img src="img/03-note.jpg" alt="The explanation panel open on the 110 metres hurdles card, listing each time the ratified record went backwards and why" loading="lazy">
+    <a class="shot" href="../#men-110-metres-hurdles" title="Open the 110m hurdles card" data-go="Open the 110m hurdles card"><img src="img/03-note.jpg" alt="The explanation panel open on the 110 metres hurdles card, listing each time the ratified record went backwards and why" loading="lazy"></a>
     <figcaption>The 110 metres hurdles, explained. Each time the ratified record moved backwards, the card says which one it was and why — here, electronic timing replacing hand times, which reads slower on paper but isn't.</figcaption>
   </figure>
 
@@ -261,7 +273,7 @@
   </div>
 
   <figure>
-    <img src="img/04-stats.jpg" alt="The stats overlay open on the 100 metres, showing the Nations tab scoped to that event" loading="lazy">
+    <a class="shot" href="../#men-100-metres" title="Open the card, then press S" data-go="Open the card, then press S"><img src="img/04-stats.jpg" alt="The stats overlay open on the 100 metres, showing the Nations tab scoped to that event" loading="lazy"></a>
     <figcaption>Nations, for the 100 metres alone. <b>Above:</b> who held the record at any moment across the century. <b>Below:</b> the same thing totalled — the United States for 76.8 years and 38 marks, Jamaica 21.2 years and 7.</figcaption>
   </figure>
 
@@ -276,46 +288,46 @@
 
   <div class="duo">
     <figure>
-      <img src="img/07-nations.jpg" alt="Nations card" loading="lazy">
+      <a class="shot" href="../#men-nations" title="Open the Nations card" data-go="Open the Nations card"><img src="img/07-nations.jpg" alt="Nations card" loading="lazy"></a>
       <figcaption><b>Nations</b> — who has held this film's records, year by year, as a stream.</figcaption>
     </figure>
     <figure>
-      <img src="img/08-athletes.jpg" alt="Athletes card" loading="lazy">
+      <a class="shot" href="../#men-athletes" title="Open the Athletes card" data-go="Open the Athletes card"><img src="img/08-athletes.jpg" alt="Athletes card" loading="lazy"></a>
       <figcaption><b>Athletes</b> — who set the most records, and who held one the longest.</figcaption>
     </figure>
   </div>
 
   <h3>Where records fall</h3>
   <figure>
-    <img src="img/09-meets.jpg" alt="Where Records Fall — every record as a dot, discipline down the side, the century across" loading="lazy">
+    <a class="shot" href="../#men-meets" title="Open Where Records Fall" data-go="Open Where Records Fall"><img src="img/09-meets.jpg" alt="Where Records Fall — every record as a dot, discipline down the side, the century across" loading="lazy"></a>
     <figcaption>Every record as a dot: discipline down the side, the century across, coloured by the kind of meeting. <b>Gold</b> is the Olympic Games, <b>cyan</b> the World Championships, <b>grey</b> everywhere else — and everywhere else is most of them.</figcaption>
   </figure>
 
   <div class="duo">
     <figure>
-      <img src="img/10-bigmeets.jpg" alt="The Biggest Meetings card" loading="lazy">
+      <a class="shot" href="../#men-bigmeets" title="Open The Biggest Meetings" data-go="Open The Biggest Meetings"><img src="img/10-bigmeets.jpg" alt="The Biggest Meetings card" loading="lazy"></a>
       <figcaption><b>The Biggest Meetings</b> — single meetings ranked by how many records fell there, with the host city.</figcaption>
     </figure>
     <figure>
-      <img src="img/11-peryear.jpg" alt="Records Per Year card" loading="lazy">
+      <a class="shot" href="../#men-peryear" title="Open Records Per Year" data-go="Open Records Per Year"><img src="img/11-peryear.jpg" alt="Records Per Year card" loading="lazy"></a>
       <figcaption><b>Records Per Year</b> — how many fell each year, stacked by kind of meeting. The long decline is the story.</figcaption>
     </figure>
   </div>
 
   <h3>Records per day / month</h3>
   <figure>
-    <img src="img/12-perday.jpg" alt="Records Per Day / Month — every mark on a 366-day calendar, with month totals below" loading="lazy">
+    <a class="shot" href="../#men-perday" title="Open Records Per Day / Month" data-go="Open Records Per Day / Month"><img src="img/12-perday.jpg" alt="Records Per Day / Month — every mark on a 366-day calendar, with month totals below" loading="lazy"></a>
     <figcaption>Every mark dropped on the day of the year it was set — a column is one calendar date across all of history, oldest at the top. The month totals below share the same axis. <b>The season is the shape:</b> 83.3% of the men's records were set between May and September, and 138 days of the year have never produced one. Across both films it is 84.5%, and 106 days.</figcaption>
   </figure>
 
   <h3>Age</h3>
   <div class="duo">
     <figure>
-      <img src="img/13-age.jpg" alt="Age card" loading="lazy">
+      <a class="shot" href="../#men-age" title="Open the Age card" data-go="Open the Age card"><img src="img/13-age.jpg" alt="Age card" loading="lazy"></a>
       <figcaption><b>Age</b> — every mark with a birth date on file, plotted by how old the athlete was.</figcaption>
     </figure>
     <figure>
-      <img src="img/14-agebyevent.jpg" alt="Average Age by Event card" loading="lazy">
+      <a class="shot" href="../#men-agebyevent" title="Open Average Age by Event" data-go="Open Average Age by Event"><img src="img/14-agebyevent.jpg" alt="Average Age by Event card" loading="lazy"></a>
       <figcaption><b>Average Age by Event</b> — youngest event at the top, the bar showing the full range.</figcaption>
     </figure>
   </div>
@@ -329,17 +341,17 @@
   <p>Three cards close each film, and they belong together.</p>
 
   <figure>
-    <img src="img/15-survival.jpg" alt="How long records last — the longest reigns in history, each drawn from the day it was set to the day it fell" loading="lazy">
+    <a class="shot" href="../#men-survival" title="Open How long records last" data-go="Open How long records last"><img src="img/15-survival.jpg" alt="How long records last — the longest reigns in history, each drawn from the day it was set to the day it fell" loading="lazy"></a>
     <figcaption><b>How long records last</b> — the longest reigns there have ever been. Each bar runs from the day the record was set to the day it fell, so a reign has a place in the century as well as a length. <b>Gold means it hasn't fallen.</b></figcaption>
   </figure>
 
   <figure>
-    <img src="img/16-duration.jpg" alt="Current Record Duration — every standing record ranked by how long it has held" loading="lazy">
+    <a class="shot" href="../#men-longest-wait" title="Open Current Record Duration" data-go="Open Current Record Duration"><img src="img/16-duration.jpg" alt="Current Record Duration — every standing record ranked by how long it has held" loading="lazy"></a>
     <figcaption><b>Current Record Duration</b> — the same chart with every bar still running, so they all reach today and the ranking is read off the left-hand edge.</figcaption>
   </figure>
 
   <figure>
-    <img src="img/17-ranking.jpg" alt="One Ranking, Men and Women — every standing world record in a single ranking" loading="lazy">
+    <a class="shot" href="../#men-one-ranking" title="Open One Ranking" data-go="Open One Ranking"><img src="img/17-ranking.jpg" alt="One Ranking, Men and Women — every standing world record in a single ranking" loading="lazy"></a>
     <figcaption><b>One Ranking, Men and Women</b> — every standing record in athletics, both sexes in a single list by how long it has held. The order is the only argument being made. It closes both films.</figcaption>
   </figure>
 </div></section>
@@ -356,7 +368,7 @@
   </ul>
 
   <figure>
-    <img src="img/18-more.jpg" alt="The more-experiences panel, listing the other A Guy With A Scarf sport experiences" loading="lazy">
+    <a class="shot" href="../#men-100-metres" title="Open the app, then press +" data-go="Open the app, then press +"><img src="img/18-more.jpg" alt="The more-experiences panel, listing the other A Guy With A Scarf sport experiences" loading="lazy"></a>
     <figcaption>The <b>+</b> button opens the rest of the series — Formula 1, tennis, the top-5 football leagues, the NFL, the World Cup and the PGA TOUR, all built the same way.</figcaption>
   </figure>
 </div></section>
@@ -369,16 +381,16 @@
 
   <div class="duo">
     <figure>
-      <img src="img/m1.jpg" alt="The 100 metres card on a phone held sideways" loading="lazy">
+      <a class="shot" href="../#men-100-metres" title="Open the 100 metres card" data-go="Open the 100 metres card"><img src="img/m1.jpg" alt="The 100 metres card on a phone held sideways" loading="lazy"></a>
       <figcaption>An event card, landscape on a phone.</figcaption>
     </figure>
     <figure>
-      <img src="img/m2.jpg" alt="Records per day on a phone held sideways" loading="lazy">
+      <a class="shot" href="../#men-perday" title="Open Records Per Day / Month" data-go="Open Records Per Day / Month"><img src="img/m2.jpg" alt="Records per day on a phone held sideways" loading="lazy"></a>
       <figcaption>Records per day / month — the whole year still fits.</figcaption>
     </figure>
   </div>
   <figure>
-    <img src="img/m3.jpg" alt="One Ranking on a phone held sideways" loading="lazy">
+    <a class="shot" href="../#men-one-ranking" title="Open One Ranking" data-go="Open One Ranking"><img src="img/m3.jpg" alt="One Ranking on a phone held sideways" loading="lazy"></a>
     <figcaption>And the closing ranking, all 42 standing records.</figcaption>
   </figure>
 </div></section>
