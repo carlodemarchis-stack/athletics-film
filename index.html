@@ -21,6 +21,13 @@
 <meta name="twitter:title" content="World Record Film — Athletics">
 <meta name="twitter:description" content="Every world record ever ratified in athletics, men's and women's — 1,382 marks across 21 events each, as an interactive card film.">
 <meta name="twitter:image" content="https://athletics.aguywithascarf.com/img/og.jpg?v=1">
+<!-- read by the AGWAS capture extension, not by link scrapers; cta/tags/bg are
+     rewritten per card in updateSocialMeta() -->
+<meta name="agwas:title"    content="Athletics world records, as a film">
+<meta name="agwas:cta"      content="Full interactive athletics experience below">
+<meta name="agwas:tags"     content="athletics dataviz worldrecords trackandfield">
+<meta name="agwas:mentions" content="worldathletics">
+<meta name="agwas:bg"       content="https://athletics.aguywithascarf.com/img/event/_all.jpg">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0807'/><g stroke='%23e2572f' stroke-width='2.2' stroke-linecap='round'><path d='M5 11h22M5 21h22'/></g><path d='M24 3.5v25' stroke='%23f2c14e' stroke-width='2.6'/></svg>">
 <style>
   :root{
@@ -2639,6 +2646,29 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
 const slugOf = M => (M.card.gender + '-' + M.card.discipline)
   .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
+function socMeta(name, content){
+  let m = document.head.querySelector('meta[name="' + name + '"]');
+  if (!m){ m = document.createElement('meta'); m.setAttribute('name', name); document.head.appendChild(m); }
+  m.setAttribute('content', content);
+}
+const SOC_BASE = 'https://athletics.aguywithascarf.com/img/event/';
+const socSlug = d => d.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+// one hashtag per event, so a post about the javelin is findable as such
+const socTag = d => d.toLowerCase().replace(/[^a-z0-9]/g, '');
+/* The capture extension reads these off the page at ⌘⇧Y, so they have to describe the card
+   actually on screen. go() is the one place every navigation passes through. */
+function updateSocialMeta(){
+  try {
+    const sl = SLIDES[IDX], M = sl.M;
+    const who = M ? `${M.card.discipline} · ${M.card.gender === 'women' ? "women's" : "men's"}`
+                  : sl.title;
+    socMeta('agwas:cta', `${who} — full interactive athletics experience below`);
+    socMeta('agwas:tags', 'athletics dataviz worldrecords'
+      + (M ? ' ' + socTag(M.card.discipline) : ' trackandfield'));
+    socMeta('agwas:bg', SOC_BASE + (M ? socSlug(M.card.discipline) : '_all') + '.jpg');
+  } catch(e){}
+}
+
 function go(i, fromHash){
   IDX = (i + SLIDES.length) % SLIDES.length;
   SEX = SLIDES[IDX].sex;
@@ -2652,6 +2682,7 @@ function go(i, fromHash){
   if (!fromHash) history.replaceState(null, '', '#' + slug);
   try { localStorage.setItem('wrf.card', slug); } catch(e){}
   markJump();
+  updateSocialMeta();
   paint();
 }
 
