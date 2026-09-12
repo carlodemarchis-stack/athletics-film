@@ -66,10 +66,13 @@
     background:linear-gradient(180deg,rgba(10,8,7,.06) 0%,rgba(10,8,7,.84) 58%,rgba(10,8,7,.97) 100%)}
   .pod.gold{border-color:rgba(242,193,78,.45)}
   .pod.gold .ph{filter:none;opacity:.55}
-  /* the portrait, lifted out of its background, standing in front of the action shot */
-  .pod .cut{position:absolute;top:8px;right:6px;bottom:0;width:44%;background-size:contain;
-    background-position:bottom right;background-repeat:no-repeat;
+  /* the portrait, lifted out of its background, standing in front of the action shot:
+     it holds the left of the winner's box and the reading sits to its right */
+  .pod .cut{position:absolute;top:8px;left:4px;bottom:0;width:43%;background-size:contain;
+    background-position:bottom left;background-repeat:no-repeat;
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.55))}
+  .pod.cutin{padding-left:calc(43% + 16px);min-height:238px}   /* room for the portrait to stand */
+  .pod.cutin .pos{position:static;font-size:64px;line-height:.86;margin-bottom:4px;opacity:1}
   .pod > *{position:relative}
   .pos{position:absolute;top:10px;left:14px;font-size:32px;font-weight:800;line-height:1;
     color:rgba(246,239,233,.22);z-index:1}
@@ -390,12 +393,12 @@ function podium(race, when){
     if (age != null) bits.push(`<span><b>${age}</b> yrs</span>`);
     if (p.pb) bits.push(`<span class="${p.pb === r.mark ? 'best' : ''}">PB <b>${esc(p.pb)}</b></span>`);
     if (p.sb && p.sb !== p.pb) bits.push(`<span>SB <b>${esc(p.sb)}</b></span>`);
-    return `<div class="pod${i === 0 ? ' gold' : ''}">
+    const cut = i === 0 && CUT.has(String(r.wa));
+    return `<div class="pod${i === 0 ? ' gold' : ''}${cut ? ' cutin' : ''}">
       ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
       <div class="scrim"></div>
-      ${i === 0 && CUT.has(String(r.wa)) ? `<div class="cut"
-        style="background-image:url('img/ath/${r.wa}.webp')"></div>` : ''}
-      <div class="pos">${r.place || ''}</div>
+      ${cut ? `<div class="cut" style="background-image:url('img/ath/${r.wa}.webp')"></div>` : ''}
+      <div class="pos">${cut ? (r.place || '').replace('.', '') : r.place || ''}</div>
       <div class="idrow">
         ${face ? `<div class="face" style="background-image:url('${D.photoBase}${face}')"></div>` : ''}
         <div><div class="nm">${esc(r.name)}</div><div class="nat">${esc(r.nat)}</div></div>
