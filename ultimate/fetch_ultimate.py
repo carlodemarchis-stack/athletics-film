@@ -87,6 +87,29 @@ def photos(ids):
     rows = gql(q, {"ids": sorted(set(ids))})["getAthleteActionPictureByIds"] or []
     return {str(r["id"]): r["primaryMediaId"] for r in rows if r.get("primaryMediaId")}
 
+def profiles(people):
+    """Podium athletes get their profile page read for the box: age, personal best in this
+    event, and a photo. The photo is worth two goes — the action-picture API has one for
+    some athletes and the profile for others, and neither has one for everybody."""
+    out = {}
+    for wa, slug, disc in people:
+        try:
+            c = next_data(f"https://worldathletics.org/athletes/{slug}")["props"]["pageProps"]["competitor"]
+        except Exception as e:
+            print(f"  ! profile {slug}: {e}"); continue
+        bd = c.get("basicData") or {}
+        pbs = ((c.get("personalBests") or {}).get("results")) or []
+        sbs = ((c.get("seasonsBests") or {}).get("results")) or []
+        pick = lambda rows: next((r for r in rows if r.get("discipline") == disc), None)
+        pb, sb = pick(pbs), pick(sbs)
+        out[str(wa)] = dict(born=bd.get("birthDate"), country=bd.get("countryFullName"),
+            media=c.get("primaryMediaId") or None,
+            pb=(pb or {}).get("mark"), pbVenue=(pb or {}).get("venue"), pbDate=(pb or {}).get("date"),
+            sb=(sb or {}).get("mark"),
+            honours=[h.get("categoryName") for h in (c.get("honours") or [])][:4])
+        time.sleep(.25)
+    return out
+
 def main():
     tt = timetable()
     print(f"timetable: {len(tt)} phases across {len({p['dayNum'] for p in tt})} days")
@@ -95,8 +118,21 @@ def main():
     print(f"results:   {len(res)} events, {n} rows, days published {days}")
     pics = photos([r["wa"] for e in res for ra in e["races"] for r in ra["rows"] if r["wa"]])
     print(f"photos:    {len(pics)} athletes have one")
+    # only the podium gets a profile read — that is what the box on the card shows
+    podium = []
+    for e in res:
+        fin = next((r for r in e["races"] if "final" in (r["name"] or "").lower()
+                    and "semi" not in (r["name"] or "").lower()), None)
+        if not fin: continue
+        disc = e["event"].split("'s ", 1)[-1] if "'s " in e["event"] else e["event"]
+        for r in fin["rows"][:3]:
+            if r["wa"] and r["slug"]: podium.append((r["wa"], r["slug"], disc))
+    prof = profiles(podium)
+    print(f"profiles:  {len(prof)} podium athletes read")
+    for wa, m in ((k, v.get("media")) for k, v in prof.items()):
+        if m and wa not in pics: pics[wa] = m          # the profile knows some the API does not
     out = dict(fetched=time.strftime("%Y-%m-%d %H:%M"), competitionId=COMP,
-               daysPublished=days, timetable=tt, results=res, photos=pics,
+               daysPublished=days, timetable=tt, results=res, photos=pics, profiles=prof,
                photoBase="https://assets.aws.worldathletics.org/")
     p = os.path.join(HERE, "data", "ultimate.json")
     json.dump(out, open(p, "w"), ensure_ascii=False)

@@ -7,37 +7,32 @@
 <meta name="theme-color" content="#0a0807">
 <meta name="description" content="Every event of the 2026 World Athletics Ultimate Championship, one card at a time — start lists as they are published, results as they land.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0807'/><g stroke='%23e2572f' stroke-width='2.2' stroke-linecap='round'><path d='M5 11h22M5 21h22'/></g><path d='M24 3.5v25' stroke='%23f2c14e' stroke-width='2.6'/></svg>">
+<link rel="canonical" href="https://athletics.aguywithascarf.com/ultimate/">
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0e11f639978547d6a4c33b703dbdf568"}'></script><!-- End Cloudflare Web Analytics -->
 <style>
   :root{
-    --bg0:#0a0807; --bg1:#1a100c; --bg2:#2b1610;
-    --ink:#f6efe9; --muted:#b39a8c; --muted-2:#7c675c;
-    --line:rgba(230,190,160,.14);
-    --acc:#e2572f; --gold:#f2c14e; --men:#6f8fb8; --women:#d9834a;
-    --track:#c2410c;
+    --bg0:#0a0807; --bg1:#1a100c; --ink:#f6efe9; --muted:#b39a8c; --muted-2:#7c675c;
+    --line:rgba(230,190,160,.14); --acc:#e2572f; --gold:#f2c14e; --men:#6f8fb8; --women:#d9834a;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{margin:0;background:var(--bg0);color:var(--ink);
-    font-family:"Helvetica Neue",Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
-    overflow:hidden}
+    font-family:"Helvetica Neue",Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
 
-  /* ---------- chrome ---------- */
-  .top{display:flex;align-items:flex-end;gap:22px;padding:20px 34px 0}
+  .top{display:flex;align-items:center;gap:22px;padding:18px 34px 0}
   .brand{font-size:10.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-2)}
   .brand b{color:var(--acc)}
   .days{display:flex;gap:6px;margin-left:auto}
-  .day{font-size:12px;font-weight:800;letter-spacing:.04em;border:1px solid var(--line);
-    background:transparent;color:var(--muted);border-radius:999px;padding:7px 15px;cursor:pointer;
-    font-family:inherit;transition:.15s;white-space:nowrap}
+  .day{font-size:12px;font-weight:800;border:1px solid var(--line);background:transparent;
+    color:var(--muted);border-radius:999px;padding:7px 15px;cursor:pointer;font-family:inherit;
+    transition:.15s;white-space:nowrap}
   .day:hover{color:var(--ink)}
   .day.on{color:var(--gold);border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.1)}
   .day i{font-style:normal;color:var(--muted-2);font-weight:700;margin-left:7px}
   .day.on i{color:rgba(242,193,78,.7)}
 
-  /* ---------- card ---------- */
-  .card{position:relative;height:calc(100vh - 58px);padding:14px 34px 22px;display:flex;
+  .card{position:relative;height:calc(100vh - 54px);padding:12px 34px 62px;display:flex;
     flex-direction:column;overflow:hidden}
-  /* a hurdles/sprint card runs lane lines under everything; field events will want their own */
   .card.track::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
     background:repeating-linear-gradient(180deg,transparent 0 62px,rgba(226,87,47,.07) 62px 63px);
     mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent)}
@@ -48,47 +43,39 @@
   .head{display:flex;align-items:flex-start;gap:26px}
   .kicker{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
     color:var(--muted-2);display:flex;align-items:center;gap:10px}
-  .kicker .sx{color:var(--men)}
+  .kicker .sx{color:var(--men)} .kicker .sx.w{color:var(--women)}
   .kicker .type{color:var(--acc)}
-  h1{font-size:clamp(30px,4.4vw,54px);letter-spacing:-.025em;margin:5px 0 0;line-height:1}
+  h1{font-size:clamp(28px,4.2vw,50px);letter-spacing:-.025em;margin:4px 0 0;line-height:1}
   .when{margin-left:auto;text-align:right;flex:0 0 auto}
-  .when .st{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--gold)}
+  .when .st{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .when .st.pending{color:var(--muted-2)}
   .when .dt{font-size:13px;color:var(--muted);margin-top:5px}
 
-  /* ---------- the final ---------- */
-  .body{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
-    gap:26px;margin-top:16px;min-height:0}
-  .panel{min-width:0;display:flex;flex-direction:column;min-height:0}
-  .plabel{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
-    color:var(--muted-2);display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
-  .plabel b{color:var(--ink)}
-  .plabel .wind{margin-left:auto;color:var(--muted-2);font-weight:700;letter-spacing:.04em}
-
-  .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:13px}
   .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
-    background:linear-gradient(180deg,var(--bg1),#120c08);min-height:190px;display:flex;
-    flex-direction:column;justify-content:flex-end;padding:14px 15px}
-  .pod .ph{position:absolute;inset:0;background-size:cover;background-position:50% 22%;
+    background:linear-gradient(180deg,var(--bg1),#120c08);min-height:172px;display:flex;
+    flex-direction:column;justify-content:flex-end;padding:13px 15px}
+  .pod .ph{position:absolute;inset:0;background-size:cover;background-position:50% 20%;
     filter:grayscale(1) contrast(1.06);opacity:.5}
   .pod .scrim{position:absolute;inset:0;
-    background:linear-gradient(180deg,rgba(10,8,7,.1) 0%,rgba(10,8,7,.86) 62%,rgba(10,8,7,.97) 100%)}
+    background:linear-gradient(180deg,rgba(10,8,7,.06) 0%,rgba(10,8,7,.84) 58%,rgba(10,8,7,.97) 100%)}
   .pod.gold{border-color:rgba(242,193,78,.45)}
   .pod.gold .ph{filter:none;opacity:.55}
   .pod > *{position:relative}
-  .pos{position:absolute;top:11px;left:14px;font-size:34px;font-weight:800;line-height:1;
+  .pos{position:absolute;top:10px;left:14px;font-size:32px;font-weight:800;line-height:1;
     color:rgba(246,239,233,.22);z-index:1}
   .pod.gold .pos{color:var(--gold);opacity:.85}
-  .pod .nm{font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+  .pod .nm{font-size:16.5px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
   .pod .nat{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--muted-2);margin-top:3px}
-  .pod .mk{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;
-    font-variant-numeric:tabular-nums}
+  .pod .mk{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-top:6px;font-variant-numeric:tabular-nums}
   .pod.gold .mk{color:var(--gold)}
+  .pod .bio{display:flex;gap:12px;margin-top:7px;font-size:10.5px;font-weight:700;color:var(--muted-2);
+    font-variant-numeric:tabular-nums;flex-wrap:wrap}
+  .pod .bio b{color:var(--muted);font-weight:800}
+  .pod .bio .best{color:var(--gold)}
   .pod .tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.12em;
-    text-transform:uppercase;color:var(--bg0);background:var(--gold);border-radius:5px;
-    padding:3px 6px;margin-top:7px}
+    text-transform:uppercase;color:var(--bg0);background:var(--gold);border-radius:5px;padding:3px 6px;margin-top:6px}
 
-  /* ---------- the rest of a field, and the semis ---------- */
   table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
   th{font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
     color:var(--muted-2);text-align:left;padding:0 0 6px}
@@ -101,42 +88,37 @@
   tr.out td{color:var(--muted-2)}
   tr.out td.m{color:var(--acc);font-size:11.5px;letter-spacing:.1em}
   tr.q td.m{color:var(--gold)}
-  .rest{margin-top:14px;overflow:auto;min-height:0}
+  .rest{margin-top:11px;overflow:auto;min-height:0;flex:1 1 auto}
 
-  .semis{display:grid;grid-template-rows:1fr 1fr;gap:16px;min-height:0}
-  .semi{min-height:0;display:flex;flex-direction:column}
-  .semi .sc{overflow:auto;min-height:0}
-
-  /* ---------- tabs: the final is the card, the semis are behind it ---------- */
-  .tabs{display:flex;gap:7px;margin-bottom:11px}
+  .tabs{display:flex;gap:7px;margin-top:12px}
   .tab{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
     border:1px solid var(--line);background:transparent;color:var(--muted-2);border-radius:999px;
     padding:6px 13px;cursor:pointer;font-family:inherit;transition:.15s}
   .tab:hover{color:var(--ink)}
   .tab.on{color:var(--gold);border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.1)}
-  .tab .w{color:var(--muted-2);font-weight:700;margin-left:7px;letter-spacing:.02em}
+  .tab .w{color:var(--muted-2);font-weight:700;margin-left:7px}
   .tab.on .w{color:rgba(242,193,78,.65)}
 
-  /* ---------- the race ---------- */
-  .race{flex:0 0 auto;border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
-  .racehead{display:flex;align-items:center;gap:14px;margin-bottom:9px}
-  .racetitle{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
-    color:var(--muted-2)}
+  .race{flex:0 0 auto;border-top:1px solid var(--line);padding-top:11px;margin-top:11px}
+  .racehead{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .racetitle{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-2)}
   .racetitle b{color:var(--ink)}
-  .replay{margin-left:auto;font-size:11.5px;font-weight:800;letter-spacing:.06em;
-    border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;
-    padding:7px 16px;cursor:pointer;font-family:inherit;transition:.15s}
+  .scale{margin-left:auto;font-size:10.5px;font-weight:800;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted-2);font-variant-numeric:tabular-nums}
+  .replay{margin-left:16px;font-size:11.5px;font-weight:800;border:1px solid var(--line);
+    background:transparent;color:var(--ink);border-radius:999px;padding:6px 15px;cursor:pointer;
+    font-family:inherit;transition:.15s}
   .replay:hover{border-color:var(--gold);color:var(--gold)}
   .lanes{position:relative}
-  .lane{display:grid;grid-template-columns:150px 1fr 82px;align-items:center;gap:12px;height:22px}
+  .lane{display:grid;grid-template-columns:150px 1fr 82px;align-items:center;gap:12px;height:21px}
   .lane .who{font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;
     text-overflow:ellipsis;color:var(--muted)}
   .lane.win .who{color:var(--ink)}
-  .lane .strip{position:relative;height:13px;border-radius:3px;
+  .lane .strip{position:relative;height:12px;border-radius:3px;
     background:linear-gradient(180deg,rgba(226,87,47,.09),rgba(226,87,47,.05));
     border:1px solid rgba(230,190,160,.07);overflow:hidden}
-  .lane .dot{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
-    background:var(--muted);transform:translate(-50%,-50%);left:0}
+  .lane .dot{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;background:var(--muted);
+    transform:translate(-50%,-50%);left:0}
   .lane.win .dot{background:var(--gold);box-shadow:0 0 12px 2px rgba(242,193,78,.55)}
   .lane .trail{position:absolute;top:50%;height:2px;left:0;width:0;transform:translateY(-50%);
     background:linear-gradient(90deg,transparent,rgba(226,87,47,.55))}
@@ -144,11 +126,76 @@
   .lane .gap{font-size:11px;font-weight:800;color:var(--muted-2);text-align:right;
     font-variant-numeric:tabular-nums;white-space:nowrap}
   .lane.win .gap{color:var(--gold)}
+  .lanes.zoomed .dot{width:11px;height:11px}
+  .lanes.zoomed .lane .gap{color:var(--ink)}
+  .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:94px;width:2px;background:rgba(242,193,78,.4)}
 
-  .foot{position:absolute;left:34px;bottom:7px;font-size:10.5px;color:var(--muted-2);z-index:2}
-  .note{position:absolute;right:34px;bottom:7px;font-size:10.5px;color:var(--muted-2);z-index:2}
-  @media (max-width:900px){ .body{grid-template-columns:1fr} .semis{display:none} }
+  .sched{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:2px;max-width:660px}
+  .sline{display:grid;grid-template-columns:110px 1fr auto;align-items:baseline;gap:16px;
+    padding:13px 0;border-top:1px solid var(--line)}
+  .sline .tm{font-size:22px;font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+  .sline .ph{font-size:15px;font-weight:800}
+  .sline .fl{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2)}
+  .await{font-size:13px;color:var(--muted);max-width:540px;line-height:1.6;margin-top:20px}
+
+  .foot{position:absolute;left:34px;bottom:8px;font-size:10.5px;color:var(--muted-2);z-index:2}
+
+  .controls{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:40;
+    display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;
+    background:rgba(20,12,9,.92);border:1px solid var(--line);backdrop-filter:blur(12px);
+    box-shadow:0 18px 50px -20px #000}
+  .controls > button:not(.counter){width:38px;height:38px;border:0;background:transparent;
+    color:var(--muted);cursor:pointer;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;transition:.15s;font-family:inherit;font-size:15px;font-weight:800}
+  .controls > button:not(.counter):hover{color:var(--ink);background:rgba(255,255,255,.08)}
+  .controls svg{width:19px;height:19px;fill:currentColor}
+  .counter{display:flex;align-items:center;gap:6px;padding:7px 12px;border:0;background:transparent;
+    color:var(--muted);cursor:pointer;border-radius:999px;font-family:inherit;font-size:12px;
+    font-weight:800;letter-spacing:.04em;transition:.15s}
+  .counter:hover{color:var(--ink);background:rgba(255,255,255,.06)}
+  .counter b{color:var(--gold);font-size:14px}
+  .counter .lbl{color:var(--muted-2);letter-spacing:.14em}
+  .cchev{width:15px;height:15px;fill:currentColor;opacity:.7}
+  .sep{width:1px;height:24px;background:var(--line);margin:0 4px}
+  @media (max-width:560px){ #fs,.controls .sep{display:none} }
+
+  .jumppop{position:fixed;left:50%;bottom:66px;transform:translateX(-50%);z-index:41;
+    width:min(960px,94vw);max-height:60vh;overflow:auto;padding:12px;border-radius:16px;
+    background:rgba(18,11,8,.97);border:1px solid var(--line);backdrop-filter:blur(14px);
+    box-shadow:0 30px 70px -24px #000}
+  .jumppop[hidden]{display:none}
+  .jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:6px}
+  .jitem{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:9px;
+    border:1px solid transparent;background:transparent;color:var(--ink);cursor:pointer;
+    font-family:inherit;font-size:12.5px;text-align:left;transition:.12s;width:100%}
+  .jitem:hover{background:rgba(255,255,255,.06);border-color:var(--line)}
+  .jitem.on{border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.09)}
+  .jitem .ji{color:var(--muted-2);font-weight:800;font-variant-numeric:tabular-nums;width:22px;flex:0 0 auto}
+  .jitem.on .ji{color:var(--gold)}
+  .jitem .jd{width:7px;height:7px;border-radius:2px;flex:0 0 auto}
+  .jitem .jn{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  .jitem .jy{font-size:10.5px;font-weight:800;color:var(--muted-2);white-space:nowrap}
+  .jitem.on .jy{color:var(--gold)}
+
+  .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
+  .modal[hidden]{display:none}
+  .modal__ov{position:absolute;inset:0;background:rgba(6,4,3,.78);backdrop-filter:blur(6px)}
+  .modal__box{position:relative;max-width:560px;width:100%;max-height:84vh;overflow:auto;
+    background:linear-gradient(180deg,#1b1109,#120c08);border:1px solid var(--line);
+    border-radius:18px;padding:28px 30px 24px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .modal__box h2{font-size:22px;margin:0 0 4px}
+  .modal__box .csub{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted-2);margin-bottom:18px}
+  .modal__box p{font-size:13.5px;line-height:1.6;color:var(--muted)}
+  .modal__box p b{color:var(--ink)}
+  .mclose{position:absolute;top:12px;right:15px;background:transparent;border:0;color:var(--muted-2);
+    font-size:25px;cursor:pointer;line-height:1}
+  .mclose:hover{color:var(--ink)}
+  .keys{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px;color:var(--muted);
+    align-items:center;margin-top:16px}
+  kbd{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:5px;padding:3px 8px;
+    font-family:inherit;font-size:11px;font-weight:800;color:var(--ink);text-align:center}
 </style>
 </head>
 <body>
@@ -160,66 +207,151 @@
 
 <section class="card" id="card"></section>
 
-<script>
-const PROTO = "Men's 110 Metres Hurdles";     // the one card this prototype draws
+<div class="controls">
+  <button id="restart" title="First card (Home)"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+  <button id="prev" title="Previous (left arrow)"><svg viewBox="0 0 24 24"><path d="M15.5 5v14l-11-7z"/><rect x="16.5" y="5" width="2.4" height="14" rx="1"/></svg></button>
+  <button id="play" title="Play / pause (Space)"><svg id="playIcon" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></button>
+  <button id="next" title="Next (right arrow)"><svg viewBox="0 0 24 24"><path d="M8.5 5v14l11-7z"/><rect x="5.1" y="5" width="2.4" height="14" rx="1"/></svg></button>
+  <button class="counter" id="counter" title="Jump to a card"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">-</span></span><svg class="cchev" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg></button>
+  <div class="sep"></div>
+  <button id="helpbtn" title="Help (H)">?</button>
+  <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
+</div>
 
+<div class="jumppop" id="jumppop" hidden><div class="jgrid" id="jgrid"></div></div>
+
+<div class="modal" id="help" hidden>
+  <div class="modal__ov" onclick="closeHelp()"></div>
+  <div class="modal__box">
+    <button class="mclose" onclick="closeHelp()" aria-label="Close">&times;</button>
+    <h2>Ultimate Championship</h2>
+    <div class="csub">Budapest 2026 &middot; A guy with a scarf</div>
+    <p>One card per event, in the order they are contested. A card that has been run opens on its
+    <b>final</b> &mdash; the podium, the finishing order, and the race replayed underneath. Every
+    finisher moves at their own average pace, so when the winner crosses, the field freezes and the
+    view closes in on the line: the gaps are then read in <b>metres</b>, not hundredths.</p>
+    <p>Semifinals sit behind the tabs. Events still to come show their schedule &mdash; World
+    Athletics publishes <b>no start list anywhere public</b>, so the field is not known here until
+    it runs.</p>
+    <div class="keys">
+      <kbd>&larr;</kbd><span>Previous card</span>
+      <kbd>&rarr;</kbd><span>Next card</span>
+      <kbd>Space</kbd><span>Play / pause</span>
+      <kbd>R</kbd><span>Replay the race</span>
+      <kbd>F</kbd><span>Fullscreen</span>
+      <kbd>Esc</kbd><span>Close</span>
+    </div>
+  </div>
+</div>
+
+<script>
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
-let D, EV, PH, TAB = 0, RAF = null;
+let D, DECK = [], IDX = 0, TAB = 0, RAF = null, TIMER = null;
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
 
 const fmtDate = iso => new Date(iso + 'T00:00:00')
   .toLocaleDateString('en-GB', {day:'numeric', month:'short'}).toUpperCase();
+const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/* One card per sex + discipline, holding every phase of it. The final is what the card is
+   about, so the deck runs in the order the finals are contested. */
+function buildDeck(){
+  const by = new Map();
+  D.timetable.forEach(p => {
+    const k = p.sexCode + '|' + p.discipline.name;
+    if (!by.has(k)) by.set(k, []);
+    by.get(k).push(p);
+  });
+  DECK = [...by.values()].map(phases => {
+    phases.sort((a, b) => a.phaseDateAndTime.localeCompare(b.phaseDateAndTime));
+    const fin = phases.find(p => /final/i.test(p.phaseName) && !/semi/i.test(p.phaseName))
+             || phases[phases.length - 1];
+    const ev = D.results.find(e => e.sex === fin.sexCode && e.event.endsWith(fin.discipline.name));
+    const who = fin.sexCode === 'W' ? 'women' : fin.sexCode === 'M' ? 'men' : 'mixed';
+    return {sex: fin.sexCode, disc: fin.discipline, phases, fin, ev, day: fin.dayNum,
+            when: fin.phaseDateAndTime, slug: slugify(who + ' ' + fin.discipline.name)};
+  }).sort((a, b) => a.when.localeCompare(b.when));
+}
 
 function boot(d){
   D = d;
-  const days = [...new Set(D.timetable.map(p => p.dayNum))].sort();
-  const dates = {}; D.timetable.forEach(p => dates[p.dayNum] = p.date);
-  document.getElementById('days').innerHTML = days.map(n =>
-    `<button class="day${n === 1 ? ' on' : ''}">${DAYNAME[n]}<i>${fmtDate(dates[n])}</i></button>`).join('');
-  EV = D.results.find(e => e.event === PROTO);
-  PH = D.timetable.filter(p => p.sexCode === EV.sex && PROTO.includes(p.discipline.name));
-  draw();
+  buildDeck();
+  const dates = {}; DECK.forEach(c => dates[c.day] = c.fin.date);
+  document.getElementById('days').innerHTML = [...new Set(DECK.map(c => c.day))].sort()
+    .map(n => `<button class="day" data-day="${n}">${DAYNAME[n]}<i>${fmtDate(dates[n])}</i></button>`).join('');
+  document.querySelectorAll('.day').forEach(b => b.onclick = () => {
+    const i = DECK.findIndex(c => c.day === +b.dataset.day);
+    if (i >= 0) go(i);
+  });
+  document.getElementById('ctot').textContent = DECK.length;
+  buildJump();
+  const want = decodeURIComponent(location.hash.slice(1)) || localStorage.getItem('uc.card') || '';
+  go(Math.max(0, DECK.findIndex(c => c.slug === want)), true);
 }
 
-/* races, final first — the final is what the card is about, the semis are behind a tab */
-const racesOf = ev => {
-  const fin = ev.races.filter(r => /final/i.test(r.name) && !/semi/i.test(r.name));
-  const semi = ev.races.filter(r => /semi/i.test(r.name));
-  return fin.concat(semi);
-};
+const hasResult = c => !!(c.ev && c.ev.races.some(r => (r.rows || []).length));
 
-function rows(race, {skip = 0} = {}){
-  return race.rows.slice(skip).map(r => {
+function buildJump(){
+  document.getElementById('jgrid').innerHTML = DECK.map((c, i) => {
+    const w = c.sex === 'W';
+    return `<button class="jitem" data-i="${i}">
+      <span class="ji">${i + 1}</span>
+      <span class="jd" style="background:${w ? 'var(--women)' : c.sex === 'M' ? 'var(--men)' : 'var(--gold)'}"></span>
+      <span class="jn">${esc(c.disc.name)}<span style="color:var(--muted-2)"> &middot; ${w ? 'W' : c.sex === 'M' ? 'M' : 'X'}</span></span>
+      <span class="jy">${hasResult(c) ? c.when.slice(11, 16) : DAYNAME[c.day]}</span></button>`;
+  }).join('');
+  document.querySelectorAll('.jitem').forEach(b =>
+    b.onclick = () => { go(+b.dataset.i); closeJump(); });
+}
+const markJump = () => document.querySelectorAll('.jitem')
+  .forEach((b, i) => b.classList.toggle('on', i === IDX));
+
+const racesOf = ev => ev.races.filter(r => /final/i.test(r.name) && !/semi/i.test(r.name))
+  .concat(ev.races.filter(r => /semi/i.test(r.name)));
+
+function rows(race, skip){
+  return race.rows.slice(skip || 0).map(r => {
     const out = !r.place;
     return `<tr class="${out ? 'out' : (r.qualified ? 'q' : '')}">
-      <td class="p">${out ? '' : esc(r.place)}</td>
-      <td class="n">${esc(r.name)}</td>
+      <td class="p">${out ? '' : esc(r.place)}</td><td class="n">${esc(r.name)}</td>
       <td class="c">${esc(r.nat)}</td>
-      <td class="m r">${esc(out ? (r.remark || r.mark || '—') : r.mark)}</td></tr>`;
+      <td class="m r">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</td></tr>`;
   }).join('');
 }
 
-function podium(race){
+const ageAt = (born, on) => {
+  if (!born) return null;
+  const b = new Date(born), d = new Date(on);
+  if (isNaN(b)) return null;
+  let a = d.getFullYear() - b.getFullYear();
+  if (d < new Date(d.getFullYear(), b.getMonth(), b.getDate())) a--;
+  return a;
+};
+
+/* The box carries what the profile page knows: how old they are, and what they had run before
+   today. A personal best equal to the winning mark means the final was the best of their life. */
+function podium(race, when){
   return race.rows.slice(0, 3).map((r, i) => {
     const pic = r.wa && D.photos[r.wa];
+    const p = (D.profiles || {})[r.wa] || {};
+    const age = ageAt(p.born, when);
+    const bits = [];
+    if (age != null) bits.push(`<span><b>${age}</b> yrs</span>`);
+    if (p.pb) bits.push(`<span class="${p.pb === r.mark ? 'best' : ''}">PB <b>${esc(p.pb)}</b></span>`);
+    if (p.sb && p.sb !== p.pb) bits.push(`<span>SB <b>${esc(p.sb)}</b></span>`);
     return `<div class="pod${i === 0 ? ' gold' : ''}">
       ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
-      <div class="scrim"></div>
-      <div class="pos">${r.place || ''}</div>
-      <div class="nm">${esc(r.name)}</div>
-      <div class="nat">${esc(r.nat)}</div>
+      <div class="scrim"></div><div class="pos">${r.place || ''}</div>
+      <div class="nm">${esc(r.name)}</div><div class="nat">${esc(r.nat)}</div>
       <div class="mk">${esc(r.mark)}</div>
-      ${r.record ? `<div><span class="tag">${esc(r.record)}</span></div>` : ''}
-    </div>`;
+      ${bits.length ? `<div class="bio">${bits.join('')}</div>` : ''}
+      ${r.record ? `<div><span class="tag">${esc(r.record)}</span></div>` : ''}</div>`;
   }).join('');
 }
 
-/* ---------- the race ----------
-   Every finisher run at their own average speed over the real distance, so the finish
-   spread is the true one: the gap you see is metres, not tenths. */
 const distOf = name => {
   const m = name.match(/(\d[\d,]*)\s*Metres/i);
   if (m) return +m[1].replace(/,/g, '');
@@ -232,108 +364,165 @@ const secs = mark => {
 };
 
 function raceStrip(race, dist, label){
-  const runners = race.rows
-    .filter(r => r.place && secs(r.mark))
-    .map(r => ({name: r.name, nat: r.nat, t: secs(r.mark), mark: r.mark}));
+  const runners = race.rows.filter(r => r.place && secs(r.mark));
   if (runners.length < 2 || !dist) return '';
-  return `<div class="race">
-    <div class="racehead">
-      <div class="racetitle">Race the ${esc(label)} — <b>${dist} m</b>, every finisher at their own pace</div>
-      <button class="replay" id="replay">▶ Run it</button>
-    </div>
-    <div class="lanes" id="lanes">
-      <div class="finish"></div>
+  return `<div class="race"><div class="racehead">
+      <div class="racetitle">Race the ${esc(label)} &mdash; <b>${dist} m</b>, every finisher at their own pace</div>
+      <span class="scale" id="scale">0 - ${dist} m</span>
+      <button class="replay" id="replay">&#9654; Run it</button></div>
+    <div class="lanes" id="lanes"><div class="finish"></div>
       ${runners.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="trail"></div><div class="dot"></div></div>
-        <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div>
-      </div>`).join('')}
+        <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div></div>`).join('')}
     </div></div>`;
 }
 
+/* Run, hold, then close in on the line. Over 110 m the whole field lands inside the last few per
+   cent of the strip, so the gaps only become legible once the window shrinks to them. */
 function runRace(race, dist){
   const lanes = document.getElementById('lanes');
   if (!lanes) return;
-  const runners = race.rows.filter(r => r.place && secs(r.mark)).map(r => secs(r.mark));
-  const win = Math.min(...runners);
+  const t = race.rows.filter(r => r.place && secs(r.mark)).map(r => secs(r.mark));
+  const win = Math.min(...t);
   const els = [...lanes.querySelectorAll('.lane')];
-  const DUR = 4200;                                   // the winner's run, on screen
+  const DUR = 4200, HOLD = 320, ZOOM = 1100;
+  const frozen = t.map(x => dist * win / x);
+  const w1 = Math.max((dist - Math.min(...frozen)) * 1.25, dist * 0.02);
+  const scale = document.getElementById('scale');
   cancelAnimationFrame(RAF);
+  lanes.classList.remove('zoomed');
   els.forEach(el => { el.querySelector('.dot').style.left = '0%';
-                      el.querySelector('.trail').style.width = '0%';
-                      el.querySelector('.gap').textContent = el.querySelector('.gap').dataset.mark; });
+    el.querySelector('.trail').style.width = '0%';
+    const g = el.querySelector('.gap'); g.textContent = g.dataset.mark; });
+  if (scale) scale.textContent = '0 - ' + dist + ' m';
   const t0 = performance.now();
   let snapped = false;
   const step = now => {
-    const el0 = (now - t0) / DUR;                     // 1.0 = the winner on the line
-    let running = false;
+    const e = now - t0, run = Math.min(1, e / DUR);
+    const zt = Math.max(0, Math.min(1, (e - DUR - HOLD) / ZOOM));
+    const ease = zt < .5 ? 4*zt*zt*zt : 1 - Math.pow(-2*zt + 2, 3) / 2;
+    const from = (dist - w1) * ease, span = dist - from;
+    const X = m => Math.max(0, Math.min(100, (m - from) / span * 100));
     els.forEach((el, i) => {
-      const frac = Math.min(1, el0 * win / runners[i]);
-      if (frac < 1) running = true;
-      el.querySelector('.dot').style.left = (frac * 100) + '%';
-      el.querySelector('.trail').style.width = (frac * 100) + '%';
+      const x = X(zt > 0 ? frozen[i] : Math.min(dist, dist * (run * win / t[i])));
+      el.querySelector('.dot').style.left = x + '%';
+      el.querySelector('.trail').style.width = x + '%';
     });
-    // the gaps are written once, on the frame the winner crosses — waiting for each runner to
-    // still be short of the line misses anyone beaten by a hundredth
-    if (el0 >= 1 && !snapped){
-      snapped = true;
+    if (run >= 1 && !snapped){
+      snapped = true;                    // one frame, or anyone beaten by a hundredth is missed
       els.forEach((el, i) => {
-        if (runners[i] === win) return;               // the winner keeps their time
-        const behind = dist - dist * (win / runners[i]);
-        el.querySelector('.gap').textContent = '−' + behind.toFixed(behind < 1 ? 2 : 1) + ' m';
+        if (t[i] === win) return;
+        const b = dist - frozen[i];
+        el.querySelector('.gap').textContent = '-' + b.toFixed(b < 1 ? 2 : 1) + ' m';
       });
     }
-    if (el0 < 1.6 && running) RAF = requestAnimationFrame(step);
+    if (zt > 0 && scale) scale.textContent = 'last ' + span.toFixed(span < 10 ? 1 : 0) + ' m';
+    if (zt >= 1) lanes.classList.add('zoomed');
+    if (e < DUR + HOLD + ZOOM) RAF = requestAnimationFrame(step);
   };
   RAF = requestAnimationFrame(step);
 }
 
 function draw(){
-  const all = racesOf(EV), race = all[TAB];
-  const fp = PH.find(p => /final/i.test(p.phaseName) && !/semi/i.test(p.phaseName)) || PH[0];
-  const disc = fp.discipline;
-  const sex = fp.sexCode === 'W' ? "Women's" : fp.sexCode === 'M' ? "Men's" : 'Mixed';
-  const when = new Date(fp.phaseDateAndTime);
-  const dist = distOf(disc.name);
-  const isFinal = TAB === 0;
+  const c = DECK[IDX], disc = c.disc;
+  const sexw = c.sex === 'W', sex = sexw ? "Women's" : c.sex === 'M' ? "Men's" : 'Mixed';
+  const when = new Date(c.when), dist = distOf(disc.name);
+  const all = c.ev ? racesOf(c.ev) : [];
+  const has = hasResult(c);
+  if (TAB >= all.length) TAB = 0;
+  const race = all[TAB], isFinal = TAB === 0;
   const card = document.getElementById('card');
   card.className = 'card' + (disc.isTrack ? ' track' : disc.isField ? ' field' : '');
 
-  card.innerHTML = `
-    <div class="head">
-      <div>
-        <div class="kicker"><span class="sx">${sex}</span> · <span class="type">${esc(disc.typeName)}</span>
-          · ${DAYNAME[fp.dayNum]}</div>
-        <h1>${esc(disc.name)}</h1>
-      </div>
-      <div class="when">
-        <div class="st">${fp.isResultPublished ? 'Result' : 'Start list'}</div>
-        <div class="dt">${when.toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
-          · ${when.toTimeString().slice(0,5)}</div>
-      </div>
-    </div>
+  const head = `<div class="head"><div>
+      <div class="kicker"><span class="sx${sexw ? ' w' : ''}">${sex}</span> &middot;
+        <span class="type">${esc(disc.typeName)}</span> &middot; ${DAYNAME[c.day]}</div>
+      <h1>${esc(disc.name)}</h1></div>
+    <div class="when"><div class="st${has ? '' : ' pending'}">${has ? 'Result' : 'To come'}</div>
+      <div class="dt">${when.toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
+        &middot; ${c.when.slice(11,16)}</div></div></div>`;
+  const foot = `<div class="foot">Data: World Athletics &middot; A guy with a scarf</div>`;
 
-    ${all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
-      `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${i ? 'Semifinal ' + r.n : 'Final'}
-        ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : ''}
+  if (!has){
+    card.innerHTML = head + `<div class="sched">
+      ${c.phases.map(p => `<div class="sline">
+        <div class="tm">${p.phaseDateAndTime.slice(11,16)}</div>
+        <div class="ph">${esc(p.phaseName)}</div>
+        <div class="fl">${p.isStartlistPublished ? 'start list published' : 'field not set'}</div>
+      </div>`).join('')}
+      <p class="await">World Athletics publishes no start list anywhere public for this one, so the
+      field is not known here yet. The card fills in as soon as it has been run.</p></div>` + foot;
+    return;
+  }
 
-    ${isFinal ? `<div class="podium">${podium(race)}</div>` : ''}
-    <div class="rest"><table>
-      <tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
-      ${rows(race, {skip: isFinal ? 3 : 0})}
-    </table></div>
+  card.innerHTML = head
+    + (all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
+        `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${i ? 'Semifinal ' + r.n : 'Final'}
+          ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
+    + (isFinal ? `<div class="podium">${podium(race, c.when)}</div>` : '')
+    + `<div class="rest"><table><tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
+        ${rows(race, isFinal ? 3 : 0)}</table></div>`
+    + raceStrip(race, dist, isFinal ? 'final' : 'semifinal') + foot;
 
-    ${raceStrip(race, dist, isFinal ? 'final' : 'semifinal')}
-
-    <div class="foot">Data: World Athletics · A guy with a scarf</div>
-    <div class="note">Prototype · one card of ${new Set(D.timetable.map(p => p.sexCode + p.discipline.name)).size}</div>`;
-
-  card.querySelectorAll('.tab').forEach(b =>
-    b.onclick = () => { TAB = +b.dataset.i; draw(); });
+  card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
-  if (rep){ rep.onclick = () => runRace(race, dist); setTimeout(() => runRace(race, dist), 450); }
+  if (rep){ rep.onclick = () => runRace(race, dist); setTimeout(() => runRace(race, dist), 420); }
 }
-</script>
 
+function go(i, fromHash){
+  IDX = (i + DECK.length) % DECK.length;
+  TAB = 0;
+  cancelAnimationFrame(RAF);
+  const c = DECK[IDX];
+  document.getElementById('cnum').textContent = IDX + 1;
+  document.querySelectorAll('.day').forEach(b => b.classList.toggle('on', +b.dataset.day === c.day));
+  if (!fromHash) history.replaceState(null, '', '#' + c.slug);
+  try { localStorage.setItem('uc.card', c.slug); } catch(e){}
+  markJump();
+  draw();
+}
+const next = () => go(IDX + 1), prev = () => go(IDX - 1);
+
+function setPlaying(on){
+  clearInterval(TIMER); TIMER = null;
+  document.getElementById('playIcon').innerHTML = on
+    ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+    : '<path d="M7 5v14l12-7z"/>';
+  if (on) TIMER = setInterval(next, 9000);
+}
+const toggleJump = () => { const p = document.getElementById('jumppop');
+  p.hidden = !p.hidden; if (!p.hidden) markJump(); };
+const closeJump = () => document.getElementById('jumppop').hidden = true;
+const openHelp  = () => { document.getElementById('help').hidden = false; setPlaying(false); };
+const closeHelp = () => document.getElementById('help').hidden = true;
+const toggleFS  = () => document.fullscreenElement ? document.exitFullscreen()
+  : document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+
+document.getElementById('next').onclick = next;
+document.getElementById('prev').onclick = prev;
+document.getElementById('restart').onclick = () => go(0);
+document.getElementById('play').onclick = () => setPlaying(!TIMER);
+document.getElementById('helpbtn').onclick = openHelp;
+document.getElementById('fs').onclick = toggleFS;
+document.getElementById('counter').onclick = e => { e.stopPropagation(); toggleJump(); };
+document.addEventListener('click', e => {
+  if (!e.target.closest('.jumppop') && !e.target.closest('#counter')) closeJump();
+});
+addEventListener('hashchange', () => {
+  const i = DECK.findIndex(c => c.slug === decodeURIComponent(location.hash.slice(1)));
+  if (i >= 0 && i !== IDX) go(i, true);
+});
+addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ closeJump(); return closeHelp(); }
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') prev();
+  else if (e.key === ' '){ e.preventDefault(); setPlaying(!TIMER); }
+  else if (e.key.toLowerCase() === 'h') openHelp();
+  else if (e.key.toLowerCase() === 'f') toggleFS();
+  else if (e.key === 'Home') go(0);
+  else if (e.key.toLowerCase() === 'r'){ const b = document.getElementById('replay'); if (b) b.click(); }
+});
+</script>
 </body>
 </html>
