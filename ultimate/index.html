@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ultimate Championship — Budapest 2026</title>
+<meta name="theme-color" content="#0a0807">
+<meta name="description" content="Every event of the 2026 World Athletics Ultimate Championship, one card at a time — start lists as they are published, results as they land.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0807'/><g stroke='%23e2572f' stroke-width='2.2' stroke-linecap='round'><path d='M5 11h22M5 21h22'/></g><path d='M24 3.5v25' stroke='%23f2c14e' stroke-width='2.6'/></svg>">
+<style>
+  :root{
+    --bg0:#0a0807; --bg1:#1a100c; --bg2:#2b1610;
+    --ink:#f6efe9; --muted:#b39a8c; --muted-2:#7c675c;
+    --line:rgba(230,190,160,.14);
+    --acc:#e2572f; --gold:#f2c14e; --men:#6f8fb8; --women:#d9834a;
+    --track:#c2410c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg0);color:var(--ink);
+    font-family:"Helvetica Neue",Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+    overflow:hidden}
+
+  /* ---------- chrome ---------- */
+  .top{display:flex;align-items:flex-end;gap:22px;padding:20px 34px 0}
+  .brand{font-size:10.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-2)}
+  .brand b{color:var(--acc)}
+  .days{display:flex;gap:6px;margin-left:auto}
+  .day{font-size:12px;font-weight:800;letter-spacing:.04em;border:1px solid var(--line);
+    background:transparent;color:var(--muted);border-radius:999px;padding:7px 15px;cursor:pointer;
+    font-family:inherit;transition:.15s;white-space:nowrap}
+  .day:hover{color:var(--ink)}
+  .day.on{color:var(--gold);border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.1)}
+  .day i{font-style:normal;color:var(--muted-2);font-weight:700;margin-left:7px}
+  .day.on i{color:rgba(242,193,78,.7)}
+
+  /* ---------- card ---------- */
+  .card{position:relative;height:calc(100vh - 58px);padding:14px 34px 22px;display:flex;
+    flex-direction:column;overflow:hidden}
+  /* a hurdles/sprint card runs lane lines under everything; field events will want their own */
+  .card.track::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(180deg,transparent 0 62px,rgba(226,87,47,.07) 62px 63px);
+    mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent)}
+  .card::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(900px 500px at 88% -8%,rgba(226,87,47,.16),transparent 62%)}
+  .card > *{position:relative;z-index:1}
+
+  .head{display:flex;align-items:flex-start;gap:26px}
+  .kicker{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted-2);display:flex;align-items:center;gap:10px}
+  .kicker .sx{color:var(--men)}
+  .kicker .type{color:var(--acc)}
+  h1{font-size:clamp(30px,4.4vw,54px);letter-spacing:-.025em;margin:5px 0 0;line-height:1}
+  .when{margin-left:auto;text-align:right;flex:0 0 auto}
+  .when .st{font-size:10.5px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--gold)}
+  .when .dt{font-size:13px;color:var(--muted);margin-top:5px}
+
+  /* ---------- the final ---------- */
+  .body{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);
+    gap:26px;margin-top:16px;min-height:0}
+  .panel{min-width:0;display:flex;flex-direction:column;min-height:0}
+  .plabel{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted-2);display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+  .plabel b{color:var(--ink)}
+  .plabel .wind{margin-left:auto;color:var(--muted-2);font-weight:700;letter-spacing:.04em}
+
+  .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    background:linear-gradient(180deg,var(--bg1),#120c08);min-height:190px;display:flex;
+    flex-direction:column;justify-content:flex-end;padding:14px 15px}
+  .pod .ph{position:absolute;inset:0;background-size:cover;background-position:50% 22%;
+    filter:grayscale(1) contrast(1.06);opacity:.5}
+  .pod .scrim{position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(10,8,7,.1) 0%,rgba(10,8,7,.86) 62%,rgba(10,8,7,.97) 100%)}
+  .pod.gold{border-color:rgba(242,193,78,.45)}
+  .pod.gold .ph{filter:none;opacity:.55}
+  .pod > *{position:relative}
+  .pos{position:absolute;top:11px;left:14px;font-size:34px;font-weight:800;line-height:1;
+    color:rgba(246,239,233,.22);z-index:1}
+  .pod.gold .pos{color:var(--gold);opacity:.85}
+  .pod .nm{font-size:17px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+  .pod .nat{font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--muted-2);margin-top:3px}
+  .pod .mk{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:8px;
+    font-variant-numeric:tabular-nums}
+  .pod.gold .mk{color:var(--gold)}
+  .pod .tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--bg0);background:var(--gold);border-radius:5px;
+    padding:3px 6px;margin-top:7px}
+
+  /* ---------- the rest of a field, and the semis ---------- */
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted-2);text-align:left;padding:0 0 6px}
+  th.r,td.r{text-align:right}
+  td{font-size:13px;padding:5px 0;border-top:1px solid rgba(230,190,160,.07)}
+  td.p{width:26px;color:var(--muted-2);font-weight:800}
+  td.n{font-weight:700}
+  td.c{width:44px;color:var(--muted-2);font-size:11px;font-weight:800;letter-spacing:.08em}
+  td.m{width:74px;font-weight:800}
+  tr.out td{color:var(--muted-2)}
+  tr.out td.m{color:var(--acc);font-size:11.5px;letter-spacing:.1em}
+  tr.q td.m{color:var(--gold)}
+  .rest{margin-top:14px;overflow:auto;min-height:0}
+
+  .semis{display:grid;grid-template-rows:1fr 1fr;gap:16px;min-height:0}
+  .semi{min-height:0;display:flex;flex-direction:column}
+  .semi .sc{overflow:auto;min-height:0}
+
+  .foot{position:absolute;left:34px;bottom:7px;font-size:10.5px;color:var(--muted-2);z-index:2}
+  .note{position:absolute;right:34px;bottom:7px;font-size:10.5px;color:var(--muted-2);z-index:2}
+  @media (max-width:900px){ .body{grid-template-columns:1fr} .semis{display:none} }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand"><b>Ultimate Championship</b> · Budapest 2026</div>
+  <div class="days" id="days"></div>
+</div>
+
+<section class="card" id="card"></section>
+
+<script>
+const PROTO = "Men's 110 Metres Hurdles";     // the one card this prototype draws
+
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
+
+fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(build);
+
+function build(D){
+  const days = [...new Set(D.timetable.map(p => p.dayNum))].sort();
+  const dates = {};
+  D.timetable.forEach(p => dates[p.dayNum] = p.date);
+  document.getElementById('days').innerHTML = days.map(n =>
+    `<button class="day${n === 1 ? ' on' : ''}">${DAYNAME[n]}<i>${fmtDate(dates[n])}</i></button>`).join('');
+
+  const ev = D.results.find(e => e.event === PROTO);
+  const phases = D.timetable.filter(p =>
+    p.sexCode === ev.sex && PROTO.includes(p.discipline.name));
+  drawCard(D, ev, phases);
+}
+
+const fmtDate = iso => {
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}).toUpperCase();
+};
+
+/* A race is drawn as a table, except the final's top three, which get the room.
+   Anything without a place — a DQ, a DNS — keeps its row but loses its rank. */
+function rows(race, D, {skip = 0} = {}){
+  return race.rows.slice(skip).map(r => {
+    const out = !r.place;
+    const mark = out ? (r.remark || r.mark || '—') : r.mark;
+    return `<tr class="${out ? 'out' : (r.qualified ? 'q' : '')}">
+      <td class="p">${out ? '' : esc(r.place)}</td>
+      <td class="n">${esc(r.name)}</td>
+      <td class="c">${esc(r.nat)}</td>
+      <td class="m r">${esc(mark)}</td></tr>`;
+  }).join('');
+}
+
+function podium(race, D){
+  return race.rows.slice(0, 3).map((r, i) => {
+    const pic = r.wa && D.photos[r.wa];
+    const bg = pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : '';
+    return `<div class="pod${i === 0 ? ' gold' : ''}">
+      ${bg}<div class="scrim"></div>
+      <div class="pos">${r.place || ''}</div>
+      <div class="nm">${esc(r.name)}</div>
+      <div class="nat">${esc(r.nat)}</div>
+      <div class="mk">${esc(r.mark)}</div>
+      ${r.record ? `<div><span class="tag">${esc(r.record)}</span></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function drawCard(D, ev, phases){
+  const final = ev.races.find(r => /final/i.test(r.name) && !/semi/i.test(r.name));
+  const semis = ev.races.filter(r => /semi/i.test(r.name));
+  const fp = phases.find(p => /final/i.test(p.phaseName) && !/semi/i.test(p.phaseName)) || phases[0];
+  const disc = fp.discipline;
+  const sex = fp.sexCode === 'W' ? "Women's" : fp.sexCode === 'M' ? "Men's" : 'Mixed';
+  const card = document.getElementById('card');
+  card.className = 'card' + (disc.isTrack ? ' track' : disc.isField ? ' field' : '');
+
+  const when = new Date(fp.phaseDateAndTime);
+  const decided = fp.isResultPublished;
+
+  card.innerHTML = `
+    <div class="head">
+      <div>
+        <div class="kicker"><span class="sx">${sex}</span> · <span class="type">${esc(disc.typeName)}</span>
+          · ${DAYNAME[fp.dayNum]}</div>
+        <h1>${esc(disc.name)}</h1>
+      </div>
+      <div class="when">
+        <div class="st">${decided ? 'Result' : 'Start list'}</div>
+        <div class="dt">${when.toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
+          · ${when.toTimeString().slice(0,5)}</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="panel">
+        <div class="plabel"><b>Final</b>
+          ${final.wind != null ? `<span class="wind">wind ${esc(final.wind)}</span>` : ''}</div>
+        <div class="podium">${podium(final, D)}</div>
+        <div class="rest"><table>
+          <tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
+          ${rows(final, D, {skip:3})}
+        </table></div>
+      </div>
+
+      <div class="panel semis">
+        ${semis.map(s => `<div class="semi">
+          <div class="plabel"><b>Semifinal ${s.n}</b>
+            ${s.wind != null ? `<span class="wind">wind ${esc(s.wind)}</span>` : ''}</div>
+          <div class="sc"><table>${rows(s, D)}</table></div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="foot">Data: World Athletics · A guy with a scarf</div>
+    <div class="note">Prototype · one card of ${new Set(D.timetable.map(p => p.sexCode + p.discipline.name)).size}</div>`;
+}
+</script>
+</body>
+</html>
