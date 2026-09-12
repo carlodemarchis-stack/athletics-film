@@ -133,6 +133,14 @@
   .lanes.zoomed .lane .gap{color:var(--ink)}
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:94px;width:2px;background:rgba(242,193,78,.4)}
+  /* a jump or a throw is not a race — the mark is a distance, so it is laid out as one */
+  .lanes.pit .strip{background:linear-gradient(90deg,rgba(226,87,47,.04),rgba(226,87,47,.11))}
+  .lanes.pit .trail{background:linear-gradient(90deg,rgba(226,87,47,.16),rgba(226,87,47,.5))}
+  .lanes.pit .lane.win .trail{background:linear-gradient(90deg,rgba(242,193,78,.22),rgba(242,193,78,.8))}
+  .lanes.pit .dot{border-radius:2px;width:4px;height:15px}
+  .lanes.pit .lane.win .dot{width:5px;height:17px}
+  .lanes.bar .dot{border-radius:2px;width:16px;height:4px}
+  .lanes.bar .lane.win .dot{height:5px}
 
   .sched{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;gap:2px;max-width:660px}
   .sline{display:grid;grid-template-columns:110px 1fr auto;align-items:baseline;gap:16px;
@@ -442,6 +450,76 @@ function runRace(race, dist){
   RAF = requestAnimationFrame(step);
 }
 
+const numOf = m => { const v = parseFloat(String(m).replace(/[^\d.]/g, '')); return isNaN(v) ? null : v; };
+
+/* Jumps and throws get the pit rather than the race: the mark is a distance, so every athlete
+   is a marker laid out at the distance they actually went. It opens on the full scale from
+   zero — which is honest, and which makes eight vaulters look identical — then closes in on
+   the spread, exactly as the race does at the line. */
+function pitStrip(race, disc, label){
+  const rows = race.rows.filter(r => r.place && numOf(r.mark));
+  if (rows.length < 2) return '';
+  const unit = disc.isField && /Jump|Vault/i.test(disc.name) ? 'height' : 'distance';
+  return `<div class="race"><div class="racehead">
+      <div class="racetitle">The ${esc(label)} pit &mdash; every mark at the ${unit} it went</div>
+      <span class="scale" id="scale">0 m</span>
+      <button class="replay" id="replay">&#9654; Lay it out</button></div>
+    <div class="lanes ${/Jump|Vault/i.test(disc.name) && !/Long|Triple/i.test(disc.name) ? 'pit bar' : 'pit'}" id="lanes">
+      ${rows.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
+        <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
+        <div class="strip"><div class="trail"></div><div class="dot"></div></div>
+        <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div></div>`).join('')}
+    </div></div>`;
+}
+
+function runPit(race){
+  const lanes = document.getElementById('lanes');
+  if (!lanes) return;
+  const m = race.rows.filter(r => r.place && numOf(r.mark)).map(r => numOf(r.mark));
+  const best = Math.max(...m), worst = Math.min(...m);
+  const els = [...lanes.querySelectorAll('.lane')];
+  const OUT = 2600, HOLD = 600, ZOOM = 1100;
+  const pad = Math.max((best - worst) * .35, best * .004);
+  const lo1 = Math.max(0, worst - pad), hi1 = best + pad * .5;   // where the scale settles
+  const scale = document.getElementById('scale');
+  cancelAnimationFrame(RAF);
+  lanes.classList.remove('zoomed');
+  els.forEach(el => { el.querySelector('.dot').style.left = '0%';
+    el.querySelector('.trail').style.width = '0%';
+    const g = el.querySelector('.gap'); g.textContent = g.dataset.mark; });
+
+  const t0 = performance.now();
+  let snapped = false;
+  const step = now => {
+    const e = now - t0;
+    const out = Math.min(1, e / OUT);
+    const oe = 1 - Math.pow(1 - out, 3);
+    const zt = Math.max(0, Math.min(1, (e - OUT - HOLD) / ZOOM));
+    const ze = zt < .5 ? 4*zt*zt*zt : 1 - Math.pow(-2*zt + 2, 3) / 2;
+    const lo = lo1 * ze, hi = (best * 1.03) + (hi1 - best * 1.03) * ze;
+    const X = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+    els.forEach((el, i) => {
+      const x = X(m[i] * oe + lo * (1 - oe));
+      el.querySelector('.dot').style.left = x + '%';
+      el.querySelector('.trail').style.width = x + '%';
+    });
+    if (out >= 1 && !snapped){
+      snapped = true;
+      els.forEach((el, i) => {
+        if (m[i] === best) return;
+        const b = best - m[i];
+        el.querySelector('.gap').textContent = '-' + b.toFixed(2) + ' m';
+      });
+    }
+    if (scale) scale.textContent = zt > 0
+      ? lo.toFixed(2) + ' - ' + hi.toFixed(2) + ' m'
+      : '0 - ' + (best * 1.03).toFixed(2) + ' m';
+    if (zt >= 1) lanes.classList.add('zoomed');
+    if (e < OUT + HOLD + ZOOM) RAF = requestAnimationFrame(step);
+  };
+  RAF = requestAnimationFrame(step);
+}
+
 function draw(){
   const c = DECK[IDX], disc = c.disc;
   const sexw = c.sex === 'W', sex = sexw ? "Women's" : c.sex === 'M' ? "Men's" : 'Mixed';
@@ -481,11 +559,15 @@ function draw(){
     + (isFinal ? `<div class="podium">${podium(race, c.when)}</div>` : '')
     + `<div class="rest"><table><tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
         ${rows(race, isFinal ? 3 : 0)}</table></div>`
-    + raceStrip(race, dist, isFinal ? 'final' : 'semifinal') + foot;
+    + (disc.isField ? pitStrip(race, disc, isFinal ? 'final' : 'semifinal')
+                    : raceStrip(race, dist, isFinal ? 'final' : 'semifinal')) + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
-  if (rep){ rep.onclick = () => runRace(race, dist); setTimeout(() => runRace(race, dist), 420); }
+  if (rep){
+    const play = () => disc.isField ? runPit(race) : runRace(race, dist);
+    rep.onclick = play; setTimeout(play, 420);
+  }
 }
 
 function go(i, fromHash){
