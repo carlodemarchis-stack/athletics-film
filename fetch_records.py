@@ -8,8 +8,11 @@ Three hops through the public worldathletics.org GraphQL API:
 """
 import json, os, sys, time, urllib.request
 
-EP = "https://graphql-prod-4881.edge.aws.worldathletics.org/graphql"
-KEY = "da2-wbnmtmvlpbhifh3uc2xaxsue5i"          # shipped in worldathletics.org's public JS bundle
+# WA rotates this host and key without notice — 4881 stopped resolving entirely on 2026-09-12.
+# To refresh: fetch any worldathletics.org page, pull /_next/static/chunks/*.js and grep for
+# `graphql:{endpoint:` — the endpoint and its apiKey sit together in that config blob.
+EP = "https://graphql-prod-4888.edge.aws.worldathletics.org/graphql"
+KEY = "da2-ekwnowppnnahhp33zt7yzri77m"          # shipped in worldathletics.org's public JS bundle
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # rarely contested, and the progression is two marks a year apart
