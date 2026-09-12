@@ -366,8 +366,8 @@ function buildJump(){
 const markJump = () => document.querySelectorAll('.jitem')
   .forEach((b, i) => b.classList.toggle('on', i === IDX));
 
-const racesOf = ev => ev.races.filter(r => /final/i.test(r.name) && !/semi/i.test(r.name))
-  .concat(ev.races.filter(r => /semi/i.test(r.name)));
+const isFinal = r => /final/i.test(r.name) && !/semi/i.test(r.name);
+const racesOf = ev => ev.races.filter(isFinal).concat(ev.races.filter(r => /semi/i.test(r.name)));
 
 function rows(race, skip){
   return race.rows.slice(skip || 0).map(r => {
@@ -515,12 +515,14 @@ const numOf = m => { const v = parseFloat(String(m).replace(/[^\d.]/g, '')); ret
 function pitStrip(race, disc, label){
   const rows = race.rows.filter(r => r.place && numOf(r.mark));
   if (rows.length < 2) return '';
-  const unit = disc.isField && /Jump|Vault/i.test(disc.name) ? 'height' : 'distance';
+  // a high jump or a vault goes up, a long or triple jump goes out, like every throw
+  const up = /Jump|Vault/i.test(disc.name) && !/Long|Triple/i.test(disc.name);
+  const unit = up ? 'height' : 'distance';
   return `<div class="race"><div class="racehead">
       <div class="racetitle">The ${esc(label)} pit &mdash; every mark at the ${unit} it went</div>
       <span class="scale" id="scale">0 m</span>
       <button class="replay" id="replay">&#9654; Lay it out</button></div>
-    <div class="lanes ${/Jump|Vault/i.test(disc.name) && !/Long|Triple/i.test(disc.name) ? 'pit bar' : 'pit'}" id="lanes">
+    <div class="lanes ${up ? 'pit bar' : 'pit'}" id="lanes">
       ${rows.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="defi"></div><div class="dot"></div></div>
@@ -589,7 +591,7 @@ function draw(){
   const all = c.ev ? racesOf(c.ev) : [];
   const has = hasResult(c);
   if (TAB >= all.length) TAB = 0;
-  const race = all[TAB], isFinal = TAB === 0;
+  const race = all[TAB], final = race && isFinal(race), anyFinal = all.some(isFinal);
   const card = document.getElementById('card');
   card.className = 'card' + (disc.isTrack ? ' track' : disc.isField ? ' field' : '');
 
@@ -597,7 +599,8 @@ function draw(){
       <div class="kicker"><span class="sx${sexw ? ' w' : ''}">${sex}</span> &middot;
         <span class="type">${esc(disc.typeName)}</span> &middot; ${DAYNAME[c.day]}</div>
       <h1>${esc(disc.name)}</h1></div>
-    <div class="when"><div class="st${has ? '' : ' pending'}">${has ? 'Result' : 'To come'}</div>
+    <div class="when"><div class="st${has ? '' : ' pending'}">${
+        has ? (anyFinal ? 'Result' : 'Semifinals') : 'To come'}</div>
       <div class="dt">${when.toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
         &middot; ${c.when.slice(11,16)}</div></div></div>`;
   const foot = `<div class="foot">Data: World Athletics &middot; A guy with a scarf</div>`;
@@ -616,13 +619,14 @@ function draw(){
 
   card.innerHTML = head
     + (all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
-        `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${i ? 'Semifinal ' + r.n : 'Final'}
+        `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${
+          isFinal(r) ? 'Final' : 'Semifinal ' + r.n}
           ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
-    + (isFinal ? `<div class="podium">${podium(race, c.when)}</div>` : '')
+    + (final ? `<div class="podium">${podium(race, c.when)}</div>` : '')
     + `<div class="rest"><table><tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
-        ${rows(race, isFinal ? 3 : 0)}</table></div>`
-    + (disc.isField ? pitStrip(race, disc, isFinal ? 'final' : 'semifinal')
-                    : raceStrip(race, dist, isFinal ? 'final' : 'semifinal')) + foot;
+        ${rows(race, final ? 3 : 0)}</table></div>`
+    + (disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
+                    : raceStrip(race, dist, final ? 'final' : 'semifinal')) + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
@@ -634,12 +638,18 @@ function draw(){
 
 // the card film slides one card to the next, the way the other films do: the card being left
 // walks off one side while the new one walks in from the other
-function slide(dir){
+// a copy of the card as it stands, taken before it is redrawn — this is the one that leaves
+function snapshot(){
   const stage = document.getElementById('stage'), card = document.getElementById('card');
   const ghost = card.cloneNode(true);
   ghost.removeAttribute('id');
   ghost.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));   // no duplicate ids
   stage.appendChild(ghost);
+  return ghost;
+}
+
+function slide(ghost, dir){
+  const card = document.getElementById('card');
   card.classList.add('still');
   card.style.transform = 'translateX(' + (dir * 100) + '%)';
   void card.offsetWidth;   // flush the jump so the move back animates — a rAF here would leave the
@@ -662,8 +672,9 @@ function go(i, fromHash){
   try { localStorage.setItem('uc.card', c.slug); } catch(e){}
   markJump();
   SLIDING = dir !== 0;
+  const ghost = dir ? snapshot() : null;
   draw();
-  if (dir) slide(dir);
+  if (ghost) slide(ghost, dir);
   SLIDING = false;
 }
 const next = () => go(IDX + 1), prev = () => go(IDX - 1);
