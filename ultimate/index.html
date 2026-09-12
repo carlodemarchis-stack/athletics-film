@@ -71,8 +71,16 @@
   .pod .cut{position:absolute;top:8px;left:4px;bottom:0;width:43%;background-size:contain;
     background-position:bottom left;background-repeat:no-repeat;
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.55))}
-  .pod.cutin{padding-left:calc(43% + 16px);min-height:238px}   /* room for the portrait to stand */
-  .pod.cutin .pos{position:static;font-size:64px;line-height:.86;margin-bottom:4px;opacity:1}
+  .pod.cutin{padding-left:calc(43% + 16px);padding-right:104px;min-height:238px}
+  /* the rank as a watermark: one numeral, the full height of the box, hard against its right */
+  .pod.gold.cutin .pos{position:absolute;top:0;bottom:0;right:12px;left:auto;display:flex;
+    align-items:center;font-size:300px;line-height:1;letter-spacing:-.04em;
+    color:rgba(242,193,78,.2);opacity:1;z-index:0}   /* .gold too, or .pod.gold .pos wins the colour */
+  /* the winner is read from across the room: the name and the mark carry the box */
+  .pod.cutin .nm{font-size:clamp(21px,1.85vw,30px);line-height:1.06;letter-spacing:-.02em}
+  .pod.cutin .nat{font-size:12px;margin-top:5px}
+  .pod.cutin .mk{font-size:clamp(36px,3.15vw,52px);margin-top:8px}
+  .pod.cutin .bio{font-size:11.5px;margin-top:9px}
   .pod > *{position:relative}
   .pos{position:absolute;top:10px;left:14px;font-size:32px;font-weight:800;line-height:1;
     color:rgba(246,239,233,.22);z-index:1}
