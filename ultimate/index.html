@@ -55,7 +55,8 @@
   .when .st.pending{color:var(--muted-2)}
   .when .dt{font-size:13px;color:var(--muted);margin-top:5px}
 
-  .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:13px}
+  /* the winner takes half the row, the other two share the rest */
+  .podium{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:13px}
   .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     background:linear-gradient(180deg,var(--bg1),#120c08);min-height:172px;display:flex;
     flex-direction:column;justify-content:flex-end;padding:13px 15px}
@@ -65,6 +66,10 @@
     background:linear-gradient(180deg,rgba(10,8,7,.06) 0%,rgba(10,8,7,.84) 58%,rgba(10,8,7,.97) 100%)}
   .pod.gold{border-color:rgba(242,193,78,.45)}
   .pod.gold .ph{filter:none;opacity:.55}
+  /* the portrait, lifted out of its background, standing in front of the action shot */
+  .pod .cut{position:absolute;top:8px;right:6px;bottom:0;width:44%;background-size:contain;
+    background-position:bottom right;background-repeat:no-repeat;
+    filter:drop-shadow(0 10px 24px rgba(0,0,0,.55))}
   .pod > *{position:relative}
   .pos{position:absolute;top:10px;left:14px;font-size:32px;font-weight:800;line-height:1;
     color:rgba(246,239,233,.22);z-index:1}
@@ -286,6 +291,9 @@
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
+// winners whose portrait has been lifted out of a World Athletics app screenshot by hand
+const CUT = new Set(['14739628','14935809','14753981','14679502','14653717','14827877',
+                     '14659011','15129238']);
 let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false;
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
@@ -384,7 +392,10 @@ function podium(race, when){
     if (p.sb && p.sb !== p.pb) bits.push(`<span>SB <b>${esc(p.sb)}</b></span>`);
     return `<div class="pod${i === 0 ? ' gold' : ''}">
       ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
-      <div class="scrim"></div><div class="pos">${r.place || ''}</div>
+      <div class="scrim"></div>
+      ${i === 0 && CUT.has(String(r.wa)) ? `<div class="cut"
+        style="background-image:url('img/ath/${r.wa}.webp')"></div>` : ''}
+      <div class="pos">${r.place || ''}</div>
       <div class="idrow">
         ${face ? `<div class="face" style="background-image:url('${D.photoBase}${face}')"></div>` : ''}
         <div><div class="nm">${esc(r.name)}</div><div class="nat">${esc(r.nat)}</div></div>
