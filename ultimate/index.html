@@ -137,6 +137,14 @@
   /* a pit is the marks and nothing else: no trail, because nobody ran from zero to a throw */
   .lanes.pit .strip{background:transparent;border:0;border-bottom:1px solid rgba(230,190,160,.08)}
   .lanes.pit .trail{display:none}
+  /* the reach from a mark to the winner's: the line IS the deficit, drawn at the same scale */
+  .lanes.pit .defi{position:absolute;top:50%;height:2px;transform:translateY(-50%);left:0;width:0;
+    background:linear-gradient(90deg,rgba(226,87,47,.55),rgba(242,193,78,.32));
+    opacity:0;transition:opacity .22s}
+  .lanes.pit .defi.in{opacity:1}
+  .lanes.pit .winline{position:absolute;top:0;bottom:0;width:2px;background:rgba(242,193,78,.38);
+    opacity:0;transition:opacity .25s}
+  .lanes.pit .winline.in{opacity:1}
   .lanes.pit .dot{border-radius:2px;width:4px;height:16px;opacity:0;transition:opacity .18s}
   .lanes.pit .dot.in{opacity:1}
   .lanes.pit .lane.win .dot{width:5px;height:19px}
@@ -472,8 +480,9 @@ function pitStrip(race, disc, label){
     <div class="lanes ${/Jump|Vault/i.test(disc.name) && !/Long|Triple/i.test(disc.name) ? 'pit bar' : 'pit'}" id="lanes">
       ${rows.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
-        <div class="strip"><div class="dot"></div></div>
+        <div class="strip"><div class="defi"></div><div class="dot"></div></div>
         <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div></div>`).join('')}
+      <div class="winline" id="winline"></div>
     </div>
     <div class="pitaxis"><div></div><div class="ax" id="pitax"></div><div></div></div></div>`;
 }
@@ -499,10 +508,19 @@ function runPit(race){
   if (ax) ax.innerHTML = [lo, (lo + hi) / 2, hi]
     .map(v => `<span style="left:${X(v)}%">${v.toFixed(2)}</span>`).join('');
 
+  const winline = document.getElementById('winline');
+  if (winline){
+    winline.classList.remove('in');
+    // the lane grid is 150px | 1fr | 82px with 12px gaps, so the strip starts at 162px and the
+    // 1fr column is the width less 162 and less the 94 the gap column and its gap take on the right
+    winline.style.left = 'calc(162px + (100% - 256px) * ' + (X(best) / 100).toFixed(4) + ')';
+  }
   els.forEach((el, i) => {
-    const d = el.querySelector('.dot');
-    d.classList.remove('in');
+    const d = el.querySelector('.dot'), f = el.querySelector('.defi');
+    d.classList.remove('in'); if (f) f.classList.remove('in');
     d.style.left = X(m[i]) + '%';                      // the mark sits where the mark went
+    if (f){ f.style.left = X(m[i]) + '%';              // and reaches from there to the winner's
+            f.style.width = Math.max(0, X(best) - X(m[i])) + '%'; }
     const g = el.querySelector('.gap'); g.textContent = g.dataset.mark;
   });
   // landed worst first so the card builds to the winner, which is the order the crowd learns it in
@@ -510,6 +528,9 @@ function runPit(race){
   order.forEach((idx, n) => {
     runPit._t.push(setTimeout(() => {
       els[idx].querySelector('.dot').classList.add('in');
+      const f = els[idx].querySelector('.defi');
+      if (f && m[idx] !== best) f.classList.add('in');
+      if (winline && m[idx] === best) winline.classList.add('in');
       if (m[idx] !== best){
         const b = best - m[idx];
         els[idx].querySelector('.gap').textContent = '-' + b.toFixed(2) + ' m';
