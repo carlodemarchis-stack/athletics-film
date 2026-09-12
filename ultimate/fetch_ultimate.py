@@ -102,8 +102,10 @@ def profiles(people):
         sbs = ((c.get("seasonsBests") or {}).get("results")) or []
         pick = lambda rows: next((r for r in rows if r.get("discipline") == disc), None)
         pb, sb = pick(pbs), pick(sbs)
+        # two image slots on a competitor, and they are not the same picture: the first is the
+        # action shot the results API also serves, the second a portrait. Keep whichever exist.
         out[str(wa)] = dict(born=bd.get("birthDate"), country=bd.get("countryFullName"),
-            media=c.get("primaryMediaId") or None,
+            media=c.get("primaryMediaId") or None, face=c.get("primaryMediaId2") or None,
             pb=(pb or {}).get("mark"), pbVenue=(pb or {}).get("venue"), pbDate=(pb or {}).get("date"),
             sb=(sb or {}).get("mark"),
             honours=[h.get("categoryName") for h in (c.get("honours") or [])][:4])
@@ -127,16 +129,26 @@ def main():
         disc = e["event"].split("'s ", 1)[-1] if "'s " in e["event"] else e["event"]
         for r in fin["rows"][:3]:
             if r["wa"] and r["slug"]: podium.append((r["wa"], r["slug"], disc))
-    prof = profiles(podium)
-    print(f"profiles:  {len(prof)} podium athletes read")
+    # A profile read can fail wholesale — worldathletics.org rate-limits, and a blocked request
+    # returns an error page with no __NEXT_DATA__. Never let that wipe profiles already on disk.
+    prev = {}
+    dst = os.path.join(HERE, "data", "ultimate.json")
+    if os.path.exists(dst):
+        try: prev = json.load(open(dst)).get("profiles") or {}
+        except Exception: pass
+    fresh = profiles(podium)
+    prof = dict(prev); prof.update(fresh)
+    print(f"profiles:  {len(fresh)} read, {len(prof)} held"
+          + ("  (kept %d from the last run)" % (len(prof) - len(fresh)) if len(prof) > len(fresh) else ""))
+    # the profile's primaryMediaId is a list of media-document ids, not a filename, and getMedia
+    # will not resolve them — so only a real filename from the action API is ever a photo URL
     for wa, m in ((k, v.get("media")) for k, v in prof.items()):
-        if m and wa not in pics: pics[wa] = m          # the profile knows some the API does not
+        if isinstance(m, str) and m and wa not in pics: pics[wa] = m
     out = dict(fetched=time.strftime("%Y-%m-%d %H:%M"), competitionId=COMP,
                daysPublished=days, timetable=tt, results=res, photos=pics, profiles=prof,
                photoBase="https://assets.aws.worldathletics.org/")
-    p = os.path.join(HERE, "data", "ultimate.json")
-    json.dump(out, open(p, "w"), ensure_ascii=False)
-    print("->", p, f"({os.path.getsize(p)//1024}KB)")
+    json.dump(out, open(dst, "w"), ensure_ascii=False)
+    print("->", dst, f"({os.path.getsize(dst)//1024}KB)")
 
 if __name__ == "__main__":
     main()
