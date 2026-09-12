@@ -440,9 +440,10 @@ function raceStrip(race, dist, label){
   const runners = race.rows.filter(r => r.place && secs(r.mark));
   if (runners.length < 2 || !dist) return '';
   return `<div class="race"><div class="racehead">
-      <div class="racetitle">Race the ${esc(label)} &mdash; <b>${dist} m</b>, every finisher at their own pace</div>
-      <span class="scale" id="scale">0 - ${dist} m</span>
-      <button class="replay" id="replay">&#9654; Run it</button></div>
+      <div class="racetitle">The ${esc(label)} at the line &mdash; <b>${dist} m</b>, all home,
+        then back to where they were when the winner crossed</div>
+      <span class="scale" id="scale">all home</span>
+      <button class="replay" id="replay">&#9654; Wind it back</button></div>
     <div class="rrow"><div class="lanes" id="lanes"><div class="finish"></div>
       ${runners.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
@@ -462,19 +463,19 @@ function runRace(race, dist){
   const t = race.rows.filter(r => r.place && secs(r.mark)).map(r => secs(r.mark));
   const win = Math.min(...t), last = Math.max(...t);
   const els = [...lanes.querySelectorAll('.lane')];
-  const WIN_AT = 4200;                                  // the winner's run, on screen
-  const RUN = WIN_AT * last / win;                      // ...and on to the last one home
-  const HOLD = 700, BACK = 1000;
+  // no run-out: they are all home together on the line, which is where a race is decided anyway,
+  // and the eye only needs the walk back to see who was where when the winner crossed
+  const HOLD = 900, BACK = 1400;
   const frozen = t.map(x => dist * win / x);            // where each of them was at the winner's line
   const w1 = Math.max((dist - Math.min(...frozen)) * 1.25, dist * 0.02);
   const scale = document.getElementById('scale');
   cancelAnimationFrame(RAF);
   lanes.classList.remove('zoomed');
-  els.forEach(el => { el.querySelector('.dot').style.left = '0%';
-    el.querySelector('.trail').style.width = '0%';
+  els.forEach(el => { el.querySelector('.dot').style.left = '100%';
+    el.querySelector('.trail').style.width = '100%';
     const dm = el.querySelector('.dm');
     if (dm){ dm.classList.remove('in', 'rt'); dm.textContent = ''; } });
-  if (scale) scale.textContent = '0 - ' + dist + ' m';
+  if (scale) scale.textContent = 'all home - ' + last.toFixed(2) + ' s';
   // the strip's own box, measured, so the labels sit on the track whatever the columns are wide
   const st = els[0] && els[0].querySelector('.strip');
   const SX = st ? st.offsetLeft : 0, SW = st ? st.offsetWidth : 0;
@@ -483,14 +484,12 @@ function runRace(race, dist){
   let snapped = false;
   const step = now => {
     const e = now - t0;
-    const bt = Math.max(0, Math.min(1, (e - RUN - HOLD) / BACK));   // the walk back
+    const bt = Math.max(0, Math.min(1, (e - HOLD) / BACK));   // the walk back
     const ease = bt < .5 ? 4*bt*bt*bt : 1 - Math.pow(-2*bt + 2, 3) / 2;
     const from = (dist - w1) * ease, span = dist - from;
     const X = m => Math.max(0, Math.min(100, (m - from) / span * 100));
     els.forEach((el, i) => {
-      const ran = Math.min(dist, dist * (e / WIN_AT) * (win / t[i]));
-      const pos = bt > 0 ? dist + (frozen[i] - dist) * ease : ran;   // home, then back to the line
-      const x = X(pos);
+      const x = X(dist + (frozen[i] - dist) * ease);   // from the line back to where they were
       el.querySelector('.dot').style.left = x + '%';
       el.querySelector('.trail').style.width = x + '%';
       const dm = el.querySelector('.dm');
@@ -507,10 +506,10 @@ function runRace(race, dist){
     }
     if (scale){
       scale.textContent = bt > 0 ? 'at the winner\'s line - last ' + span.toFixed(span < 10 ? 1 : 0) + ' m'
-        : (e >= RUN ? 'all home - ' + last.toFixed(2) + ' s' : '0 - ' + dist + ' m');
+        : 'all home - ' + last.toFixed(2) + ' s';
     }
     if (bt >= 1) lanes.classList.add('zoomed');
-    if (e < RUN + HOLD + BACK) RAF = requestAnimationFrame(step);
+    if (e < HOLD + BACK) RAF = requestAnimationFrame(step);
   };
   RAF = requestAnimationFrame(step);
 }
