@@ -18,6 +18,11 @@ EP   = "https://graphql-prod-4888.edge.aws.worldathletics.org/graphql"
 KEY  = "da2-ekwnowppnnahhp33zt7yzri77m"      # see fetch_records.py for how to refresh these
 COMP = 7212925                                # eventId_WA of the 2026 Ultimate Championship
 RESULTS_URL = f"https://worldathletics.org/competition/calendar-results/results/{COMP}"
+PF_URL = f"https://media.aws.iaaf.org/competitiondocuments/photofinish/{COMP}/"
+PF_CODE = {"100 Metres": "100", "200 Metres": "200", "400 Metres": "400", "800 Metres": "800",
+           "1500 Metres": "1500", "5000 Metres": "5000", "100 Metres Hurdles": "100H",
+           "110 Metres Hurdles": "110H", "400 Metres Hurdles": "400H",
+           "4x100 Metres Relay": "4X1", "4x400 Metres Relay": "4X4"}
 UA   = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0 Safari/537.36"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -102,6 +107,42 @@ def day_events(pp):
                             relay=e.get("isRelay"), withWind=e.get("withWind"), races=races))
     return out
 
+def photofinish(res):
+    """Seiko's finish-line image for every track race that has one.
+
+    They are not in any API and not named like the other competition documents: they live at
+    photofinish/<competition>/<SEX>_<CODE>_<phase>_<n>.jpg, 7000px wide and 2-4MB each, so they
+    are fetched once and kept in the repo at a size a card can actually use.
+    """
+    from PIL import Image                       # as tools/build_event_bg.py does
+    out = os.path.join(HERE, "img", "pf")
+    os.makedirs(out, exist_ok=True)
+    got = 0
+    for e in res:
+        code = PF_CODE.get(re.sub(r"^(Men's |Women's |Mixed )", "", e["event"]))
+        if not code: continue
+        for r in e["races"]:
+            ph = "f" if ("final" in (r["name"] or "").lower()
+                         and "semi" not in (r["name"] or "").lower()) else "sf"
+            name = f'{e["sex"]}_{code}_{ph}_{r["n"] or 1}'
+            dst = os.path.join(out, name + ".webp")
+            if os.path.exists(dst): r["pf"] = name + ".webp"; got += 1; continue
+            tmp = os.path.join(out, name + ".jpg")
+            try:
+                req = urllib.request.Request(PF_URL + name + ".jpg", headers={"User-Agent": UA})
+                with urllib.request.urlopen(req, timeout=120) as fh, open(tmp, "wb") as w:
+                    w.write(fh.read())
+            except Exception:
+                continue                        # a race with no photo finish, or not yet posted
+            im = Image.open(tmp).convert("RGB")
+            im.thumbnail((1600, 1600), Image.LANCZOS)
+            im.save(dst, quality=80, method=6)
+            os.remove(tmp)
+            r["pf"] = name + ".webp"; got += 1
+            print(f"  + photo finish {name} {im.size[0]}x{im.size[1]} "
+                  f"{os.path.getsize(dst)//1024}KB")
+    return got
+
 def photos(ids):
     if not ids: return {}
     q = """query($ids:[Int]){getAthleteActionPictureByIds(ids:$ids){id primaryMediaId}}"""
@@ -139,6 +180,7 @@ def main():
     res, days = results(max(p['dayNum'] for p in tt))
     n = sum(len(r['rows']) for e in res for r in e['races'])
     print(f"results:   {len(res)} events, {n} rows, days published {days}")
+    print(f"photo finish: {photofinish(res)} races have one")
     pics = photos([r["wa"] for e in res for ra in e["races"] for r in ra["rows"] if r["wa"]])
     print(f"photos:    {len(pics)} athletes have one")
     # only the podium gets a profile read — that is what the box on the card shows

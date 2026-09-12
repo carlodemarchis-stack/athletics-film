@@ -163,6 +163,14 @@
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:calc(var(--gw) + 12px);width:2px;
     background:rgba(242,193,78,.4)}
+  /* Seiko's finish-line image beside the race it belongs to */
+  .rrow{display:flex;gap:18px;align-items:stretch}
+  .rrow .lanes{flex:1 1 auto;min-width:0;align-self:center}
+  .pf{flex:0 0 34%;margin:0;display:flex;flex-direction:column;min-width:0;align-self:center}
+  .pf img{width:100%;flex:1 1 auto;min-height:0;max-height:27vh;object-fit:contain;object-position:50% 50%;
+    border:1px solid var(--line);border-radius:8px;background:#0f0b09}
+  .pf figcaption{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted-2);margin-top:6px;text-align:right}
   /* a jump or a throw is not a race — the mark is a distance, so it is laid out as one */
   /* a pit is the marks and nothing else: no trail, because nobody ran from zero to a throw */
   .lanes.pit .strip{background:transparent;border:0;border-bottom:1px solid rgba(230,190,160,.08)}
@@ -435,12 +443,13 @@ function raceStrip(race, dist, label){
       <div class="racetitle">Race the ${esc(label)} &mdash; <b>${dist} m</b>, every finisher at their own pace</div>
       <span class="scale" id="scale">0 - ${dist} m</span>
       <button class="replay" id="replay">&#9654; Run it</button></div>
-    <div class="lanes" id="lanes"><div class="finish"></div>
+    <div class="rrow"><div class="lanes" id="lanes"><div class="finish"></div>
       ${runners.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="trail"></div><div class="dot"></div></div><div class="dm"></div>
         <div class="gap">${esc(r.mark)}</div></div>`).join('')}
-    </div></div>`;
+    </div>${race.pf ? `<figure class="pf"><img src="img/pf/${esc(race.pf)}" alt="Photo finish">
+      <figcaption>Photo finish &middot; Seiko</figcaption></figure>` : ''}</div></div>`;
 }
 
 /* The race is run properly first — everybody crosses the line, because that is what happens.
