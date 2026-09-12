@@ -31,8 +31,11 @@
   .day i{font-style:normal;color:var(--muted-2);font-weight:700;margin-left:7px}
   .day.on i{color:rgba(242,193,78,.7)}
 
-  .card{position:relative;height:calc(100vh - 54px);padding:12px 34px 62px;display:flex;
-    flex-direction:column;overflow:hidden}
+  .stage{position:relative;height:calc(100vh - 54px);overflow:hidden}
+  .card{position:absolute;inset:0;padding:12px 34px 62px;display:flex;
+    flex-direction:column;overflow:hidden;
+    transition:transform .55s cubic-bezier(.7,0,.2,1)}
+  .card.still{transition:none}
   .card.track::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
     background:repeating-linear-gradient(180deg,transparent 0 62px,rgba(226,87,47,.07) 62px 63px);
     mask-image:linear-gradient(180deg,transparent,#000 22%,#000 70%,transparent)}
@@ -229,7 +232,7 @@
   <div class="days" id="days"></div>
 </div>
 
-<section class="card" id="card"></section>
+<div class="stage" id="stage"><section class="card" id="card"></section></div>
 
 <div class="controls">
   <button id="restart" title="First card (Home)"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
@@ -272,7 +275,7 @@
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
-let D, DECK = [], IDX = 0, TAB = 0, RAF = null, TIMER = null;
+let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false;
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
 
@@ -523,8 +526,8 @@ function runPit(race){
             f.style.width = Math.max(0, X(best) - X(m[i])) + '%'; }
     const g = el.querySelector('.gap'); g.textContent = g.dataset.mark;
   });
-  // landed worst first so the card builds to the winner, which is the order the crowd learns it in
-  const order = els.map((el, i) => i).sort((a, b) => m[a] - m[b]);
+  // the winner lands first and the rule with it, then each mark behind reaches up to it
+  const order = els.map((el, i) => i).sort((a, b) => m[b] - m[a]);
   order.forEach((idx, n) => {
     runPit._t.push(setTimeout(() => {
       els[idx].querySelector('.dot').classList.add('in');
@@ -585,11 +588,30 @@ function draw(){
   const rep = document.getElementById('replay');
   if (rep){
     const play = () => disc.isField ? runPit(race) : runRace(race, dist);
-    rep.onclick = play; setTimeout(play, 420);
+    rep.onclick = play; setTimeout(play, SLIDING ? 720 : 420);
   }
 }
 
+// the card film slides one card to the next, the way the other films do: the card being left
+// walks off one side while the new one walks in from the other
+function slide(dir){
+  const stage = document.getElementById('stage'), card = document.getElementById('card');
+  const ghost = card.cloneNode(true);
+  ghost.removeAttribute('id');
+  ghost.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));   // no duplicate ids
+  stage.appendChild(ghost);
+  card.classList.add('still');
+  card.style.transform = 'translateX(' + (dir * 100) + '%)';
+  void card.offsetWidth;   // flush the jump so the move back animates — a rAF here would leave the
+                           // card parked off-screen in a background tab, where rAF never fires
+  card.classList.remove('still');
+  card.style.transform = '';
+  ghost.style.transform = 'translateX(' + (dir * -100) + '%)';
+  setTimeout(() => ghost.remove(), 700);
+}
+
 function go(i, fromHash){
+  const dir = IDX == null ? 0 : i > IDX ? 1 : i < IDX ? -1 : 0;
   IDX = (i + DECK.length) % DECK.length;
   TAB = 0;
   cancelAnimationFrame(RAF);
@@ -599,7 +621,10 @@ function go(i, fromHash){
   if (!fromHash) history.replaceState(null, '', '#' + c.slug);
   try { localStorage.setItem('uc.card', c.slug); } catch(e){}
   markJump();
+  SLIDING = dir !== 0;
   draw();
+  if (dir) slide(dir);
+  SLIDING = false;
 }
 const next = () => go(IDX + 1), prev = () => go(IDX - 1);
 
