@@ -59,8 +59,29 @@ def timetable():
         r["date"] = d
     return rows
 
-def results():
-    pp = next_data(RESULTS_URL)["props"]["pageProps"]["calendarEventsResults"]
+def results(ndays):
+    # the page shows ONE day at a time and defaults to the first, and its own day list only ever
+    # names the days up to the one asked for — so walk the days the timetable knows about.
+    # Without this the deck stopped at day 1 while the meet was still running.
+    out, seen, days = [], {}, []
+    for n in range(1, ndays + 1):
+        try:
+            pp = next_data(f"{RESULTS_URL}?day={n}")["props"]["pageProps"]["calendarEventsResults"]
+        except Exception as e:
+            print(f"  ! day {n}: {e}"); continue
+        got = day_events(pp)
+        if not got: continue
+        days = [d["date"] for d in (pp.get("options") or {}).get("days", [])] or days
+        for ev in got:
+            k = (ev["sex"], ev["event"])
+            if k in seen:                       # semifinals one day, the final the next
+                have = {(r["name"], r["n"]) for r in seen[k]["races"]}
+                seen[k]["races"] += [r for r in ev["races"] if (r["name"], r["n"]) not in have]
+            else:
+                seen[k] = ev; out.append(ev)
+    return out, days
+
+def day_events(pp):
     out = []
     for title in pp.get("eventTitles") or []:
         for e in title.get("events") or []:
@@ -79,7 +100,7 @@ def results():
                                   wind=r.get("wind"), rows=rows))
             out.append(dict(event=e.get("event"), sex=e.get("gender"),
                             relay=e.get("isRelay"), withWind=e.get("withWind"), races=races))
-    return out, [d["date"] for d in (pp.get("options") or {}).get("days", [])]
+    return out
 
 def photos(ids):
     if not ids: return {}
@@ -115,7 +136,7 @@ def profiles(people):
 def main():
     tt = timetable()
     print(f"timetable: {len(tt)} phases across {len({p['dayNum'] for p in tt})} days")
-    res, days = results()
+    res, days = results(max(p['dayNum'] for p in tt))
     n = sum(len(r['rows']) for e in res for r in e['races'])
     print(f"results:   {len(res)} events, {n} rows, days published {days}")
     pics = photos([r["wa"] for e in res for ra in e["races"] for r in ra["rows"] if r["wa"]])
