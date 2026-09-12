@@ -71,16 +71,20 @@
   .pod .cut{position:absolute;top:8px;left:4px;bottom:0;width:43%;background-size:contain;
     background-position:bottom left;background-repeat:no-repeat;
     filter:drop-shadow(0 10px 24px rgba(0,0,0,.55))}
-  .pod.cutin{padding-left:calc(43% + 16px);padding-right:104px;min-height:238px}
-  /* the rank as a watermark: one numeral, the full height of the box, hard against its right */
+  /* any box with a portrait reads photo left, result right; the rank leads the reading */
+  .pod.cutin{padding-left:calc(43% + 14px);min-height:238px}
+  .pod.cutin .pos{position:static;font-size:30px;line-height:.9;margin-bottom:3px;
+    color:rgba(246,239,233,.45);opacity:1}
+  .pod.gold.cutin{padding-left:calc(43% + 16px);padding-right:104px}
+  /* on the winner the rank is a watermark: one numeral, the full height, hard against the right */
   .pod.gold.cutin .pos{position:absolute;top:0;bottom:0;right:12px;left:auto;display:flex;
-    align-items:center;font-size:300px;line-height:1;letter-spacing:-.04em;
+    align-items:center;margin:0;font-size:300px;line-height:1;letter-spacing:-.04em;
     color:rgba(242,193,78,.2);opacity:1;z-index:0}   /* .gold too, or .pod.gold .pos wins the colour */
   /* the winner is read from across the room: the name and the mark carry the box */
-  .pod.cutin .nm{font-size:clamp(21px,1.85vw,30px);line-height:1.06;letter-spacing:-.02em}
-  .pod.cutin .nat{font-size:12px;margin-top:5px}
-  .pod.cutin .mk{font-size:clamp(36px,3.15vw,52px);margin-top:8px}
-  .pod.cutin .bio{font-size:11.5px;margin-top:9px}
+  .pod.gold.cutin .nm{font-size:clamp(21px,1.85vw,30px);line-height:1.06;letter-spacing:-.02em}
+  .pod.gold.cutin .nat{font-size:12px;margin-top:5px}
+  .pod.gold.cutin .mk{font-size:clamp(36px,3.15vw,52px);margin-top:8px}
+  .pod.gold.cutin .bio{font-size:11.5px;margin-top:9px}
   .pod > *{position:relative}
   .pos{position:absolute;top:10px;left:14px;font-size:32px;font-weight:800;line-height:1;
     color:rgba(246,239,233,.22);z-index:1}
@@ -312,7 +316,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
 const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
 // winners whose portrait has been lifted out of a World Athletics app screenshot by hand
 const CUT = new Set(['14739628','14935809','14753981','14679502','14653717','14827877',
-                     '14659011','15129238']);
+                     '14659011','15129238','14579526','14451249']);
 let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false;
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
@@ -409,7 +413,7 @@ function podium(race, when){
     if (age != null) bits.push(`<span><b>${age}</b> yrs</span>`);
     if (p.pb) bits.push(`<span class="${p.pb === r.mark ? 'best' : ''}">PB <b>${esc(p.pb)}</b></span>`);
     if (p.sb && p.sb !== p.pb) bits.push(`<span>SB <b>${esc(p.sb)}</b></span>`);
-    const cut = i === 0 && CUT.has(String(r.wa));
+    const cut = CUT.has(String(r.wa));
     return `<div class="pod${i === 0 ? ' gold' : ''}${cut ? ' cutin' : ''}">
       ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
       <div class="scrim"></div>
