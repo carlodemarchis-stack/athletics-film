@@ -107,6 +107,45 @@
   .semi{min-height:0;display:flex;flex-direction:column}
   .semi .sc{overflow:auto;min-height:0}
 
+  /* ---------- tabs: the final is the card, the semis are behind it ---------- */
+  .tabs{display:flex;gap:7px;margin-bottom:11px}
+  .tab{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    border:1px solid var(--line);background:transparent;color:var(--muted-2);border-radius:999px;
+    padding:6px 13px;cursor:pointer;font-family:inherit;transition:.15s}
+  .tab:hover{color:var(--ink)}
+  .tab.on{color:var(--gold);border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.1)}
+  .tab .w{color:var(--muted-2);font-weight:700;margin-left:7px;letter-spacing:.02em}
+  .tab.on .w{color:rgba(242,193,78,.65)}
+
+  /* ---------- the race ---------- */
+  .race{flex:0 0 auto;border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  .racehead{display:flex;align-items:center;gap:14px;margin-bottom:9px}
+  .racetitle{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted-2)}
+  .racetitle b{color:var(--ink)}
+  .replay{margin-left:auto;font-size:11.5px;font-weight:800;letter-spacing:.06em;
+    border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;
+    padding:7px 16px;cursor:pointer;font-family:inherit;transition:.15s}
+  .replay:hover{border-color:var(--gold);color:var(--gold)}
+  .lanes{position:relative}
+  .lane{display:grid;grid-template-columns:150px 1fr 82px;align-items:center;gap:12px;height:22px}
+  .lane .who{font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;color:var(--muted)}
+  .lane.win .who{color:var(--ink)}
+  .lane .strip{position:relative;height:13px;border-radius:3px;
+    background:linear-gradient(180deg,rgba(226,87,47,.09),rgba(226,87,47,.05));
+    border:1px solid rgba(230,190,160,.07);overflow:hidden}
+  .lane .dot{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+    background:var(--muted);transform:translate(-50%,-50%);left:0}
+  .lane.win .dot{background:var(--gold);box-shadow:0 0 12px 2px rgba(242,193,78,.55)}
+  .lane .trail{position:absolute;top:50%;height:2px;left:0;width:0;transform:translateY(-50%);
+    background:linear-gradient(90deg,transparent,rgba(226,87,47,.55))}
+  .lane.win .trail{background:linear-gradient(90deg,transparent,rgba(242,193,78,.75))}
+  .lane .gap{font-size:11px;font-weight:800;color:var(--muted-2);text-align:right;
+    font-variant-numeric:tabular-nums;white-space:nowrap}
+  .lane.win .gap{color:var(--gold)}
+  .finish{position:absolute;top:0;bottom:0;right:94px;width:2px;background:rgba(242,193,78,.4)}
+
   .foot{position:absolute;left:34px;bottom:7px;font-size:10.5px;color:var(--muted-2);z-index:2}
   .note{position:absolute;right:34px;bottom:7px;font-size:10.5px;color:var(--muted-2);z-index:2}
   @media (max-width:900px){ .body{grid-template-columns:1fr} .semis{display:none} }
@@ -127,47 +166,48 @@ const PROTO = "Men's 110 Metres Hurdles";     // the one card this prototype dra
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
   c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
+let D, EV, PH, TAB = 0, RAF = null;
 
-fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(build);
+fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
 
-function build(D){
+const fmtDate = iso => new Date(iso + 'T00:00:00')
+  .toLocaleDateString('en-GB', {day:'numeric', month:'short'}).toUpperCase();
+
+function boot(d){
+  D = d;
   const days = [...new Set(D.timetable.map(p => p.dayNum))].sort();
-  const dates = {};
-  D.timetable.forEach(p => dates[p.dayNum] = p.date);
+  const dates = {}; D.timetable.forEach(p => dates[p.dayNum] = p.date);
   document.getElementById('days').innerHTML = days.map(n =>
     `<button class="day${n === 1 ? ' on' : ''}">${DAYNAME[n]}<i>${fmtDate(dates[n])}</i></button>`).join('');
-
-  const ev = D.results.find(e => e.event === PROTO);
-  const phases = D.timetable.filter(p =>
-    p.sexCode === ev.sex && PROTO.includes(p.discipline.name));
-  drawCard(D, ev, phases);
+  EV = D.results.find(e => e.event === PROTO);
+  PH = D.timetable.filter(p => p.sexCode === EV.sex && PROTO.includes(p.discipline.name));
+  draw();
 }
 
-const fmtDate = iso => {
-  const d = new Date(iso + 'T00:00:00');
-  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}).toUpperCase();
+/* races, final first — the final is what the card is about, the semis are behind a tab */
+const racesOf = ev => {
+  const fin = ev.races.filter(r => /final/i.test(r.name) && !/semi/i.test(r.name));
+  const semi = ev.races.filter(r => /semi/i.test(r.name));
+  return fin.concat(semi);
 };
 
-/* A race is drawn as a table, except the final's top three, which get the room.
-   Anything without a place — a DQ, a DNS — keeps its row but loses its rank. */
-function rows(race, D, {skip = 0} = {}){
+function rows(race, {skip = 0} = {}){
   return race.rows.slice(skip).map(r => {
     const out = !r.place;
-    const mark = out ? (r.remark || r.mark || '—') : r.mark;
     return `<tr class="${out ? 'out' : (r.qualified ? 'q' : '')}">
       <td class="p">${out ? '' : esc(r.place)}</td>
       <td class="n">${esc(r.name)}</td>
       <td class="c">${esc(r.nat)}</td>
-      <td class="m r">${esc(mark)}</td></tr>`;
+      <td class="m r">${esc(out ? (r.remark || r.mark || '—') : r.mark)}</td></tr>`;
   }).join('');
 }
 
-function podium(race, D){
+function podium(race){
   return race.rows.slice(0, 3).map((r, i) => {
     const pic = r.wa && D.photos[r.wa];
-    const bg = pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : '';
     return `<div class="pod${i === 0 ? ' gold' : ''}">
-      ${bg}<div class="scrim"></div>
+      ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
+      <div class="scrim"></div>
       <div class="pos">${r.place || ''}</div>
       <div class="nm">${esc(r.name)}</div>
       <div class="nat">${esc(r.nat)}</div>
@@ -177,17 +217,87 @@ function podium(race, D){
   }).join('');
 }
 
-function drawCard(D, ev, phases){
-  const final = ev.races.find(r => /final/i.test(r.name) && !/semi/i.test(r.name));
-  const semis = ev.races.filter(r => /semi/i.test(r.name));
-  const fp = phases.find(p => /final/i.test(p.phaseName) && !/semi/i.test(p.phaseName)) || phases[0];
+/* ---------- the race ----------
+   Every finisher run at their own average speed over the real distance, so the finish
+   spread is the true one: the gap you see is metres, not tenths. */
+const distOf = name => {
+  const m = name.match(/(\d[\d,]*)\s*Metres/i);
+  if (m) return +m[1].replace(/,/g, '');
+  if (/^4x(\d+)/i.test(name)) return 4 * +name.match(/^4x(\d+)/i)[1];
+  return null;
+};
+const secs = mark => {
+  const m = String(mark).match(/^(?:(\d+):)?(\d+(?:\.\d+)?)$/);
+  return m ? (+(m[1] || 0)) * 60 + +m[2] : null;
+};
+
+function raceStrip(race, dist, label){
+  const runners = race.rows
+    .filter(r => r.place && secs(r.mark))
+    .map(r => ({name: r.name, nat: r.nat, t: secs(r.mark), mark: r.mark}));
+  if (runners.length < 2 || !dist) return '';
+  return `<div class="race">
+    <div class="racehead">
+      <div class="racetitle">Race the ${esc(label)} — <b>${dist} m</b>, every finisher at their own pace</div>
+      <button class="replay" id="replay">▶ Run it</button>
+    </div>
+    <div class="lanes" id="lanes">
+      <div class="finish"></div>
+      ${runners.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
+        <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
+        <div class="strip"><div class="trail"></div><div class="dot"></div></div>
+        <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div>
+      </div>`).join('')}
+    </div></div>`;
+}
+
+function runRace(race, dist){
+  const lanes = document.getElementById('lanes');
+  if (!lanes) return;
+  const runners = race.rows.filter(r => r.place && secs(r.mark)).map(r => secs(r.mark));
+  const win = Math.min(...runners);
+  const els = [...lanes.querySelectorAll('.lane')];
+  const DUR = 4200;                                   // the winner's run, on screen
+  cancelAnimationFrame(RAF);
+  els.forEach(el => { el.querySelector('.dot').style.left = '0%';
+                      el.querySelector('.trail').style.width = '0%';
+                      el.querySelector('.gap').textContent = el.querySelector('.gap').dataset.mark; });
+  const t0 = performance.now();
+  let snapped = false;
+  const step = now => {
+    const el0 = (now - t0) / DUR;                     // 1.0 = the winner on the line
+    let running = false;
+    els.forEach((el, i) => {
+      const frac = Math.min(1, el0 * win / runners[i]);
+      if (frac < 1) running = true;
+      el.querySelector('.dot').style.left = (frac * 100) + '%';
+      el.querySelector('.trail').style.width = (frac * 100) + '%';
+    });
+    // the gaps are written once, on the frame the winner crosses — waiting for each runner to
+    // still be short of the line misses anyone beaten by a hundredth
+    if (el0 >= 1 && !snapped){
+      snapped = true;
+      els.forEach((el, i) => {
+        if (runners[i] === win) return;               // the winner keeps their time
+        const behind = dist - dist * (win / runners[i]);
+        el.querySelector('.gap').textContent = '−' + behind.toFixed(behind < 1 ? 2 : 1) + ' m';
+      });
+    }
+    if (el0 < 1.6 && running) RAF = requestAnimationFrame(step);
+  };
+  RAF = requestAnimationFrame(step);
+}
+
+function draw(){
+  const all = racesOf(EV), race = all[TAB];
+  const fp = PH.find(p => /final/i.test(p.phaseName) && !/semi/i.test(p.phaseName)) || PH[0];
   const disc = fp.discipline;
   const sex = fp.sexCode === 'W' ? "Women's" : fp.sexCode === 'M' ? "Men's" : 'Mixed';
+  const when = new Date(fp.phaseDateAndTime);
+  const dist = distOf(disc.name);
+  const isFinal = TAB === 0;
   const card = document.getElementById('card');
   card.className = 'card' + (disc.isTrack ? ' track' : disc.isField ? ' field' : '');
-
-  const when = new Date(fp.phaseDateAndTime);
-  const decided = fp.isResultPublished;
 
   card.innerHTML = `
     <div class="head">
@@ -197,35 +307,33 @@ function drawCard(D, ev, phases){
         <h1>${esc(disc.name)}</h1>
       </div>
       <div class="when">
-        <div class="st">${decided ? 'Result' : 'Start list'}</div>
+        <div class="st">${fp.isResultPublished ? 'Result' : 'Start list'}</div>
         <div class="dt">${when.toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
           · ${when.toTimeString().slice(0,5)}</div>
       </div>
     </div>
 
-    <div class="body">
-      <div class="panel">
-        <div class="plabel"><b>Final</b>
-          ${final.wind != null ? `<span class="wind">wind ${esc(final.wind)}</span>` : ''}</div>
-        <div class="podium">${podium(final, D)}</div>
-        <div class="rest"><table>
-          <tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
-          ${rows(final, D, {skip:3})}
-        </table></div>
-      </div>
+    ${all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
+      `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${i ? 'Semifinal ' + r.n : 'Final'}
+        ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : ''}
 
-      <div class="panel semis">
-        ${semis.map(s => `<div class="semi">
-          <div class="plabel"><b>Semifinal ${s.n}</b>
-            ${s.wind != null ? `<span class="wind">wind ${esc(s.wind)}</span>` : ''}</div>
-          <div class="sc"><table>${rows(s, D)}</table></div>
-        </div>`).join('')}
-      </div>
-    </div>
+    ${isFinal ? `<div class="podium">${podium(race)}</div>` : ''}
+    <div class="rest"><table>
+      <tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
+      ${rows(race, {skip: isFinal ? 3 : 0})}
+    </table></div>
+
+    ${raceStrip(race, dist, isFinal ? 'final' : 'semifinal')}
 
     <div class="foot">Data: World Athletics · A guy with a scarf</div>
     <div class="note">Prototype · one card of ${new Set(D.timetable.map(p => p.sexCode + p.discipline.name)).size}</div>`;
+
+  card.querySelectorAll('.tab').forEach(b =>
+    b.onclick = () => { TAB = +b.dataset.i; draw(); });
+  const rep = document.getElementById('replay');
+  if (rep){ rep.onclick = () => runRace(race, dist); setTimeout(() => runRace(race, dist), 450); }
 }
 </script>
+
 </body>
 </html>
