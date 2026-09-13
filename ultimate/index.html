@@ -126,7 +126,8 @@
   .tab .w{color:var(--muted-2);font-weight:700;margin-left:7px}
   .tab.on .w{color:rgba(242,193,78,.65)}
 
-  .race{flex:0 0 auto;border-top:1px solid var(--line);padding-top:11px;margin-top:11px}
+  .race{flex:1 1 auto;border-top:1px solid var(--line);padding-top:11px;margin-top:11px;
+    display:flex;flex-direction:column;justify-content:center;min-height:0}
   .racehead{display:flex;align-items:center;gap:14px;margin-bottom:8px}
   .racetitle{font-size:10.5px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-2)}
   .racetitle b{color:var(--ink)}
@@ -167,9 +168,20 @@
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:calc(var(--gw) + 12px);width:2px;
     background:rgba(242,193,78,.4)}
-  /* Seiko's finish-line image beside the race it belongs to */
+  /* Seiko's finish-line image beside the race it belongs to, and the rest of the field
+     filling the room the tall image leaves under the strip */
   .rrow{display:flex;gap:18px;align-items:stretch}
-  .rrow .lanes{flex:1 1 auto;min-width:0;align-self:center}
+  .rleft{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center}
+  .rgrid{display:grid;grid-auto-flow:column;column-gap:34px;margin-top:16px;max-width:820px}
+  .ritem{display:grid;grid-template-columns:26px 1fr 40px 66px;align-items:center;gap:8px;
+    height:22px;font-size:11.5px;border-bottom:1px solid rgba(230,190,160,.06)}
+  .ritem .p{color:var(--muted-2);font-weight:800;font-size:11px}
+  .ritem .n{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ritem .c{color:var(--muted-2);font-size:10px;font-weight:800;letter-spacing:.06em}
+  .ritem .m{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+  .ritem.out .n,.ritem.out .p{color:var(--muted-2)}
+  .ritem.out .m{color:var(--acc);font-size:10.5px;letter-spacing:.08em}
+  .ritem.q .m{color:var(--gold)}
   .pf{flex:0 0 34%;margin:0;display:flex;flex-direction:column;min-width:0;align-self:center}
   .pf img{width:100%;flex:1 1 auto;min-height:0;max-height:27vh;object-fit:contain;object-position:50% 50%;
     border:1px solid var(--line);border-radius:8px;background:#0f0b09}
@@ -316,7 +328,9 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g,
 const DAYNAME = ['', 'Day 1', 'Day 2', 'Day 3'];
 // winners whose portrait has been lifted out of a World Athletics app screenshot by hand
 const CUT = new Set(['14739628','14935809','14753981','14679502','14653717','14827877',
-                     '14659011','15129238','14579526','14451249']);
+                     '14659011','15129238','14579526','14451249','14719972','15025463',
+                     '14372810','14812264','14455361','14411267','14424480','14686964',
+                     '14669731','14681630','14905834','14907166']);
 let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false;
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
@@ -381,6 +395,20 @@ const markJump = () => document.querySelectorAll('.jitem')
 const isFinal = r => /final/i.test(r.name) && !/semi/i.test(r.name);
 const racesOf = ev => ev.races.filter(isFinal).concat(ev.races.filter(r => /semi/i.test(r.name)));
 
+// everyone the podium did not name, in two columns, read down then across
+function restList(race, skip){
+  const rest = race.rows.slice(skip || 0);
+  if (!rest.length) return '';
+  const n = Math.ceil(rest.length / 2);
+  return `<div class="rgrid" style="grid-template-rows:repeat(${n},auto)">${rest.map(r => {
+    const out = !r.place;
+    return `<div class="ritem${out ? ' out' : (r.qualified ? ' q' : '')}">
+      <span class="p">${out ? '' : esc(r.place)}</span><span class="n">${esc(r.name)}</span>
+      <span class="c">${esc(r.nat)}</span>
+      <span class="m">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</span></div>`;
+  }).join('')}</div>`;
+}
+
 function rows(race, skip){
   return race.rows.slice(skip || 0).map(r => {
     const out = !r.place;
@@ -440,7 +468,7 @@ const secs = mark => {
   return m ? (+(m[1] || 0)) * 60 + +m[2] : null;
 };
 
-function raceStrip(race, dist, label){
+function raceStrip(race, dist, label, rest){
   const runners = race.rows.filter(r => r.place && secs(r.mark));
   if (runners.length < 2 || !dist) return '';
   return `<div class="race"><div class="racehead">
@@ -448,12 +476,13 @@ function raceStrip(race, dist, label){
         then back to where they were when the winner crossed</div>
       <span class="scale" id="scale">all home</span>
       <button class="replay" id="replay">&#9654; Wind it back</button></div>
-    <div class="rrow"><div class="lanes" id="lanes"><div class="finish"></div>
+    <div class="rrow"><div class="rleft"><div class="lanes" id="lanes"><div class="finish"></div>
       ${runners.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="trail"></div><div class="dot"></div></div><div class="dm"></div>
         <div class="gap">${esc(r.mark)}</div></div>`).join('')}
-    </div>${race.pf ? `<figure class="pf"><img src="img/pf/${esc(race.pf)}" alt="Photo finish">
+    </div>${rest || ''}</div>${race.pf ? `<figure class="pf">
+      <img src="img/pf/${esc(race.pf)}" alt="Photo finish">
       <figcaption>Photo finish &middot; Seiko</figcaption></figure>` : ''}</div></div>`;
 }
 
@@ -524,7 +553,7 @@ const numOf = m => { const v = parseFloat(String(m).replace(/[^\d.]/g, '')); ret
    is a marker laid out at the distance they actually went. It opens on the full scale from
    zero — which is honest, and which makes eight vaulters look identical — then closes in on
    the spread, exactly as the race does at the line. */
-function pitStrip(race, disc, label){
+function pitStrip(race, disc, label, rest){
   const rows = race.rows.filter(r => r.place && numOf(r.mark));
   if (rows.length < 2) return '';
   // a high jump or a vault goes up, a long or triple jump goes out, like every throw
@@ -534,14 +563,15 @@ function pitStrip(race, disc, label){
       <div class="racetitle">The ${esc(label)} pit &mdash; every mark at the ${unit} it went</div>
       <span class="scale" id="scale">0 m</span>
       <button class="replay" id="replay">&#9654; Lay it out</button></div>
-    <div class="lanes ${up ? 'pit bar' : 'pit'}" id="lanes">
+    <div class="rrow"><div class="rleft"><div class="lanes ${up ? 'pit bar' : 'pit'}" id="lanes">
       ${rows.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="defi"></div><div class="dot"></div></div>
         <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div></div>`).join('')}
       <div class="winline" id="winline"></div>
     </div>
-    <div class="pitaxis"><div></div><div class="ax" id="pitax"></div><div></div></div></div>`;
+    <div class="pitaxis"><div></div><div class="ax" id="pitax"></div><div></div></div>
+    ${rest || ''}</div></div></div>`;
 }
 
 function runPit(race){
@@ -629,16 +659,18 @@ function draw(){
     return;
   }
 
+  const rest = restList(race, final ? 3 : 0);
+  const strip = disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal', rest)
+                             : raceStrip(race, dist, final ? 'final' : 'semifinal', rest);
   card.innerHTML = head
     + (all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
         `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${
           isFinal(r) ? 'Final' : 'Semifinal ' + r.n}
           ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
     + (final ? `<div class="podium">${podium(race, c.when)}</div>` : '')
-    + `<div class="rest"><table><tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
-        ${rows(race, final ? 3 : 0)}</table></div>`
-    + (disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
-                    : raceStrip(race, dist, final ? 'final' : 'semifinal')) + foot;
+    + strip + (strip ? '' : `<div class="rest"><table>
+        <tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
+        ${rows(race, final ? 3 : 0)}</table></div>`) + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
