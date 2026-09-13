@@ -103,19 +103,6 @@
   .pod .tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.12em;
     text-transform:uppercase;color:var(--bg0);background:var(--gold);border-radius:5px;padding:3px 6px;margin-top:6px}
 
-  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-  th{font-size:9.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--muted-2);text-align:left;padding:0 0 6px}
-  th.r,td.r{text-align:right}
-  td{font-size:13px;padding:5px 0;border-top:1px solid rgba(230,190,160,.07)}
-  td.p{width:26px;color:var(--muted-2);font-weight:800}
-  td.n{font-weight:700}
-  td.c{width:44px;color:var(--muted-2);font-size:11px;font-weight:800;letter-spacing:.08em}
-  td.m{width:74px;font-weight:800}
-  tr.out td{color:var(--muted-2)}
-  tr.out td.m{color:var(--acc);font-size:11.5px;letter-spacing:.1em}
-  tr.q td.m{color:var(--gold)}
-  .rest{margin-top:11px;overflow:auto;min-height:0;flex:1 1 auto}
 
   .tabs{display:flex;gap:7px;margin-top:12px}
   .tab{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
@@ -172,7 +159,8 @@
      filling the room the tall image leaves under the strip */
   .rrow{display:flex;gap:18px;align-items:stretch}
   .rleft{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:center}
-  .rgrid{display:grid;grid-auto-flow:column;column-gap:34px;margin-top:16px;max-width:820px}
+  .rgrid{display:grid;grid-auto-flow:column;column-gap:34px;margin-top:13px;max-width:820px;
+    flex:0 0 auto}
   .ritem{display:grid;grid-template-columns:26px 1fr 40px 66px;align-items:center;gap:8px;
     height:22px;font-size:11.5px;border-bottom:1px solid rgba(230,190,160,.06)}
   .ritem .p{color:var(--muted-2);font-weight:800;font-size:11px}
@@ -409,16 +397,6 @@ function restList(race, skip){
   }).join('')}</div>`;
 }
 
-function rows(race, skip){
-  return race.rows.slice(skip || 0).map(r => {
-    const out = !r.place;
-    return `<tr class="${out ? 'out' : (r.qualified ? 'q' : '')}">
-      <td class="p">${out ? '' : esc(r.place)}</td><td class="n">${esc(r.name)}</td>
-      <td class="c">${esc(r.nat)}</td>
-      <td class="m r">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</td></tr>`;
-  }).join('');
-}
-
 const ageAt = (born, on) => {
   if (!born) return null;
   const b = new Date(born), d = new Date(on);
@@ -468,7 +446,7 @@ const secs = mark => {
   return m ? (+(m[1] || 0)) * 60 + +m[2] : null;
 };
 
-function raceStrip(race, dist, label, rest){
+function raceStrip(race, dist, label){
   const runners = race.rows.filter(r => r.place && secs(r.mark));
   if (runners.length < 2 || !dist) return '';
   return `<div class="race"><div class="racehead">
@@ -481,7 +459,7 @@ function raceStrip(race, dist, label, rest){
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="trail"></div><div class="dot"></div></div><div class="dm"></div>
         <div class="gap">${esc(r.mark)}</div></div>`).join('')}
-    </div>${rest || ''}</div>${race.pf ? `<figure class="pf">
+    </div></div>${race.pf ? `<figure class="pf">
       <img src="img/pf/${esc(race.pf)}" alt="Photo finish">
       <figcaption>Photo finish &middot; Seiko</figcaption></figure>` : ''}</div></div>`;
 }
@@ -553,7 +531,7 @@ const numOf = m => { const v = parseFloat(String(m).replace(/[^\d.]/g, '')); ret
    is a marker laid out at the distance they actually went. It opens on the full scale from
    zero — which is honest, and which makes eight vaulters look identical — then closes in on
    the spread, exactly as the race does at the line. */
-function pitStrip(race, disc, label, rest){
+function pitStrip(race, disc, label){
   const rows = race.rows.filter(r => r.place && numOf(r.mark));
   if (rows.length < 2) return '';
   // a high jump or a vault goes up, a long or triple jump goes out, like every throw
@@ -571,7 +549,7 @@ function pitStrip(race, disc, label, rest){
       <div class="winline" id="winline"></div>
     </div>
     <div class="pitaxis"><div></div><div class="ax" id="pitax"></div><div></div></div>
-    ${rest || ''}</div></div></div>`;
+    </div></div></div>`;
 }
 
 function runPit(race){
@@ -660,17 +638,15 @@ function draw(){
   }
 
   const rest = restList(race, final ? 3 : 0);
-  const strip = disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal', rest)
-                             : raceStrip(race, dist, final ? 'final' : 'semifinal', rest);
+  const strip = disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
+                             : raceStrip(race, dist, final ? 'final' : 'semifinal');
   card.innerHTML = head
     + (all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
         `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${
           isFinal(r) ? 'Final' : 'Semifinal ' + r.n}
           ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
     + (final ? `<div class="podium">${podium(race, c.when)}</div>` : '')
-    + strip + (strip ? '' : `<div class="rest"><table>
-        <tr><th></th><th>Athlete</th><th></th><th class="r">Mark</th></tr>
-        ${rows(race, final ? 3 : 0)}</table></div>`) + foot;
+    + rest + strip + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
