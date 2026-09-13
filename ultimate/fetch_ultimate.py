@@ -86,6 +86,55 @@ def results(ndays):
                 seen[k] = ev; out.append(ev)
     return out, days
 
+def topup(res, tt):
+    """Whatever the day pages have not caught up with, straight from the API.
+
+    The calendar page is the only place with athlete url slugs, so it stays the primary source —
+    but it lags: both 200m finals and the women's triple jump were still showing semifinals there
+    hours after they were run and published. Any phase the timetable calls published and the day
+    pages have not got is filled in here.
+    """
+    by = {(e["sex"], re.sub(r"^(Men's |Women's |Mixed )", "", e["event"])): e for e in res}
+    added = 0
+    for p in tt:
+        if not p.get("isResultPublished"): continue
+        sex, disc = p["sexCode"], p["discipline"]["name"]
+        fin = isFinal(p["phaseName"])
+        ev = by.get((sex, disc))
+        if ev and any(isFinal(r["name"]) == fin for r in ev["races"]): continue
+        q = """query($e:Int,$d:String,$s:String,$p:String){
+          getEventPhaseByDiscipline(eventId:$e, disciplineCode:$d, sexCode:$s, phaseCode:$p){
+            units{ unitCode results{ competitorName competitorId_WA resultCountryCode
+              resultMark resultRank resultWind record qualified } } }}"""
+        try:
+            ph = gql(q, {"e": COMP, "d": slugify(disc), "s": sex,
+                         "p": "final" if fin else "semifinal"}) or {}
+            ph = ph.get("getEventPhaseByDiscipline") or {}
+        except Exception as ex:
+            print(f"  ! topup {sex} {disc}: {ex}"); continue
+        races = []
+        for n, u in enumerate(ph.get("units") or [], 1):
+            rows = []
+            for x in (u.get("results") or []):
+                rank = x.get("resultRank")
+                rows.append(dict(place=f"{rank}." if rank else None, name=x.get("competitorName"),
+                    wa=x.get("competitorId_WA"), slug=None, nat=x.get("resultCountryCode"),
+                    mark=x.get("resultMark"), wind=x.get("resultWind"),
+                    record=x.get("record") or "", qualified=x.get("qualified"),
+                    remark=None if rank else x.get("resultMark"), points=None))
+            if rows: races.append(dict(name="Final" if fin else "Semifinal - Heat", n=n,
+                                       wind=rows[0].get("wind"), rows=rows))
+        if not races: continue
+        if not ev:
+            who = {"M": "Men's ", "W": "Women's ", "X": "Mixed "}.get(sex, "")
+            ev = dict(event=who + disc, sex=sex, relay=bool(p["discipline"].get("isRelay")),
+                      withWind=bool(p["discipline"].get("isWind")), races=[])
+            res.append(ev); by[(sex, disc)] = ev
+        ev["races"] += races
+        added += sum(len(r["rows"]) for r in races)
+        print(f"  + {sex} {disc} {p['phaseName']}: {sum(len(r['rows']) for r in races)} rows from the API")
+    return added
+
 def day_events(pp):
     out = []
     for title in pp.get("eventTitles") or []:
@@ -191,15 +240,27 @@ def photos(ids):
     return {str(r["id"]): r["primaryMediaId"] for r in rows if r.get("primaryMediaId")}
 
 def profiles(people):
-    """Podium athletes get their profile page read for the box: age, personal best in this
-    event, and a photo. The photo is worth two goes — the action-picture API has one for
-    some athletes and the profile for others, and neither has one for everybody."""
+    """Podium athletes get a profile for the box: age, personal best in this event, and a photo.
+    The photo is worth two goes — the action-picture API has one for some athletes and the
+    profile for others, and neither has one for everybody.
+
+    This used to read the athlete's own page. The API answers with the same object keyed by id,
+    which needs no url slug — results filled in from the API have none — and does not get
+    rate-limited into an error page halfway down a podium.
+    """
+    Q = """query($id:Int){getSingleCompetitor(id:$id){
+      basicData{ birthDate countryFullName }
+      primaryMediaId primaryMediaId2
+      personalBests{ results{ discipline mark venue date } }
+      seasonsBests{ results{ discipline mark } }
+      honours{ categoryName } }}"""
     out = {}
     for wa, slug, disc in people:
         try:
-            c = next_data(f"https://worldathletics.org/athletes/{slug}")["props"]["pageProps"]["competitor"]
+            c = (gql(Q, {"id": int(wa)}) or {}).get("getSingleCompetitor")
+            if not c: raise ValueError("no competitor")
         except Exception as e:
-            print(f"  ! profile {slug}: {e}"); continue
+            print(f"  ! profile {wa}: {e}"); continue
         bd = c.get("basicData") or {}
         pbs = ((c.get("personalBests") or {}).get("results")) or []
         sbs = ((c.get("seasonsBests") or {}).get("results")) or []
@@ -212,7 +273,6 @@ def profiles(people):
             pb=(pb or {}).get("mark"), pbVenue=(pb or {}).get("venue"), pbDate=(pb or {}).get("date"),
             sb=(sb or {}).get("mark"),
             honours=[h.get("categoryName") for h in (c.get("honours") or [])][:4])
-        time.sleep(.25)
     return out
 
 def main():
@@ -221,6 +281,9 @@ def main():
     res, days = results(max(p['dayNum'] for p in tt))
     n = sum(len(r['rows']) for e in res for r in e['races'])
     print(f"results:   {len(res)} events, {n} rows, days published {days}")
+    if topup(res, tt):
+        n = sum(len(r['rows']) for e in res for r in e['races'])
+        print(f"topped up: {len(res)} events, {n} rows")
     print(f"attempts:  {attempts(res, tt)} field marks have their series")
     print(f"photo finish: {photofinish(res)} races have one")
     pics = photos([r["wa"] for e in res for ra in e["races"] for r in ra["rows"] if r["wa"]])
@@ -233,7 +296,7 @@ def main():
         if not fin: continue
         disc = e["event"].split("'s ", 1)[-1] if "'s " in e["event"] else e["event"]
         for r in fin["rows"][:3]:
-            if r["wa"] and r["slug"]: podium.append((r["wa"], r["slug"], disc))
+            if r["wa"]: podium.append((r["wa"], r["slug"], disc))
     # A profile read can fail wholesale — worldathletics.org rate-limits, and a blocked request
     # returns an error page with no __NEXT_DATA__. Never let that wipe profiles already on disk.
     prev = {}
