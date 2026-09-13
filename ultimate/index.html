@@ -190,19 +190,20 @@
   .lanes.throw .fly.go{opacity:1;animation:flyx var(--t) linear forwards}
   .lanes.throw .fly.go.done{opacity:0;transition:opacity .18s}
   .lanes.throw .fly.up i{animation:flyup 380ms cubic-bezier(.3,0,.15,1) forwards}
-  .lanes.throw .fly i{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;
+  .lanes.throw .fly i{--s:4px;   /* half the implement, so it rests on the ground and not in it */
+    position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;
     background:radial-gradient(circle at 34% 30%,#efe7df,#8d7a6d 70%);
     box-shadow:0 0 10px rgba(230,190,160,.4);
     animation:flyy var(--t) forwards}
-  .lanes.throw.spear .fly i{width:20px;height:2px;left:-16px;top:-1px;border-radius:1px;
+  .lanes.throw.spear .fly i{--s:1px;width:20px;height:2px;left:-20px;top:-1px;border-radius:1px;
     background:linear-gradient(90deg,rgba(230,190,160,.25),#efe7df)}
   @keyframes flyx{from{left:0}to{left:var(--x)}}
   /* up out of the hand, then down to the ground at the far end — --d is this row's drop to the floor */
   @keyframes flyy{
     0%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.7,.5,1)}
     42%{transform:translateY(-30px);animation-timing-function:cubic-bezier(.5,0,.75,.45)}
-    100%{transform:translateY(var(--d))}}
-  @keyframes flyup{from{transform:translateY(var(--d))}to{transform:translateY(0)}}
+    100%{transform:translateY(calc(var(--d) - var(--s)))}}
+  @keyframes flyup{from{transform:translateY(calc(var(--d) - var(--s)))}to{transform:translateY(0)}}
   /* a rule under every axis label, so a mark can be read against the scale and not just the winner */
   .lanes.pit .plines i{position:absolute;top:0;bottom:0;width:1px;background:rgba(230,190,160,.09)}
   .lanes.pit .winline{position:absolute;top:0;bottom:0;width:2px;background:rgba(242,193,78,.38);
