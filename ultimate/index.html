@@ -187,16 +187,18 @@
   /* a throw is thrown: the implement flies out over the field and lands where the mark is */
   .lanes.throw .strip{overflow:visible}
   .lanes.throw .fly{position:absolute;top:50%;left:0;width:0;height:0;opacity:0;z-index:2}
-  .lanes.throw .fly.go{opacity:1;animation:flyx var(--t) linear forwards}
-  .lanes.throw .fly.go.done{opacity:0;transition:opacity .18s}
-  .lanes.throw .fly.up i{animation:flyup 380ms cubic-bezier(.3,0,.15,1) forwards}
   .lanes.throw .fly i{--s:4px;   /* half the implement, so it rests on the ground and not in it */
     position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;
     background:radial-gradient(circle at 34% 30%,#efe7df,#8d7a6d 70%);
-    box-shadow:0 0 10px rgba(230,190,160,.4);
-    animation:flyy var(--t) forwards}
+    box-shadow:0 0 10px rgba(230,190,160,.4)}
   .lanes.throw.spear .fly i{--s:1px;width:20px;height:2px;left:-20px;top:-1px;border-radius:1px;
     background:linear-gradient(90deg,rgba(230,190,160,.25),#efe7df)}
+  /* both halves of the flight hang off .go, so taking the class away resets them and putting it
+     back throws again — with the arc on the implement itself a replay only slid it sideways */
+  .lanes.throw .fly.go{opacity:1;animation:flyx var(--t) linear forwards}
+  .lanes.throw .fly.go i{animation:flyy var(--t) forwards}
+  .lanes.throw .fly.up i{animation:flyup 380ms cubic-bezier(.3,0,.15,1) forwards}
+  .lanes.throw .fly.go.done{opacity:0;transition:opacity .18s}
   @keyframes flyx{from{left:0}to{left:var(--x)}}
   /* up out of the hand, then down to the ground at the far end — --d is this row's drop to the floor */
   @keyframes flyy{
