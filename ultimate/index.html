@@ -23,14 +23,6 @@
   .top{display:flex;align-items:center;gap:22px;padding:18px 34px 0}
   .brand{font-size:10.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--muted-2)}
   .brand b{color:var(--acc)}
-  .days{display:flex;gap:6px;margin-left:auto}
-  .day{font-size:12px;font-weight:800;border:1px solid var(--line);background:transparent;
-    color:var(--muted);border-radius:999px;padding:7px 15px;cursor:pointer;font-family:inherit;
-    transition:.15s;white-space:nowrap}
-  .day:hover{color:var(--ink)}
-  .day.on{color:var(--gold);border-color:rgba(242,193,78,.45);background:rgba(242,193,78,.1)}
-  .day i{font-style:normal;color:var(--muted-2);font-weight:700;margin-left:7px}
-  .day.on i{color:rgba(242,193,78,.7)}
 
   .stage{position:relative;height:calc(100vh - 54px);overflow:hidden}
   .card{position:absolute;inset:0;padding:12px 34px 62px;display:flex;
@@ -311,7 +303,6 @@
 
 <div class="top">
   <div class="brand"><b>Ultimate Championship</b> · Budapest 2026</div>
-  <div class="days" id="days"></div>
 </div>
 
 <div class="stage" id="stage"><section class="card" id="card"></section></div>
@@ -369,8 +360,6 @@ let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
 
-const fmtDate = iso => new Date(iso + 'T00:00:00')
-  .toLocaleDateString('en-GB', {day:'numeric', month:'short'}).toUpperCase();
 const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 /* One card per sex + discipline, holding every phase of it. The final is what the card is
@@ -390,19 +379,24 @@ function buildDeck(){
     const who = fin.sexCode === 'W' ? 'women' : fin.sexCode === 'M' ? 'men' : 'mixed';
     return {sex: fin.sexCode, disc: fin.discipline, phases, fin, ev, day: fin.dayNum,
             when: fin.phaseDateAndTime, slug: slugify(who + ' ' + fin.discipline.name)};
-  }).sort((a, b) => a.when.localeCompare(b.when));
+  }).sort((a, b) => evIx(a.disc.name) - evIx(b.disc.name)
+                 || sexIx(a.sex) - sexIx(b.sex)
+                 || a.when.localeCompare(b.when));
 }
+
+// the running order of an athletics programme, the same sequence the record film uses:
+// sprints out to the marathon, hurdles, jumps, throws, then the relays
+const EVORDER = ['100 Metres', '200 Metres', '400 Metres', '800 Metres', '1500 Metres',
+  '5000 Metres', '10,000 Metres', 'Marathon', '110 Metres Hurdles', '100 Metres Hurdles',
+  '400 Metres Hurdles', 'High Jump', 'Pole Vault', 'Long Jump', 'Triple Jump', 'Shot Put',
+  'Discus Throw', 'Hammer Throw', 'Javelin Throw', 'Decathlon', 'Heptathlon',
+  '4x100 Metres Relay', '4x400 Metres Relay'];
+const evIx = n => { const i = EVORDER.indexOf(n); return i < 0 ? EVORDER.length : i; };
+const sexIx = s => s === 'M' ? 0 : s === 'W' ? 1 : 2;
 
 function boot(d){
   D = d;
   buildDeck();
-  const dates = {}; DECK.forEach(c => dates[c.day] = c.fin.date);
-  document.getElementById('days').innerHTML = [...new Set(DECK.map(c => c.day))].sort()
-    .map(n => `<button class="day" data-day="${n}">${DAYNAME[n]}<i>${fmtDate(dates[n])}</i></button>`).join('');
-  document.querySelectorAll('.day').forEach(b => b.onclick = () => {
-    const i = DECK.findIndex(c => c.day === +b.dataset.day);
-    if (i >= 0) go(i);
-  });
   document.getElementById('ctot').textContent = DECK.length;
   buildJump();
   const want = decodeURIComponent(location.hash.slice(1)) || localStorage.getItem('uc.card') || '';
@@ -454,17 +448,18 @@ const ageAt = (born, on) => {
 
 /* The box carries what the profile page knows: how old they are, and what they had run before
    today. A personal best equal to the winning mark means the final was the best of their life. */
-function podium(race, when){
+function podium(race, when, disc){
   return race.rows.slice(0, 3).map((r, i) => {
     const p = (D.profiles || {})[r.wa] || {};
+    const m = (p.marks || {})[disc] || {};      // bests are per event: a sprinter has two of them
     // two pictures where two exist: the action shot fills the box, the portrait sits by the name
     const pic = r.wa && D.photos[r.wa];
     const face = typeof p.face === 'string' ? p.face : null;
     const age = ageAt(p.born, when);
     const bits = [];
     if (age != null) bits.push(`<span><b>${age}</b> yrs</span>`);
-    if (p.pb) bits.push(`<span class="${p.pb === r.mark ? 'best' : ''}">PB <b>${esc(p.pb)}</b></span>`);
-    if (p.sb && p.sb !== p.pb) bits.push(`<span>SB <b>${esc(p.sb)}</b></span>`);
+    if (m.pb) bits.push(`<span class="${m.pb === r.mark ? 'best' : ''}">PB <b>${esc(m.pb)}</b></span>`);
+    if (m.sb && m.sb !== m.pb) bits.push(`<span>SB <b>${esc(m.sb)}</b></span>`);
     const cut = CUT.has(String(r.wa));
     return `<div class="pod${i === 0 ? ' gold' : ''}${cut ? ' cutin' : ''}">
       ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
@@ -751,7 +746,7 @@ function draw(){
         `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${
           isFinal(r) ? 'Final' : 'Semifinal ' + r.n}
           ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
-    + (final ? `<div class="podium">${podium(race, c.when)}</div>` : '')
+    + (final ? `<div class="podium">${podium(race, c.when, disc.name)}</div>` : '')
     + rest + strip + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
@@ -793,7 +788,6 @@ function go(i, fromHash){
   cancelAnimationFrame(RAF);
   const c = DECK[IDX];
   document.getElementById('cnum').textContent = IDX + 1;
-  document.querySelectorAll('.day').forEach(b => b.classList.toggle('on', +b.dataset.day === c.day));
   if (!fromHash) history.replaceState(null, '', '#' + c.slug);
   try { localStorage.setItem('uc.card', c.slug); } catch(e){}
   markJump();

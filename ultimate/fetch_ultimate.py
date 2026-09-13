@@ -254,10 +254,12 @@ def profiles(people):
       personalBests{ results{ discipline mark venue date } }
       seasonsBests{ results{ discipline mark } }
       honours{ categoryName } }}"""
-    out = {}
+    out, seen = {}, {}
     for wa, slug, disc in people:
         try:
-            c = (gql(Q, {"id": int(wa)}) or {}).get("getSingleCompetitor")
+            if wa not in seen:                 # an athlete can stand on two podiums
+                seen[wa] = (gql(Q, {"id": int(wa)}) or {}).get("getSingleCompetitor")
+            c = seen[wa]
             if not c: raise ValueError("no competitor")
         except Exception as e:
             print(f"  ! profile {wa}: {e}"); continue
@@ -268,11 +270,12 @@ def profiles(people):
         pb, sb = pick(pbs), pick(sbs)
         # two image slots on a competitor, and they are not the same picture: the first is the
         # action shot the results API also serves, the second a portrait. Keep whichever exist.
-        out[str(wa)] = dict(born=bd.get("birthDate"), country=bd.get("countryFullName"),
+        # the bests are per event, not per athlete: Bednarek's 100m box was showing his 200m PB
+        rec = out.setdefault(str(wa), dict(born=bd.get("birthDate"), country=bd.get("countryFullName"),
             media=c.get("primaryMediaId") or None, face=c.get("primaryMediaId2") or None,
-            pb=(pb or {}).get("mark"), pbVenue=(pb or {}).get("venue"), pbDate=(pb or {}).get("date"),
-            sb=(sb or {}).get("mark"),
-            honours=[h.get("categoryName") for h in (c.get("honours") or [])][:4])
+            honours=[h.get("categoryName") for h in (c.get("honours") or [])][:4], marks={}))
+        rec["marks"][disc] = dict(pb=(pb or {}).get("mark"), sb=(sb or {}).get("mark"),
+                                  pbVenue=(pb or {}).get("venue"), pbDate=(pb or {}).get("date"))
     return out
 
 def main():
