@@ -184,26 +184,32 @@
     background:linear-gradient(90deg,rgba(226,87,47,.55),rgba(242,193,78,.32));
     opacity:0;transition:opacity .22s}
   .lanes.pit .defi.in{opacity:1}
-  /* a throw is thrown: the implement flies out over the field and lands where the mark is */
-  .lanes.throw .strip{overflow:visible}
-  .lanes.throw .fly{position:absolute;top:50%;left:0;width:0;height:0;opacity:0;z-index:2}
-  .lanes.throw .fly i{--s:4px;   /* half the implement, so it rests on the ground and not in it */
+  /* a throw is thrown and a jump is jumped: whatever goes through the air flies out over the
+     field, lands where the mark is, and the mark is what it leaves */
+  .lanes.air .strip{overflow:visible}
+  .lanes.air .fly{position:absolute;top:50%;left:0;width:0;height:0;opacity:0;z-index:2}
+  .lanes.air .fly i{--s:4px;   /* half the implement, so it rests on the ground and not in it */
+    --peak:-30px;
     position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;
     background:radial-gradient(circle at 34% 30%,#efe7df,#8d7a6d 70%);
     box-shadow:0 0 10px rgba(230,190,160,.4)}
-  .lanes.throw.spear .fly i{--s:1px;width:20px;height:2px;left:-20px;top:-1px;border-radius:1px;
+  .lanes.air.spear .fly i{--s:1px;width:20px;height:2px;left:-20px;top:-1px;border-radius:1px;
     background:linear-gradient(90deg,rgba(230,190,160,.25),#efe7df)}
+  /* a jumper, mid-flight, on a flatter arc than a hammer's */
+  .lanes.air.jump .fly i{--s:12px;--peak:-22px;width:24px;height:24px;left:-12px;top:-12px;
+    border-radius:0;box-shadow:none;
+    background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23efe7df' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='17.6' cy='4.6' r='2.5' fill='%23efe7df' stroke='none'/%3E%3Cpath d='M16.6 7.6 L11.4 12'/%3E%3Cpath d='M11.4 12 L15.4 14.6 L20.6 13'/%3E%3Cpath d='M11.4 12 L7.6 15.8 L9.2 19.4'/%3E%3Cpath d='M15.6 8.6 L20.4 7'/%3E%3Cpath d='M15.2 9.2 L9.6 6.6'/%3E%3C/svg%3E") center/contain no-repeat}
   /* both halves of the flight hang off .go, so taking the class away resets them and putting it
      back throws again — with the arc on the implement itself a replay only slid it sideways */
-  .lanes.throw .fly.go{opacity:1;animation:flyx var(--t) linear forwards}
-  .lanes.throw .fly.go i{animation:flyy var(--t) forwards}
-  .lanes.throw .fly.up i{animation:flyup 380ms cubic-bezier(.3,0,.15,1) forwards}
-  .lanes.throw .fly.go.done{opacity:0;transition:opacity .18s}
+  .lanes.air .fly.go{opacity:1;animation:flyx var(--t) linear forwards}
+  .lanes.air .fly.go i{animation:flyy var(--t) forwards}
+  .lanes.air .fly.up i{animation:flyup 380ms cubic-bezier(.3,0,.15,1) forwards}
+  .lanes.air .fly.go.done{opacity:0;transition:opacity .18s}
   @keyframes flyx{from{left:0}to{left:var(--x)}}
   /* up out of the hand, then down to the ground at the far end — --d is this row's drop to the floor */
   @keyframes flyy{
     0%{transform:translateY(0);animation-timing-function:cubic-bezier(.2,.7,.5,1)}
-    42%{transform:translateY(-30px);animation-timing-function:cubic-bezier(.5,0,.75,.45)}
+    42%{transform:translateY(var(--peak));animation-timing-function:cubic-bezier(.5,0,.75,.45)}
     100%{transform:translateY(calc(var(--d) - var(--s)))}}
   @keyframes flyup{from{transform:translateY(calc(var(--d) - var(--s)))}to{transform:translateY(0)}}
   /* a rule under every axis label, so a mark can be read against the scale and not just the winner */
@@ -564,9 +570,9 @@ function pitStrip(race, disc, label){
   // a high jump or a vault goes up, a long or triple jump goes out, like every throw
   const up = /Jump|Vault/i.test(disc.name) && !/Long|Triple/i.test(disc.name);
   const unit = up ? 'height' : 'distance';
-  const thrown = /Throw|Put|Discus/i.test(disc.name);
-  const kind = (up ? 'pit bar' : 'pit') + (thrown ? ' throw' : '')
-             + (/Javelin/i.test(disc.name) ? ' spear' : '');
+  const thrown = /Throw|Put|Discus/i.test(disc.name), jumped = /Long|Triple/i.test(disc.name);
+  const kind = (up ? 'pit bar' : 'pit') + (thrown || jumped ? ' air' : '')
+             + (/Javelin/i.test(disc.name) ? ' spear' : '') + (jumped ? ' jump' : '');
   return `<div class="race"><div class="racehead">
       <div class="racetitle">The ${esc(label)} pit &mdash; every mark at the ${unit} it went</div>
       <span class="scale" id="scale">0 m</span>
@@ -574,7 +580,7 @@ function pitStrip(race, disc, label){
     <div class="rrow"><div class="rleft"><div class="lanes ${kind}" id="lanes">
       ${rows.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
-        <div class="strip"><div class="defi"></div>${thrown ? '<div class="fly"><i></i></div>' : ''}
+        <div class="strip"><div class="defi"></div>${thrown || jumped ? '<div class="fly"><i></i></div>' : ''}
           <div class="dot"></div></div><div class="dm"></div>
         <div class="gap">${esc(r.mark)}</div></div>`).join('')}
       <div class="plines" id="plines"></div><div class="winline" id="winline"></div>
@@ -620,7 +626,7 @@ function runPit(race){
     winline.classList.remove('in');
     if (st) winline.style.left = at(best);
   }
-  const flies = lanes.classList.contains('throw');
+  const flies = lanes.classList.contains('air');
   const FLY = 660, RISE = 380, HOLD = 140, STEP = flies ? 430 : 260;
   const lb = lanes.getBoundingClientRect();
   const SX = st ? st.offsetLeft : 0, SW = st ? st.offsetWidth : 0;
