@@ -184,14 +184,16 @@
     background:linear-gradient(90deg,rgba(226,87,47,.55),rgba(242,193,78,.32));
     opacity:0;transition:opacity .22s}
   .lanes.pit .defi.in{opacity:1}
+  /* a rule under every axis label, so a mark can be read against the scale and not just the winner */
+  .lanes.pit .plines i{position:absolute;top:0;bottom:0;width:1px;background:rgba(230,190,160,.09)}
   .lanes.pit .winline{position:absolute;top:0;bottom:0;width:2px;background:rgba(242,193,78,.38);
     opacity:0;transition:opacity .25s}
   .lanes.pit .winline.in{opacity:1}
   .lanes.pit .dot{border-radius:2px;width:4px;height:16px;opacity:0;transition:opacity .18s}
   .lanes.pit .dot.in{opacity:1}
   .lanes.pit .lane.win .dot{width:5px;height:19px}
-  .lanes.bar .dot{border-radius:2px;width:18px;height:4px}
-  .lanes.bar .lane.win .dot{height:5px}
+  .lanes.pit.bar .dot{border-radius:2px;width:18px;height:4px}
+  .lanes.pit.bar .lane.win .dot{width:22px;height:5px}
   .pitaxis{display:grid;grid-template-columns:var(--nw) 1fr var(--gw);gap:12px;margin-top:5px}
   .pitaxis .ax{position:relative;height:13px}
   .pitaxis .ax span{position:absolute;top:0;transform:translateX(-50%);font-size:9.5px;
@@ -546,7 +548,7 @@ function pitStrip(race, disc, label){
         <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
         <div class="strip"><div class="defi"></div><div class="dot"></div></div>
         <div class="gap" data-mark="${esc(r.mark)}">${esc(r.mark)}</div></div>`).join('')}
-      <div class="winline" id="winline"></div>
+      <div class="plines" id="plines"></div><div class="winline" id="winline"></div>
     </div>
     <div class="pitaxis"><div></div><div class="ax" id="pitax"></div><div></div></div>
     </div></div></div>`;
@@ -570,15 +572,24 @@ function runPit(race){
   (runPit._t || []).forEach(clearTimeout);
   runPit._t = [];
   if (scale) scale.textContent = lo.toFixed(2) + ' - ' + hi.toFixed(2) + ' m';
-  if (ax) ax.innerHTML = [lo, (lo + hi) / 2, hi]
-    .map(v => `<span style="left:${X(v)}%">${v.toFixed(2)}</span>`).join('');
+  // a round step for the scale — 0.05 m on a high jump, 2 m on a hammer — so the labels and the
+  // rules under them fall on numbers a reader recognises
+  const raw = (hi - lo) / 4, p10 = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p10;
+  const step = (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p10;
+  const dec = step < 1 ? 2 : Number.isInteger(step) ? 0 : 1;
+  const ticks = [];
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) ticks.push(v);
+  if (ax) ax.innerHTML = ticks
+    .map(v => `<span style="left:${X(v)}%">${v.toFixed(dec)}</span>`).join('');
 
+  const st = els[0] && els[0].querySelector('.strip');   // the strip's own box, not a guess at it
+  const at = v => (els[0].offsetLeft + st.offsetLeft + st.offsetWidth * X(v) / 100) + 'px';
+  const plines = document.getElementById('plines');
+  if (plines && st) plines.innerHTML = ticks.map(v => `<i style="left:${at(v)}"></i>`).join('');
   const winline = document.getElementById('winline');
   if (winline){
     winline.classList.remove('in');
-    const st = els[0] && els[0].querySelector('.strip');   // the strip's own box, not a guess at it
-    if (st) winline.style.left =
-      (els[0].offsetLeft + st.offsetLeft + st.offsetWidth * X(best) / 100) + 'px';
+    if (st) winline.style.left = at(best);
   }
   els.forEach((el, i) => {
     const d = el.querySelector('.dot'), f = el.querySelector('.defi');
