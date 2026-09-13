@@ -115,6 +115,7 @@ def photofinish(res):
     are fetched once and kept in the repo at a size a card can actually use.
     """
     from PIL import Image                       # as tools/build_event_bg.py does
+    Image.MAX_IMAGE_PIXELS = None               # a finish-line image can run to 95 megapixels
     out = os.path.join(HERE, "img", "pf")
     os.makedirs(out, exist_ok=True)
     got = 0
