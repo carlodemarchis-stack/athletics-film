@@ -14,8 +14,8 @@ Start lists for events that have not been run are not available anywhere public 
 """
 import json, os, re, sys, time, urllib.request
 
-EP   = "https://graphql-prod-4888.edge.aws.worldathletics.org/graphql"
-KEY  = "da2-ekwnowppnnahhp33zt7yzri77m"      # see fetch_records.py for how to refresh these
+EP   = "https://graphql-prod-4891.edge.aws.worldathletics.org/graphql"
+KEY  = "da2-jxuw7sextrh5dkbefsbitcuqoa"      # see fetch_records.py for how to refresh these
 COMP = 7212925                                # eventId_WA of the 2026 Ultimate Championship
 RESULTS_URL = f"https://worldathletics.org/competition/calendar-results/results/{COMP}"
 PF_URL = f"https://media.aws.iaaf.org/competitiondocuments/photofinish/{COMP}/"
