@@ -201,7 +201,7 @@
      what they did on the right, the event behind it all */
   .wall{flex:1 1 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:14px;
     min-height:0}
-  .ch{position:relative;display:grid;grid-template-columns:38% 1fr;gap:6px;min-height:0;
+  .ch{position:relative;display:block;min-height:0;
     text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;
     overflow:hidden;background:linear-gradient(180deg,rgba(236,236,255,.05),rgba(236,236,255,.01));
     transition:border-color .15s,transform .15s}
@@ -210,29 +210,30 @@
     z-index:2}
   .ch.m::before{background:linear-gradient(90deg,#2bdde1,#77a7f3)}
   .ch.w::before{background:linear-gradient(90deg,#ae81e6,#ff5ac5)}
-  .chpic{position:relative;min-height:0}
-  .chpic i{position:absolute;inset:5px 0 0;background-size:contain;background-repeat:no-repeat;
+  /* the portrait takes the whole tile, as tall as the tile is; the reading sits across the base
+     on its own dark band, so a broad thrower and a sprinter are framed the same way */
+  .chpic{position:absolute;inset:3px 0 0}
+  .chpic i{position:absolute;inset:0;background-size:auto 100%;background-repeat:no-repeat;
     background-position:50% 100%}
-  .chpic i.team{background-size:cover;background-position:50% 30%;inset:0;opacity:.9}
-  .chtx{position:relative;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;
-    padding:0 8px 8px 0}
+  .chpic i.team{background-size:cover;background-position:50% 30%;opacity:.9}
+  .chpic::after{content:"";position:absolute;left:0;right:0;bottom:0;height:62%;
+    background:linear-gradient(180deg,transparent,rgba(8,8,11,.82) 46%,rgba(8,8,11,.95))}
+  .chtx{position:absolute;left:0;right:0;bottom:0;padding:0 9px 7px;min-width:0}
   /* the event, behind the reading, the way the rank sits behind a champion */
-  .chbg{position:absolute;right:0;top:2px;font-size:34px;font-weight:800;line-height:.9;
-    letter-spacing:-.04em;color:rgba(236,236,255,.09);pointer-events:none}
+  .chbg{position:absolute;right:7px;top:4px;font-weight:800;line-height:.9;z-index:1;
+    letter-spacing:-.04em;color:rgba(236,236,255,.16);pointer-events:none;
+    text-shadow:0 1px 10px rgba(8,8,11,.7)}
   .chev{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    position:relative}
-  .chnm{font-size:clamp(10px,.78vw,13px);font-weight:800;letter-spacing:-.015em;margin-top:2px;
-    white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;position:relative}
-  .chrow{display:flex;align-items:baseline;gap:6px;margin-top:2px;position:relative}
+    color:var(--muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chnm{font-size:clamp(10px,.82vw,14px);font-weight:800;letter-spacing:-.015em;margin-top:1px;
+    white-space:nowrap;overflow:hidden}
+  .chrow{display:flex;align-items:baseline;gap:7px;margin-top:2px}
   .chmk{font-size:clamp(13px,1.05vw,16px);font-weight:800;font-variant-numeric:tabular-nums;
     background:var(--flare);-webkit-background-clip:text;background-clip:text;color:transparent}
   .chrec{font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--muted-2)}
   .chrec.big{color:var(--bg0);background:var(--flare);border-radius:3px;padding:1px 4px}
-  .chnat{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--muted-2);margin-top:3px;
-    display:grid;grid-template-columns:15px auto;gap:4px;align-items:center;justify-items:start;
-    position:relative}
+  .chnat{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--muted-2);
+    display:flex;gap:4px;align-items:center;margin-left:auto}
   .kicker .sx.x{color:var(--gold)}
   /* a vertical event, drawn vertically: height up the side, a column per athlete. The plot and
      the axis share one row so a rule, a label and a mark at the same height all line up */
@@ -1118,16 +1119,16 @@ function drawChampions(c){
           cut ? `<i style="background-image:url('img/ath/${w.wa}.webp')"></i>`
           : team ? `<i class="team" style="background-image:url('img/team/${w.slug}.webp')"></i>`
           : ''}</div>
+        <span class="chbg" style="font-size:${
+          [30, 30, 28, 24, 17][Math.min(shortEv(w.event).length, 4)]}px"
+          >${esc(shortEv(w.event))}</span>
         <div class="chtx">
-          <span class="chbg" style="font-size:${
-            [30, 30, 28, 24, 17][Math.min(shortEv(w.event).length, 4)]}px"
-            >${esc(shortEv(w.event))}</span>
           <div class="chev">${esc(w.event)}</div>
           <div class="chnm">${esc(short(w.name, !!team))}</div>
           <div class="chrow"><span class="chmk">${esc(w.mark)}</span>
             ${w.record ? `<span class="chrec${BIG_REC.test(w.record) ? ' big' : ''}"
-              >${esc(w.record)}</span>` : ''}</div>
-          <div class="chnat">${natCell(w.nat)}</div></div></a>`;
+              >${esc(w.record)}</span>` : ''}
+            <span class="chnat">${natCell(w.nat)}</span></div></div></a>`;
     }).join('')}</div>
     <div class="foot">Data: World Athletics &middot; A guy with a scarf</div>`;
   // a long name is shrunk until it fits its own tile, rather than trimmed with an ellipsis —
