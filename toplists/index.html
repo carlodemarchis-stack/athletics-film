@@ -636,7 +636,9 @@ function runLadder(root, animate){
 let SLIDES = [], IDX = 0, TIMER = null, SEX = 'women', TOP = 50;
 const FILMS = {};
 
-fetch('data/toplists.json').then(r => r.json()).then(build).catch(e => {
+/* GitHub Pages serves both files with max-age=600, so a freshly deployed page can otherwise
+   sit and read a ten-minute-old list. Revalidate against the etag instead of trusting the age. */
+fetch('data/toplists.json', {cache: 'no-cache'}).then(r => r.json()).then(build).catch(e => {
   document.getElementById('track').innerHTML =
     `<div class="loading">Could not load the lists — ${esc(e.message)}</div>`;
 });
