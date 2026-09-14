@@ -196,6 +196,36 @@
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:calc(var(--gw) + 12px);width:2px;
     background:rgba(255,90,197,.4)}
+  /* a vertical event, drawn vertically: height up the side, a column per athlete */
+  .vwrap{display:grid;grid-template-columns:52px 1fr;gap:10px;flex:1 1 auto;min-height:170px}
+  .vaxis{position:relative}
+  .vaxis span{position:absolute;right:0;transform:translateY(50%);font-size:9.5px;font-weight:800;
+    letter-spacing:.06em;color:var(--muted-2);font-variant-numeric:tabular-nums}
+  .vplot{position:relative;display:flex;align-items:flex-end;gap:10px;padding-bottom:34px}
+  .vrule{position:absolute;left:0;right:0;height:1px;background:rgba(236,236,255,.07)}
+  .vcol{position:relative;flex:1 1 0;height:100%;min-width:0}
+  .vbar{position:absolute;left:50%;bottom:34px;width:2px;transform:translateX(-50%);
+    height:var(--h,0%);background:linear-gradient(180deg,#77a7f3,rgba(119,167,243,.15));
+    transition:height .5s cubic-bezier(.3,0,.2,1)}
+  .vcol.win .vbar{background:var(--flare)}
+  .vtick{position:absolute;left:50%;width:15px;height:2px;transform:translate(-50%,50%);
+    background:rgba(236,236,255,.5);opacity:0;transition:opacity .3s;margin-bottom:34px}
+  .vcol.in .vtick{opacity:1}
+  .vcol.win .vtick{background:#eef0ff}
+  .vfail{position:absolute;left:50%;transform:translate(-50%,50%);font-style:normal;font-size:12px;
+    font-weight:800;color:var(--bad);opacity:0;transition:opacity .3s;margin-bottom:34px}
+  .vcol.in .vfail{opacity:.8}
+  .vtop{position:absolute;left:0;right:0;bottom:calc(34px + var(--h,0%));text-align:center;
+    opacity:0;transition:opacity .35s,bottom .5s cubic-bezier(.3,0,.2,1);padding-bottom:7px}
+  .vcol.in .vtop{opacity:1}
+  .vtop b{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+  .vcol.win .vtop b{background:var(--flare);-webkit-background-clip:text;background-clip:text;
+    color:transparent}
+  .vname{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:11px;font-weight:700;
+    color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vname span{display:flex;gap:4px;justify-content:center;font-size:9.5px;font-weight:800;
+    letter-spacing:.06em;color:var(--muted-2);margin-top:3px}
+  .vcol.win .vname{color:var(--ink)}
   /* the series tab: the same columns, given the whole card. Not .series — .race.series is
      already the pit that carries attempt columns */
   .sertab{margin-top:16px;flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
@@ -699,6 +729,45 @@ const numOf = m => { const v = parseFloat(String(m).replace(/[^\d.]/g, '')); ret
    is a marker laid out at the distance they actually went. It opens on the full scale from
    zero — which is honest, and which makes eight vaulters look identical — then closes in on
    the spread, exactly as the race does at the line. */
+// A high jump and a vault go up, so the chart goes up: height on the y-axis at its own scale,
+// one column per athlete rising to what they cleared, the bar they went out on marked above it.
+function barChart(race, disc, label){
+  const rows = race.rows.filter(r => r.place && numOf(r.mark) && (r.atn || []).length);
+  if (rows.length < 2) return '';
+  const bars = [...new Set(rows.flatMap(r => r.atn))]
+    .filter(x => /^\d/.test(x || '')).map(Number).sort((a, b) => a - b);
+  if (bars.length < 2) return '';
+  const step = bars[1] - bars[0];
+  const lo = bars[0] - step * 1.1, hi = bars[bars.length - 1] + step * .35;
+  const Y = v => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
+  const short = n => (n || '').split(' ').slice(-1)[0];
+  const dec = step < 0.1 ? 2 : 2;
+  return `<div class="race vert"><div class="racehead">
+      <div class="racetitle">The ${esc(label)} bar by bar &mdash; every height each of them took on</div>
+      <span class="scale" id="scale">${bars[0].toFixed(dec)} - ${bars[bars.length - 1].toFixed(dec)} m</span>
+      <button class="replay" id="replay">&#9654; Raise the bar</button></div>
+    <div class="vwrap" id="vwrap">
+      <div class="vaxis">${bars.map(b =>
+        `<span style="bottom:${Y(b)}%">${b.toFixed(dec)}</span>`).join('')}</div>
+      <div class="vplot">
+        ${bars.map(b => `<i class="vrule" style="bottom:${Y(b)}%"></i>`).join('')}
+        ${rows.map((r, i) => {
+          const best = numOf(r.mark);
+          // the bar they went out on: the first height with three failures against it
+          const k = (r.att || []).findIndex(a => /^X+$/.test((a || '').trim()));
+          const outAt = k >= 0 ? Number(r.atn[k]) : null;
+          const cleared = (r.att || []).map((a, n) => /O/.test(a || '') ? Number(r.atn[n]) : null)
+            .filter(v => v != null);
+          return `<div class="vcol${i === 0 ? ' win' : ''}" data-y="${Y(best).toFixed(2)}">
+            <div class="vbar"></div>
+            ${cleared.map(v => `<i class="vtick" style="bottom:${Y(v)}%"></i>`).join('')}
+            ${outAt ? `<i class="vfail" style="bottom:${Y(outAt)}%">&times;</i>` : ''}
+            <div class="vtop"><b>${esc(r.mark)}</b></div>
+            <div class="vname">${esc(short(r.name))}<span>${natCell(r.nat)}</span></div></div>`;
+        }).join('')}
+      </div></div></div>`;
+}
+
 function pitStrip(race, disc, label){
   const rows = race.rows.filter(r => r.place && numOf(r.mark));
   if (rows.length < 2) return '';
@@ -733,6 +802,21 @@ function pitStrip(race, disc, label){
     </div>
     <div class="pitaxis"><div></div><div class="ax" id="pitax"></div><div></div></div>
     </div></div></div>`;
+}
+
+function runBars(){
+  const wrap = document.getElementById('vwrap');
+  if (!wrap) return;
+  const cols = [...wrap.querySelectorAll('.vcol')];
+  (runBars._t || []).forEach(clearTimeout);
+  runBars._t = [];
+  cols.forEach(c => { c.classList.remove('in'); c.style.setProperty('--h', '0%'); });
+  // lowest first: the bar rises through the field the way the competition does
+  const order = cols.map((c, i) => i).sort((a, b) => +cols[a].dataset.y - +cols[b].dataset.y);
+  order.forEach((idx, n) => runBars._t.push(setTimeout(() => {
+    cols[idx].style.setProperty('--h', cols[idx].dataset.y + '%');
+    cols[idx].classList.add('in');
+  }, 220 + n * 230)));
 }
 
 function runPit(race){
@@ -867,7 +951,9 @@ function draw(){
   }
 
   const rest = final ? '' : `<div class="solo">${field(race, c.when, disc.name, 0)}</div>`;
-  const strip = disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
+  const vertical = disc.isField && /Jump|Vault/i.test(disc.name) && !/Long|Triple/i.test(disc.name);
+  const strip = vertical ? barChart(race, disc, final ? 'final' : 'semifinal')
+              : disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
                              : raceStrip(race, dist, final ? 'final' : 'semifinal');
   const series = all.some(r => r.rows.some(x => (x.att || []).length));
   const onSeries = series && TAB === all.length;
@@ -885,7 +971,7 @@ function draw(){
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
   if (rep){
-    const play = () => disc.isField ? runPit(race) : runRace(race, dist);
+    const play = () => vertical ? runBars() : disc.isField ? runPit(race) : runRace(race, dist);
     rep.onclick = play; setTimeout(play, SLIDING ? 720 : 420);
   }
 }
