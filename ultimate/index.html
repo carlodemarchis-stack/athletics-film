@@ -89,6 +89,7 @@
   .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     background:linear-gradient(180deg,var(--bg1),#0d0d12);min-height:172px;display:flex;
     flex-direction:column;justify-content:flex-end;padding:13px 15px}
+  /* the crop is aimed at the face the photo actually has, not at a guess — see data focus{} */
   .pod .ph{position:absolute;inset:0;background-size:cover;background-position:50% 20%;
     filter:grayscale(1) contrast(1.06);opacity:.5}
   .pod .scrim{position:absolute;inset:0;
@@ -261,8 +262,9 @@
   .atts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
   .atts span{font-size:11px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;
     color:var(--muted);padding:1px 5px;border-radius:3px}
-  .lane .atts span{opacity:0;transition:opacity .3s}
-  .lane .atts span.in{opacity:1}
+  .lane .atts span{opacity:0;transform:translateY(3px);
+    transition:opacity .3s,transform .3s cubic-bezier(.2,.8,.3,1)}
+  .lane .atts span.in{opacity:1;transform:none}
   .lane .atts span.best{color:var(--ink);background:rgba(255,90,197,.14);
     box-shadow:inset 0 0 0 1px rgba(255,90,197,.3)}
   .lane.win .atts span.best{color:var(--gold);background:rgba(255,90,197,.2)}
@@ -628,7 +630,9 @@ function podium(race, when, disc){
     if (m.sb && m.sb !== m.pb) bits.push(`<span>SB <b>${esc(m.sb)}</b></span>`);
     const cut = CUT.has(String(r.wa));
     return `<div class="pod${i === 0 ? ' gold' : ''}${cut ? ' cutin' : ''}">
-      ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
+      ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}');${
+        (D.focus || {})[r.wa] ? `background-position:${D.focus[r.wa][0]}% ${D.focus[r.wa][1]}%` : ''
+      }"></div>` : ''}
       <div class="scrim"></div>
       ${cut ? `<div class="cut" style="background-image:url('img/ath/${r.wa}.webp')"></div>` : ''}
       <div class="pos">${(r.place || '').replace('.', '')}</div>
@@ -892,8 +896,15 @@ function runPit(race){
   const cells = els.map(el => [...el.querySelectorAll('.atts span')]);
   const rounds = Math.max(0, ...cells.map(c => c.length));
   for (let k = 0; k < rounds; k++)
-    runPit._t.push(setTimeout(() => cells.forEach(c => c[k] && c[k].classList.add('in')),
-                              420 + k * 540));
+    runPit._t.push(setTimeout(() => cells.forEach((c, r) => {
+      const cell = c[k];
+      if (!cell) return;
+      // inside a round the marks do not arrive together: a small fixed jitter per cell, so the
+      // column fills like a scoreboard rather than a row of lights, and a replay looks the same
+      const j = (r * 37 + k * 53) % 7;
+      cell.style.transitionDuration = (170 + j * 32) + 'ms';
+      runPit._t.push(setTimeout(() => cell.classList.add('in'), j * 28));
+    }), 420 + k * 540));
 
   // the winner lands first and the rule with it, then each mark behind reaches up to it
   const order = els.map((el, i) => i).sort((a, b) => m[b] - m[a]);

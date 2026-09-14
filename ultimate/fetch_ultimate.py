@@ -326,9 +326,15 @@ def main():
     # will not resolve them — so only a real filename from the action API is ever a photo URL
     for wa, m in ((k, v.get("media")) for k, v in prof.items()):
         if isinstance(m, str) and m and wa not in pics: pics[wa] = m
+    # where the face is in each action photo, so the card crops to it — computed by tools/facefocus
+    # (macOS Vision) and kept on disk, since a photo does not move once it is published
+    focus = {}
+    if os.path.exists(dst):
+        try: focus = json.load(open(dst)).get("focus") or {}
+        except Exception: pass
     out = dict(fetched=time.strftime("%Y-%m-%d %H:%M"), competitionId=COMP,
                daysPublished=days, timetable=tt, results=res, photos=pics, profiles=prof,
-               photoBase="https://assets.aws.worldathletics.org/")
+               focus=focus, photoBase="https://assets.aws.worldathletics.org/")
     json.dump(out, open(dst, "w"), ensure_ascii=False)
     print("->", dst, f"({os.path.getsize(dst)//1024}KB)")
 
