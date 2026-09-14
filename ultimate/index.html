@@ -381,10 +381,12 @@
     display:flex;align-items:center;gap:5px;padding:6px 9px;border-radius:999px;
     background:rgba(20,12,9,.92);border:1px solid var(--line);backdrop-filter:blur(12px);
     box-shadow:0 18px 50px -20px #000}
-  .controls > button:not(.counter){width:38px;height:38px;border:0;background:transparent;
+  .controls > button:not(.counter),.controls > a{width:38px;height:38px;border:0;background:transparent;
     color:var(--muted);cursor:pointer;border-radius:50%;display:flex;align-items:center;
-    justify-content:center;transition:.15s;font-family:inherit;font-size:15px;font-weight:800}
-  .controls > button:not(.counter):hover{color:var(--ink);background:rgba(255,255,255,.08)}
+    justify-content:center;transition:.15s;font-family:inherit;font-size:15px;font-weight:800;
+    text-decoration:none;flex:0 0 auto}
+  .controls > button:not(.counter):hover,.controls > a:hover{color:var(--ink);background:rgba(255,255,255,.08)}
+  .morebtn{font-size:21px;font-weight:700;line-height:1}
   .controls svg{width:19px;height:19px;fill:currentColor}
   .counter{display:flex;align-items:center;gap:6px;padding:7px 12px;border:0;background:transparent;
     color:var(--muted);cursor:pointer;border-radius:999px;font-family:inherit;font-size:12px;
@@ -428,6 +430,20 @@
   .mclose{position:absolute;top:12px;right:15px;background:transparent;border:0;color:var(--muted-2);
     font-size:25px;cursor:pointer;line-height:1}
   .mclose:hover{color:var(--ink)}
+  .applist{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+  .applist a{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;
+    text-decoration:none;color:inherit;border:1px solid transparent}
+  .applist a:hover{background:rgba(255,255,255,.05);border-color:var(--line)}
+  .applist i{flex:0 0 auto;width:9px;height:9px;border-radius:50%}
+  .applist .t{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .applist .n{font-size:13.5px;font-weight:800;color:var(--ink)}
+  .applist .k{font-size:11px;font-weight:700;color:var(--muted-2)}
+  .applist .go{margin-left:auto;color:var(--muted-2);font-size:14px;font-weight:700}
+  .applist a:hover .go{color:var(--gold)}
+  .allapps{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;
+    font-weight:700;color:var(--muted-2)}
+  .allapps a{color:var(--muted-2);text-decoration:none}
+  .allapps a:hover{color:var(--gold)}
   .keys{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px;color:var(--muted);
     align-items:center;margin-top:16px}
   kbd{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:5px;padding:3px 8px;
@@ -486,8 +502,10 @@
       border-width:1px 0 0;justify-content:space-around;gap:2px;
       padding:6px 6px calc(6px + env(safe-area-inset-bottom));
       background:rgba(20,12,9,.94);box-shadow:0 -14px 40px -22px #000}
-    .controls > button:not(.counter){width:40px;height:40px}
-    .controls svg{width:20px;height:20px}
+    /* eight controls have to sit across the narrowest phone, so they scale with it */
+    .controls > button:not(.counter),.controls > a{width:clamp(30px,9.2vw,38px);height:clamp(30px,9.2vw,38px)}
+    .controls svg{width:18px;height:18px}
+    .controls .counter{padding:7px 6px}
     .jumppop{left:10px;right:10px;transform:none;width:auto;
       bottom:calc(58px + env(safe-area-inset-bottom));max-height:56vh}
     .jgrid{grid-template-columns:1fr}
@@ -515,11 +533,44 @@
   <button id="next" title="Next (right arrow)"><svg viewBox="0 0 24 24"><path d="M8.5 5v14l11-7z"/><rect x="5.1" y="5" width="2.4" height="14" rx="1"/></svg></button>
   <button class="counter" id="counter" title="Jump to a card"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">-</span></span><svg class="cchev" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg></button>
   <div class="sep"></div>
+  <a href="../" id="recbtn" title="World Record Film"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></a>
   <button id="helpbtn" title="Help (H)">?</button>
   <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
+  <button id="morebtn" class="morebtn" title="More sports experiences">+</button>
 </div>
 
 <div class="jumppop" id="jumppop" hidden><div class="jgrid" id="jgrid"></div></div>
+
+<div class="modal" id="more" hidden>
+  <div class="modal__ov" onclick="closeMore()"></div>
+  <div class="modal__box" style="max-width:400px">
+    <button class="mclose" onclick="closeMore()" aria-label="Close">&times;</button>
+    <h2>More sports experiences</h2>
+    <div class="csub">A guy with a scarf</div>
+    <div class="applist">
+      <a href="https://f1.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#00d7b6"></i>
+        <span class="t"><span class="n">Formula 1</span><span class="k">A season read lap by lap</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://tennis.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#f2c14e"></i>
+        <span class="t"><span class="n">Tennis</span><span class="k">The season, one player at a time</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://top5.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#3fbe72"></i>
+        <span class="t"><span class="n">Top 5 Leagues</span><span class="k">Wins up, losses down</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://nfl.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#4d94e0"></i>
+        <span class="t"><span class="n">NFL</span><span class="k">The season as a tower</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://worldcupbracket.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#8f7ad6"></i>
+        <span class="t"><span class="n">World Cup</span><span class="k">Road to the Final</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://golf.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#57a34a"></i>
+        <span class="t"><span class="n">PGA TOUR</span><span class="k">Season Film</span></span>
+        <span class="go">&#8599;</span></a>
+    </div>
+    <div class="allapps"><a href="https://dataviz.aguywithascarf.com/" target="_blank"
+      rel="noopener noreferrer">See them all &rarr;</a></div>
+  </div>
+</div>
 
 <div class="modal" id="help" hidden>
   <div class="modal__ov" onclick="closeHelp()"></div>
@@ -1270,6 +1321,8 @@ const toggleJump = () => { const p = document.getElementById('jumppop');
 const closeJump = () => document.getElementById('jumppop').hidden = true;
 const openHelp  = () => { document.getElementById('help').hidden = false; setPlaying(false); };
 const closeHelp = () => document.getElementById('help').hidden = true;
+const openMore  = () => { document.getElementById('more').hidden = false; setPlaying(false); };
+const closeMore = () => document.getElementById('more').hidden = true;
 const toggleFS  = () => document.fullscreenElement ? document.exitFullscreen()
   : document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
 
@@ -1278,6 +1331,7 @@ document.getElementById('prev').onclick = prev;
 document.getElementById('restart').onclick = () => go(0);
 document.getElementById('play').onclick = () => setPlaying(!TIMER);
 document.getElementById('helpbtn').onclick = openHelp;
+document.getElementById('morebtn').onclick = openMore;
 document.getElementById('fs').onclick = toggleFS;
 document.getElementById('counter').onclick = e => { e.stopPropagation(); toggleJump(); };
 document.addEventListener('click', e => {
@@ -1288,7 +1342,7 @@ addEventListener('hashchange', () => {
   if (i >= 0 && i !== IDX) go(i, true);
 });
 addEventListener('keydown', e => {
-  if (e.key === 'Escape'){ closeJump(); return closeHelp(); }
+  if (e.key === 'Escape'){ closeJump(); closeMore(); return closeHelp(); }
   if (e.key === 'ArrowRight') next();
   else if (e.key === 'ArrowLeft') prev();
   else if (e.key === ' '){ e.preventDefault(); setPlaying(!TIMER); }
