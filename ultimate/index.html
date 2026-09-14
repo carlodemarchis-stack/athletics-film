@@ -432,6 +432,59 @@
     align-items:center;margin-top:16px}
   kbd{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:5px;padding:3px 8px;
     font-family:inherit;font-size:11px;font-weight:800;color:var(--ink);text-align:center}
+
+  /* ---- a phone reads the card as a list: champion, then the field, then the strip, which is
+     the one thing that cannot shrink — it keeps its own width and is swiped sideways ---- */
+  @media (max-width: 820px), (max-height: 560px){
+    html,body{height:auto;overflow:visible}
+    .top{padding:12px 16px 0;gap:10px}
+    .brand{font-size:9px;letter-spacing:.14em;gap:7px}
+    .brand svg{width:13px;height:13px}
+    .stage{position:static;height:auto;overflow:visible}
+    .card{position:static!important;height:auto;padding:10px 16px 104px;transform:none!important;
+      transition:none!important}
+    .card::after{background:radial-gradient(600px 380px at 90% -6%,rgba(174,129,230,.15),transparent 62%)}
+    .head{flex-direction:column;align-items:flex-start;gap:6px}
+    .head h1{font-size:clamp(30px,9.5vw,46px)}
+    .when{text-align:left;display:flex;align-items:baseline;gap:10px;align-self:flex-start}
+    .tabs{flex-wrap:wrap;margin-top:10px}
+    .top2{grid-template-columns:1fr;gap:12px;margin-top:11px}
+    .pod.gold{min-height:200px;padding-right:74px}
+    .pod.gold.cutin{padding-left:calc(38% + 12px)}
+    .pod.gold .pos{font-size:132px;right:4px}
+    .pod.gold .nm{font-size:20px}
+    .pod.gold .mk{font-size:36px}
+    .pod.gold .bio{font-size:11px}
+    .beaten{grid-template-rows:none!important}
+    .fr{grid-template-columns:20px 1fr 36px 66px 22px;gap:7px;height:34px;min-height:34px}
+    .fn{font-size:12.5px;letter-spacing:-.01em}
+    .fm{font-size:15px}
+    .fnat{font-size:9.5px}
+    .frec i{font-size:8px;padding:1px 3px}
+    .solo .beaten{flex:none}
+    /* the strip keeps its full width and is swiped */
+    .race{flex:none}
+    .rrow{display:block}
+    .rleft{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+    .lanes,.pitaxis,.atthead{min-width:620px}
+    .race.series{--gw:190px}
+    .pf{width:100%;margin-top:10px;align-self:stretch}
+    .pf img{max-height:26vh}
+    .race.vert{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .vwrap{min-width:620px;min-height:230px}
+    .racehead{flex-wrap:wrap;gap:8px}
+    .racetitle{font-size:9.5px;letter-spacing:.14em}
+    /* the wall, two across */
+    .wall{grid-template-columns:repeat(2,1fr);gap:8px}
+    .ch{min-height:168px}
+    .chnm{font-size:13px!important}
+    .foot{margin-top:14px}
+    .controls{bottom:10px;gap:2px;padding:5px 8px}
+    .controls > button{width:32px;height:32px}
+    .jumppop{left:16px;right:16px;transform:none;width:auto}
+    .jgrid{grid-template-columns:1fr}
+    .modal__box{padding:22px 18px;max-height:82vh;overflow:auto}
+  }
 </style>
 </head>
 <body>
@@ -1036,6 +1089,9 @@ function draw(){
 // the card film slides one card to the next, the way the other films do: the card being left
 // walks off one side while the new one walks in from the other
 // a copy of the card as it stands, taken before it is redrawn — this is the one that leaves
+// a phone on its side is as tight as a phone upright: both read the card as a list
+const NARROW = () => matchMedia('(max-width: 820px), (max-height: 560px)').matches;
+
 function snapshot(){
   const stage = document.getElementById('stage'), card = document.getElementById('card');
   const ghost = card.cloneNode(true);
@@ -1178,8 +1234,9 @@ function go(i, fromHash){
   try { localStorage.setItem('uc.card', c.slug); } catch(e){}
   markJump();
   updateSocialMeta();
+  if (NARROW()) scrollTo(0, 0);
   SLIDING = dir !== 0;
-  const ghost = dir ? snapshot() : null;
+  const ghost = dir && !NARROW() ? snapshot() : null;
   draw();
   if (ghost) slide(ghost, dir);
   SLIDING = false;
