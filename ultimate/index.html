@@ -208,6 +208,10 @@
   .ch::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--flare)}
   .ch.m::before{background:linear-gradient(90deg,#2bdde1,#77a7f3)}
   .ch.w::before{background:linear-gradient(90deg,#ae81e6,#ff5ac5)}
+  /* the event itself, behind the tile, the way the rank sits behind a champion */
+  .chbg{position:absolute;right:8px;bottom:2px;font-weight:800;line-height:.9;
+    letter-spacing:-.04em;color:rgba(236,236,255,.07);pointer-events:none;z-index:0}
+  .ch > *:not(.chbg){position:relative;z-index:1}
   .chpic{flex:1 1 auto;min-height:0;position:relative;margin:0 -10px}
   .chpic i{position:absolute;inset:6px 0 0;background-size:contain;background-repeat:no-repeat;
     background-position:50% 100%}
@@ -1076,6 +1080,17 @@ function champions(){
   return out;
 }
 
+// the event, short enough to sit behind the tile: a track event is its distance, a field event
+// its two letters, a relay its leg
+const SHORTEV = {'High Jump': 'HJ', 'Pole Vault': 'PV', 'Long Jump': 'LJ', 'Triple Jump': 'TJ',
+  'Shot Put': 'SP', 'Discus Throw': 'DT', 'Hammer Throw': 'HT', 'Javelin Throw': 'JT',
+  'Decathlon': 'DEC', 'Heptathlon': 'HEP'};
+const shortEv = n => SHORTEV[n]
+  || (n.match(/^(\d+)\s+Metres(\s+Hurdles)?$/) || [])[0] && n.replace(/^(\d+)\s+Metres(\s+Hurdles)?$/,
+       (m, d, h) => d + (h ? 'H' : ''))
+  || n.replace(/^4x(\d+)\s+Metres\s+Relay$/, '4\u00d7$1')
+  || n;
+
 function drawChampions(c){
   const card = document.getElementById('card');
   card.className = 'card champs';
@@ -1093,6 +1108,9 @@ function drawChampions(c){
     <div class="wall">${all.map(w => {
       const cut = CUT.has(String(w.wa)), team = TEAMBG[w.slug];
       return `<a class="ch${w.sex === 'W' ? ' w' : w.sex === 'M' ? ' m' : ' x'}" href="#${w.slug}">
+        <span class="chbg" style="font-size:${
+          [58, 58, 54, 44, 32][Math.min(shortEv(w.event).length, 4)]}px"
+          >${esc(shortEv(w.event))}</span>
         <div class="chpic">${
           cut ? `<i style="background-image:url('img/ath/${w.wa}.webp')"></i>`
           : team ? `<i class="team" style="background-image:url('img/team/${w.slug}.webp')"></i>`
