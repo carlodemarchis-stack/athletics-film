@@ -197,36 +197,42 @@
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:calc(var(--gw) + 12px);width:2px;
     background:rgba(255,90,197,.4)}
-  /* the last card: every champion of the meet, one tile each */
-  .wall{flex:1 1 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:14px;
+  /* the last card: every champion of the meet, one tile each — the portrait on the left,
+     what they did on the right, the event behind it all */
+  .wall{flex:1 1 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:14px;
     min-height:0}
-  .ch{position:relative;display:flex;flex-direction:column;min-height:0;text-decoration:none;
-    color:inherit;border:1px solid var(--line);border-radius:12px;overflow:hidden;
-    background:linear-gradient(180deg,rgba(236,236,255,.05),rgba(236,236,255,.01));
-    padding:0 10px 9px;transition:border-color .15s,transform .15s}
+  .ch{position:relative;display:grid;grid-template-columns:34% 1fr;gap:8px;min-height:0;
+    text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;
+    overflow:hidden;background:linear-gradient(180deg,rgba(236,236,255,.05),rgba(236,236,255,.01));
+    transition:border-color .15s,transform .15s}
   .ch:hover{border-color:rgba(255,90,197,.5);transform:translateY(-2px)}
-  .ch::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--flare)}
+  .ch::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--flare);
+    z-index:2}
   .ch.m::before{background:linear-gradient(90deg,#2bdde1,#77a7f3)}
   .ch.w::before{background:linear-gradient(90deg,#ae81e6,#ff5ac5)}
-  /* the event itself, behind the tile, the way the rank sits behind a champion */
-  .chbg{position:absolute;right:8px;bottom:2px;font-weight:800;line-height:.9;
-    letter-spacing:-.04em;color:rgba(236,236,255,.07);pointer-events:none;z-index:0}
-  .ch > *:not(.chbg){position:relative;z-index:1}
-  .chpic{flex:1 1 auto;min-height:0;position:relative;margin:0 -10px}
-  .chpic i{position:absolute;inset:6px 0 0;background-size:contain;background-repeat:no-repeat;
+  .chpic{position:relative;min-height:0}
+  .chpic i{position:absolute;inset:5px 0 0;background-size:contain;background-repeat:no-repeat;
     background-position:50% 100%}
-  .chpic i.team{background-size:cover;background-position:50% 30%;inset:0;opacity:.85}
+  .chpic i.team{background-size:cover;background-position:50% 30%;inset:0;opacity:.9}
+  .chtx{position:relative;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;
+    padding:0 10px 8px 0}
+  /* the event, behind the reading, the way the rank sits behind a champion */
+  .chbg{position:absolute;right:0;top:2px;font-size:34px;font-weight:800;line-height:.9;
+    letter-spacing:-.04em;color:rgba(236,236,255,.09);pointer-events:none}
   .chev{font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--muted-2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .chnm{font-size:13px;font-weight:800;letter-spacing:-.01em;margin-top:2px;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
-  .chrow{display:flex;align-items:baseline;gap:6px;margin-top:2px}
-  .chmk{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;
+    color:var(--muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    position:relative}
+  .chnm{font-size:clamp(11.5px,.95vw,14px);font-weight:800;letter-spacing:-.01em;margin-top:2px;
+    white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;position:relative}
+  .chrow{display:flex;align-items:baseline;gap:6px;margin-top:2px;position:relative}
+  .chmk{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
     background:var(--flare);-webkit-background-clip:text;background-clip:text;color:transparent}
   .chrec{font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--muted-2)}
   .chrec.big{color:var(--bg0);background:var(--flare);border-radius:3px;padding:1px 4px}
   .chnat{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--muted-2);margin-top:3px;
-    display:grid;grid-template-columns:15px auto;gap:4px;align-items:center;justify-items:start}
+    display:grid;grid-template-columns:15px auto;gap:4px;align-items:center;justify-items:start;
+    position:relative}
   .kicker .sx.x{color:var(--gold)}
   /* a vertical event, drawn vertically: height up the side, a column per athlete. The plot and
      the axis share one row so a rule, a label and a mark at the same height all line up */
@@ -1108,19 +1114,20 @@ function drawChampions(c){
     <div class="wall">${all.map(w => {
       const cut = CUT.has(String(w.wa)), team = TEAMBG[w.slug];
       return `<a class="ch${w.sex === 'W' ? ' w' : w.sex === 'M' ? ' m' : ' x'}" href="#${w.slug}">
-        <span class="chbg" style="font-size:${
-          [58, 58, 54, 44, 32][Math.min(shortEv(w.event).length, 4)]}px"
-          >${esc(shortEv(w.event))}</span>
         <div class="chpic">${
           cut ? `<i style="background-image:url('img/ath/${w.wa}.webp')"></i>`
           : team ? `<i class="team" style="background-image:url('img/team/${w.slug}.webp')"></i>`
           : ''}</div>
-        <div class="chev">${esc(w.event)}</div>
-        <div class="chnm">${esc(short(w.name, !!team))}</div>
-        <div class="chrow"><span class="chmk">${esc(w.mark)}</span>
-          ${w.record ? `<span class="chrec${BIG_REC.test(w.record) ? ' big' : ''}"
-            >${esc(w.record)}</span>` : ''}</div>
-        <div class="chnat">${natCell(w.nat)}</div></a>`;
+        <div class="chtx">
+          <span class="chbg" style="font-size:${
+            [36, 36, 34, 30, 22][Math.min(shortEv(w.event).length, 4)]}px"
+            >${esc(shortEv(w.event))}</span>
+          <div class="chev">${esc(w.event)}</div>
+          <div class="chnm">${esc(short(w.name, !!team))}</div>
+          <div class="chrow"><span class="chmk">${esc(w.mark)}</span>
+            ${w.record ? `<span class="chrec${BIG_REC.test(w.record) ? ' big' : ''}"
+              >${esc(w.record)}</span>` : ''}</div>
+          <div class="chnat">${natCell(w.nat)}</div></div></a>`;
     }).join('')}</div>
     <div class="foot">Data: World Athletics &middot; A guy with a scarf</div>`;
   card.querySelectorAll('.ch').forEach(a => a.onclick = e => {
