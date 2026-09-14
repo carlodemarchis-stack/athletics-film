@@ -48,7 +48,26 @@
   .when .dt{font-size:13px;color:var(--muted);margin-top:5px}
 
   /* the winner takes half the row, the other two share the rest */
-  .podium{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px;margin-top:13px}
+  .top2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:13px;align-items:stretch}
+  /* the field the champion beat, one line each, big enough to read across the room */
+  .field{display:grid;gap:0;align-content:stretch;min-height:0}
+  .fr{display:grid;grid-template-columns:26px 34px 1fr 44px 92px 26px;align-items:center;gap:10px;
+    border-bottom:1px solid rgba(230,190,160,.07);min-height:0}
+  .fr:last-child{border-bottom:0}
+  .fp{font-size:13px;font-weight:800;color:var(--muted-2);text-align:right}
+  .fc i{display:block;width:30px;height:30px;border-radius:50%;background-size:cover;
+    background-position:50% 8%;background-color:rgba(230,190,160,.07)}
+  .fn{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fnat{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--muted-2)}
+  .fm{font-size:19px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;
+    letter-spacing:-.01em}
+  .fpb{font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--gold)}
+  .fr.out .fn,.fr.out .fp{color:var(--muted-2)}
+  .fr.out .fm{color:var(--acc);font-size:13px;letter-spacing:.08em}
+  .field.tight .fn{font-size:13.5px}
+  .field.tight .fm{font-size:16.5px}
+  .field.tight .fc i{width:24px;height:24px}
+  .field.tight .fp{font-size:12px}
   .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     background:linear-gradient(180deg,var(--bg1),#120c08);min-height:172px;display:flex;
     flex-direction:column;justify-content:flex-end;padding:13px 15px}
@@ -67,20 +86,20 @@
   .pod.cutin{padding-left:calc(43% + 14px);min-height:238px}
   .pod.cutin .pos{position:static;font-size:30px;line-height:.9;margin-bottom:3px;
     color:rgba(246,239,233,.45);opacity:1}
-  .pod.gold.cutin{padding-left:calc(43% + 16px);padding-right:104px}
-  /* on the winner the rank is a watermark: one numeral, the full height, hard against the right */
-  .pod.gold.cutin .pos{position:absolute;top:0;bottom:0;right:12px;left:auto;display:flex;
+  .pod.gold{min-height:238px;padding-right:104px}
+  .pod.gold.cutin{padding-left:calc(43% + 16px)}
+  /* the champion's rank is a watermark: one numeral, the full height, hard against the right */
+  .pod.gold .pos{position:absolute;top:0;bottom:0;right:12px;left:auto;display:flex;
     align-items:center;margin:0;font-size:300px;line-height:1;letter-spacing:-.04em;
-    color:rgba(242,193,78,.2);opacity:1;z-index:0}   /* .gold too, or .pod.gold .pos wins the colour */
-  /* the winner is read from across the room: the name and the mark carry the box */
-  .pod.gold.cutin .nm{font-size:clamp(21px,1.85vw,30px);line-height:1.06;letter-spacing:-.02em}
-  .pod.gold.cutin .nat{font-size:12px;margin-top:5px}
-  .pod.gold.cutin .mk{font-size:clamp(36px,3.15vw,52px);margin-top:8px}
-  .pod.gold.cutin .bio{font-size:11.5px;margin-top:9px}
+    color:rgba(242,193,78,.2);opacity:1;z-index:0}
+  /* the champion is read from across the room, portrait or not */
+  .pod.gold .nm{font-size:clamp(21px,1.85vw,30px);line-height:1.06;letter-spacing:-.02em}
+  .pod.gold .nat{font-size:12px;margin-top:5px}
+  .pod.gold .mk{font-size:clamp(36px,3.15vw,52px);margin-top:8px}
+  .pod.gold .bio{font-size:11.5px;margin-top:9px}
   .pod > *{position:relative}
   .pos{position:absolute;top:10px;left:14px;font-size:32px;font-weight:800;line-height:1;
     color:rgba(246,239,233,.22);z-index:1}
-  .pod.gold .pos{color:var(--gold);opacity:.85}
   .pod .idrow{display:flex;align-items:center;gap:10px}
   .pod .face{width:38px;height:38px;border-radius:50%;flex:0 0 auto;background-size:cover;
     background-position:50% 20%;border:1px solid rgba(242,193,78,.35)}
@@ -426,6 +445,24 @@ const markJump = () => document.querySelectorAll('.jitem')
 const isFinal = r => /final/i.test(r.name) && !/semi/i.test(r.name);
 const racesOf = ev => ev.races.filter(isFinal).concat(ev.races.filter(r => /semi/i.test(r.name)));
 
+function field(race, when, disc){
+  const rest = race.rows.slice(1);
+  if (!rest.length) return '';
+  // a deep field takes the type down a step rather than pushing the card past its own height
+  return `<div class="field${rest.length >= 10 ? ' tight' : ''}"
+    style="grid-template-rows:repeat(${rest.length},1fr)">${rest.map(r => {
+    const out = !r.place, cut = CUT.has(String(r.wa));
+    const p = (D.profiles || {})[r.wa] || {}, m = (p.marks || {})[disc] || {};
+    return `<div class="fr${out ? ' out' : ''}">
+      <span class="fp">${out ? '' : esc((r.place || '').replace('.', ''))}</span>
+      <span class="fc">${cut ? `<i style="background-image:url('img/ath/${r.wa}.webp')"></i>` : ''}</span>
+      <span class="fn">${esc(r.name)}</span>
+      <span class="fnat">${esc(r.nat)}</span>
+      <span class="fm">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</span>
+      <span class="fpb">${m.pb && m.pb === r.mark ? 'PB' : ''}</span></div>`;
+  }).join('')}</div>`;
+}
+
 // everyone the podium did not name, in two columns, read down then across
 function restList(race, skip){
   const rest = race.rows.slice(skip || 0);
@@ -451,8 +488,10 @@ const ageAt = (born, on) => {
 
 /* The box carries what the profile page knows: how old they are, and what they had run before
    today. A personal best equal to the winning mark means the final was the best of their life. */
+// One champion, not a podium: the Ultimate hands out a single title, so the winner takes the
+// whole left of the card and everyone they beat is listed down the right.
 function podium(race, when, disc){
-  return race.rows.slice(0, 3).map((r, i) => {
+  return race.rows.slice(0, 1).map((r, i) => {
     const p = (D.profiles || {})[r.wa] || {};
     const m = (p.marks || {})[disc] || {};      // bests are per event: a sprinter has two of them
     // two pictures where two exist: the action shot fills the box, the portrait sits by the name
@@ -468,7 +507,7 @@ function podium(race, when, disc){
       ${pic ? `<div class="ph" style="background-image:url('${D.photoBase}${pic}')"></div>` : ''}
       <div class="scrim"></div>
       ${cut ? `<div class="cut" style="background-image:url('img/ath/${r.wa}.webp')"></div>` : ''}
-      <div class="pos">${cut ? (r.place || '').replace('.', '') : r.place || ''}</div>
+      <div class="pos">${(r.place || '').replace('.', '')}</div>
       <div class="idrow">
         ${face ? `<div class="face" style="background-image:url('${D.photoBase}${face}')"></div>` : ''}
         <div><div class="nm">${esc(r.name)}</div><div class="nat">${esc(r.nat)}</div></div>
@@ -741,7 +780,7 @@ function draw(){
     return;
   }
 
-  const rest = restList(race, final ? 3 : 0);
+  const rest = final ? '' : restList(race, 0);
   const strip = disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
                              : raceStrip(race, dist, final ? 'final' : 'semifinal');
   card.innerHTML = head
@@ -749,7 +788,8 @@ function draw(){
         `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${
           isFinal(r) ? 'Final' : 'Semifinal ' + r.n}
           ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
-    + (final ? `<div class="podium">${podium(race, c.when, disc.name)}</div>` : '')
+    + (final ? `<div class="top2">${podium(race, c.when, disc.name)}
+        ${field(race, c.when, disc.name)}</div>` : '')
     + rest + strip + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
