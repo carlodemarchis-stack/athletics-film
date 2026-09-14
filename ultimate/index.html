@@ -199,9 +199,9 @@
     background:rgba(255,90,197,.4)}
   /* the last card: every champion of the meet, one tile each — the portrait on the left,
      what they did on the right, the event behind it all */
-  .wall{flex:1 1 auto;display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:14px;
+  .wall{flex:1 1 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:14px;
     min-height:0}
-  .ch{position:relative;display:grid;grid-template-columns:34% 1fr;gap:8px;min-height:0;
+  .ch{position:relative;display:grid;grid-template-columns:38% 1fr;gap:6px;min-height:0;
     text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:12px;
     overflow:hidden;background:linear-gradient(180deg,rgba(236,236,255,.05),rgba(236,236,255,.01));
     transition:border-color .15s,transform .15s}
@@ -215,18 +215,18 @@
     background-position:50% 100%}
   .chpic i.team{background-size:cover;background-position:50% 30%;inset:0;opacity:.9}
   .chtx{position:relative;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;
-    padding:0 10px 8px 0}
+    padding:0 8px 8px 0}
   /* the event, behind the reading, the way the rank sits behind a champion */
   .chbg{position:absolute;right:0;top:2px;font-size:34px;font-weight:800;line-height:.9;
     letter-spacing:-.04em;color:rgba(236,236,255,.09);pointer-events:none}
-  .chev{font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  .chev{font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
     color:var(--muted-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     position:relative}
-  .chnm{font-size:clamp(11.5px,.95vw,14px);font-weight:800;letter-spacing:-.01em;margin-top:2px;
+  .chnm{font-size:clamp(10px,.78vw,13px);font-weight:800;letter-spacing:-.015em;margin-top:2px;
     white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;position:relative}
   .chrow{display:flex;align-items:baseline;gap:6px;margin-top:2px;position:relative}
-  .chmk{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
+  .chmk{font-size:clamp(13px,1.05vw,16px);font-weight:800;font-variant-numeric:tabular-nums;
     background:var(--flare);-webkit-background-clip:text;background-clip:text;color:transparent}
   .chrec{font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--muted-2)}
   .chrec.big{color:var(--bg0);background:var(--flare);border-radius:3px;padding:1px 4px}
@@ -1120,7 +1120,7 @@ function drawChampions(c){
           : ''}</div>
         <div class="chtx">
           <span class="chbg" style="font-size:${
-            [36, 36, 34, 30, 22][Math.min(shortEv(w.event).length, 4)]}px"
+            [30, 30, 28, 24, 17][Math.min(shortEv(w.event).length, 4)]}px"
             >${esc(shortEv(w.event))}</span>
           <div class="chev">${esc(w.event)}</div>
           <div class="chnm">${esc(short(w.name, !!team))}</div>
@@ -1130,6 +1130,14 @@ function drawChampions(c){
           <div class="chnat">${natCell(w.nat)}</div></div></a>`;
     }).join('')}</div>
     <div class="foot">Data: World Athletics &middot; A guy with a scarf</div>`;
+  // a long name is shrunk until it fits its own tile, rather than trimmed with an ellipsis —
+  // JEFFERSON-WOODEN is sixteen characters and the tile is the tile
+  card.querySelectorAll('.chnm').forEach(el => {
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth + 1 && size > 7.5){
+      size -= .5; el.style.fontSize = size + 'px';
+    }
+  });
   card.querySelectorAll('.ch').forEach(a => a.onclick = e => {
     e.preventDefault();
     const i = DECK.findIndex(x => x.slug === a.getAttribute('href').slice(1));
