@@ -29,7 +29,7 @@
 <meta name="agwas:tags"     content="athletics ultimatechampionship budapest26 dataviz">
 <meta name="agwas:mentions" content="worldathletics">
 <meta name="agwas:bg"       content="https://athletics.aguywithascarf.com/ultimate/img/og.jpg">
-<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0e11f639978547d6a4c33b703dbdf568"}'></script><!-- End Cloudflare Web Analytics -->
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0e11f639978547d6a4c33b703dbdf568"}'></script><!-- End Cloudflare Web Analytics -->
 <style>
   /* Class of One — the Ultimate Championship identity: a monochrome ground with the iridescent
      accents of the Star Flare, aqua through violet to magenta, kept for the moments that matter */
@@ -509,7 +509,7 @@ const CUT = new Set(['14739628','14935809','14753981','14679502','14653717','148
                      '14715244','14737998','14498578',
                      '14894836','14375750','14715835','14755064','14877871','14533464',
                      '14976579']);
-let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false;
+let D, DECK = [], IDX = null, TAB = 0, RAF = null, TIMER = null, SLIDING = false, PLAY_MS = 0;
 
 fetch('data/ultimate.json', {cache:'no-cache'}).then(r => r.json()).then(boot);
 
@@ -763,6 +763,7 @@ function runRace(race, dist){
     if (e < HOLD + BACK) RAF = requestAnimationFrame(step);
   };
   RAF = requestAnimationFrame(step);
+  return HOLD + BACK;
 }
 
 const numOf = m => { const v = parseFloat(String(m).replace(/[^\d.]/g, '')); return isNaN(v) ? null : v; };
@@ -860,6 +861,7 @@ function runBars(){
     cols[idx].style.setProperty('--h', cols[idx].dataset.y + '%');
     cols[idx].classList.add('in');
   }, 220 + n * 230)));
+  return 220 + (cols.length - 1) * 230 + 500;   // the last column still has its rise to finish
 }
 
 function runPit(race){
@@ -967,10 +969,13 @@ function runPit(race){
       }
     }, land));
   });
+  return Math.max(220 + (order.length - 1) * STEP + (flies ? FLY + HOLD + RISE : 0) + 300,
+                  420 + (rounds - 1) * 540 + 400);
 }
 
 function draw(){
   const c = DECK[IDX], disc = c.disc;
+  PLAY_MS = 0;
   if (c.kind === 'champions') return drawChampions(c);
   const sexw = c.sex === 'W', sex = sexw ? "Women's" : c.sex === 'M' ? "Men's" : 'Mixed';
   const when = new Date(c.when), dist = distOf(disc.name);
@@ -1020,8 +1025,11 @@ function draw(){
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');
   if (rep){
-    const play = () => vertical ? runBars() : disc.isField ? runPit(race) : runRace(race, dist);
-    rep.onclick = play; setTimeout(play, SLIDING ? 720 : 420);
+    const play = () => { PLAY_MS = (vertical ? runBars()
+                                  : disc.isField ? runPit(race) : runRace(race, dist)) || 0; };
+    const lead = SLIDING ? 720 : 420;
+    PLAY_MS = lead + 2600;                      // until the animation reports its own length
+    rep.onclick = play; setTimeout(() => { play(); PLAY_MS += lead; }, lead);
   }
 }
 
@@ -1178,12 +1186,19 @@ function go(i, fromHash){
 }
 const next = () => go(IDX + 1), prev = () => go(IDX - 1);
 
+// a card is held for five seconds after its own animation ends, so a long pit and a short race
+// each get the same beat to be read in rather than one fixed interval for both
+const DWELL = 5000;
+function queueNext(){
+  clearTimeout(TIMER);
+  TIMER = setTimeout(() => { next(); queueNext(); }, (PLAY_MS || 0) + DWELL);
+}
 function setPlaying(on){
-  clearInterval(TIMER); TIMER = null;
+  clearTimeout(TIMER); TIMER = null;
   document.getElementById('playIcon').innerHTML = on
     ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
     : '<path d="M7 5v14l12-7z"/>';
-  if (on) TIMER = setInterval(next, 9000);
+  if (on) queueNext();
 }
 const toggleJump = () => { const p = document.getElementById('jumppop');
   p.hidden = !p.hidden; if (!p.hidden) markJump(); };
