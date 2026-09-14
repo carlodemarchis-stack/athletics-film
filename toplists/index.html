@@ -111,7 +111,7 @@
     grid-template-rows:repeat(var(--half,25),minmax(0,1fr));
     column-gap:clamp(10px,1.5vw,26px); min-height:0; font-size:var(--rf,12px)}
   .lr{min-width:0; min-height:0; display:grid; align-items:center; gap:0 7px;
-    grid-template-columns:2.2em 4.5em minmax(0,1fr) 2.9em 2.5em;
+    grid-template-columns:2.2em 4.5em 2.9em 2.6em minmax(0,1fr);
     border-top:1px solid rgba(230,190,160,.07); opacity:0; transform:translateX(-7px);
     transition:opacity .22s ease, transform .22s ease}
   .lr.in{opacity:1; transform:none}
@@ -133,9 +133,11 @@
   /* the nations with no flag (ANA, URS, GDR) fall back to their code, which must not
      inherit its way down to four pixels on a thirty-row card */
   .lnm .cc{font-size:8.5px; padding:1px 3px; border-radius:3px; vertical-align:baseline}
-  .ladder.nowind .lr{grid-template-columns:2.2em 4.5em minmax(0,1fr) 2.5em}
+  .ladder.nowind .lr{grid-template-columns:2.2em 4.5em 2.6em minmax(0,1fr)}
+  .lr:hover,.lr.lit{background:rgba(255,255,255,.06)}
+  .lr.lit .lnm .n{color:var(--gold)}
   .lw{font-size:.82em; font-weight:700; color:var(--muted-2); text-align:right; white-space:nowrap}
-  .ly{font-size:.85em; font-weight:800; color:var(--muted); text-align:right}
+  .ly{font-size:.85em; font-weight:800; color:var(--muted); text-align:right; padding-right:4px}
 
   /* the era chart */
   .chartwrap{position:relative; min-height:0}
@@ -143,6 +145,13 @@
   .lbl{font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; fill:var(--muted-2)}
   .axv{font-size:10.5px; font-weight:700; fill:var(--muted-2)}
   .dot{cursor:pointer}
+  .dot .ring{transform-box:fill-box; transform-origin:center; pointer-events:none; opacity:0}
+  .dot.pulse .ring{animation:ping 1.05s cubic-bezier(.2,.6,.3,1) infinite}
+  .dot.pulse .d{stroke:var(--ink); stroke-width:1.6}
+  @keyframes ping{
+    0%{transform:scale(1); opacity:.9}
+    70%{transform:scale(3.4); opacity:0}
+    100%{transform:scale(3.4); opacity:0}}
   .tip{position:absolute; z-index:9; pointer-events:none; opacity:0; transition:opacity .12s;
     background:rgba(12,9,8,.94); border:1px solid var(--line); border-radius:10px;
     padding:9px 12px; font-size:12px; line-height:1.45; white-space:nowrap;
@@ -519,14 +528,15 @@ function cardHTML(M, sex){
       <div class="ladder ${wind ? '' : 'nowind'}" style="--half:${
         Math.ceil(M.rows.length / 2)}">${M.rows.map((r, i) => `
         <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''} ${
-               i === 0 || i === Math.ceil(M.rows.length / 2) ? 'nb' : ''}" style="--c:${r.c}">
+               i === 0 || i === Math.ceil(M.rows.length / 2) ? 'nb' : ''}"
+             data-i="${i}" style="--c:${r.c}">
           <span class="lk">${r.tie ? '=' : r.rank}</span>
           <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
+          ${wind ? `<span class="lw">${esc(r.wind || '')}</span>` : ''}
+          <span class="ly">${r.year}</span>
           <span class="lnm" title="${esc(teamOf(r.name))}"><span class="n">${
             ladderName(r.name, r.team)}</span>${
             flagOf(r.nat)}</span>
-          ${wind ? `<span class="lw">${esc(r.wind || '')}</span>` : ''}
-          <span class="ly">${r.year}</span>
         </div>`).join('')}</div>
       <div class="chartwrap"><svg></svg><div class="tip"></div></div>
     </div>
@@ -585,10 +595,13 @@ function drawEra(M, root, animate){
 
   const tip = root.querySelector('.tip');
   M.rows.forEach((r, i) => {
-    const g = el('g', {class: 'dot'});
+    const g = el('g', {class: 'dot', 'data-i': i});
     const cx = X(r.when), cy = Y(r.k);
     const halo = el('circle', {cx, cy, r: 9, fill: 'transparent'});
-    const dot = el('circle', {cx, cy, r: r.rank === 1 ? 6 : 4.6,
+    const rad = r.rank === 1 ? 6 : 4.6;
+    const ring = el('circle', {class: 'ring', cx, cy, r: rad, fill: 'none',
+      stroke: r.rank === 1 ? 'var(--gold)' : r.c, 'stroke-width': 1.6});
+    const dot = el('circle', {class: 'd', cx, cy, r: rad,
       fill: r.rank === 1 ? 'var(--gold)' : r.c,
       stroke: 'rgba(10,8,7,.55)', 'stroke-width': 1});
     if (animate){
@@ -600,7 +613,7 @@ function drawEra(M, root, animate){
         dot.setAttribute('transform', 'translate(0 0)');
       }, 120 + i * 17);
     }
-    g.appendChild(dot); g.appendChild(halo);
+    g.appendChild(ring); g.appendChild(dot); g.appendChild(halo);
     halo.addEventListener('mouseenter', () => {
       tip.innerHTML = `<div class="p">${esc(r.mark)}</div>`
         + `<div class="n">${esc(r.name)} ${esc(r.nat)}</div>`
@@ -611,8 +624,18 @@ function drawEra(M, root, animate){
       tip.style.top = Math.max(2, cy - tip.offsetHeight - 12) + 'px';
     });
     halo.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+    halo.addEventListener('mouseenter', () => link(root, i, true));
+    halo.addEventListener('mouseleave', () => link(root, i, false));
     svg.appendChild(g);
   });
+}
+
+/* the ladder and the chart hold the same fifty marks; hovering either says which */
+function link(root, i, on){
+  const row = root.querySelector(`.lr[data-i="${i}"]`);
+  const g = root.querySelector(`.dot[data-i="${i}"]`);
+  if (row) row.classList.toggle('lit', on);
+  if (g) g.classList.toggle('pulse', on);
 }
 
 /* the ladder fills from the best mark down, the way the chart fills */
@@ -809,6 +832,15 @@ addEventListener('keydown', e => {
   else if (e.key.toLowerCase() === 'f') toggleFS();
   else if (e.key.toLowerCase() === 'h') openHelp();
   else if (e.key.toLowerCase() === 'r') paint(true);
+});
+
+document.addEventListener('mouseover', e => {
+  const row = e.target.closest('.lr');
+  if (row) link(row.closest('.card'), row.dataset.i, true);
+});
+document.addEventListener('mouseout', e => {
+  const row = e.target.closest('.lr');
+  if (row && !row.contains(e.relatedTarget)) link(row.closest('.card'), row.dataset.i, false);
 });
 
 new ResizeObserver(() => paint(false)).observe(document.getElementById('track'));
