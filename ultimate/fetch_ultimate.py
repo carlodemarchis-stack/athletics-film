@@ -163,38 +163,44 @@ def isFinal(name):
     n = (name or "").lower()
     return "final" in n and "semi" not in n
 
-def attempts(res, tt):
-    """Every attempt of every field final, in order.
+def details(res, tt):
+    """What the day pages leave out: the record a mark set, and every attempt of a field final.
 
     getEventPhaseByDiscipline wants the URL slug for the discipline but the letter code for the
     sex — "hammer-throw" with "M" — and anything else comes back null or throws inside their
-    lambda. The attempts themselves arrive out of order, so they are sorted by their own index.
+    lambda. Attempts arrive out of order, so they are sorted by their own index.
     """
     field = {(p["sexCode"], p["discipline"]["name"]) for p in tt if p["discipline"].get("isField")}
-    got = 0
+    recs = atts = 0
+    q = """query($e:Int,$d:String,$s:String,$p:String){
+      getEventPhaseByDiscipline(eventId:$e, disciplineCode:$d, sexCode:$s, phaseCode:$p){
+        units{ results{ competitorName record reactionTime }
+          series{ competitorName attempts{ competitionIntermediateOrder intermediateMark } } } }}"""
     for e in res:
         disc = re.sub(r"^(Men's |Women's |Mixed )", "", e["event"])
-        if (e["sex"], disc) not in field: continue
         for r in e["races"]:
             phase = "final" if isFinal(r["name"]) else "semifinal"
-            q = """query($e:Int,$d:String,$s:String,$p:String){
-              getEventPhaseByDiscipline(eventId:$e, disciplineCode:$d, sexCode:$s, phaseCode:$p){
-                units{ series{ competitorName resultMark
-                  attempts{ competitionIntermediateOrder intermediateMark } } } }}"""
             try:
                 ph = gql(q, {"e": COMP, "d": slugify(disc), "s": e["sex"], "p": phase})
                 ph = (ph or {}).get("getEventPhaseByDiscipline") or {}
             except Exception as ex:
-                print(f"  ! attempts {e['event']}: {ex}"); continue
-            by = {}
+                print(f"  ! detail {e['event']}: {ex}"); continue
+            rec, by = {}, {}
             for u in (ph.get("units") or []):
+                for x in (u.get("results") or []):
+                    rec[(x.get("competitorName") or "").strip()] = (x.get("record"), x.get("reactionTime"))
                 for x in (u.get("series") or []):
                     a = sorted(x.get("attempts") or [], key=lambda v: v.get("competitionIntermediateOrder") or 0)
                     by[(x.get("competitorName") or "").strip()] = [v.get("intermediateMark") for v in a]
             for row in r["rows"]:
-                a = by.get((row.get("name") or "").strip())
-                if a: row["att"] = a; got += 1
-    return got
+                who = (row.get("name") or "").strip()
+                if who in rec:
+                    mark, rt = rec[who]
+                    if mark: row["record"] = mark; recs += 1
+                    if rt: row["rt"] = rt
+                if (e["sex"], disc) in field and by.get(who):
+                    row["att"] = by[who]; atts += 1
+    return recs, atts
 
 def photofinish(res):
     """Seiko's finish-line image for every track race that has one.
@@ -287,7 +293,8 @@ def main():
     if topup(res, tt):
         n = sum(len(r['rows']) for e in res for r in e['races'])
         print(f"topped up: {len(res)} events, {n} rows")
-    print(f"attempts:  {attempts(res, tt)} field marks have their series")
+    nrec, natt = details(res, tt)
+    print(f"detail:    {nrec} marks carry a record, {natt} have their series")
     print(f"photo finish: {photofinish(res)} races have one")
     pics = photos([r["wa"] for e in res for ra in e["races"] for r in ra["rows"] if r["wa"]])
     print(f"photos:    {len(pics)} athletes have one")

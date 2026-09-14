@@ -63,22 +63,21 @@
   .top2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:13px;align-items:stretch}
   /* the field the champion beat, one line each, big enough to read across the room */
   .field{display:grid;gap:0;align-content:stretch;min-height:0}
-  .fr{display:grid;grid-template-columns:26px 34px 1fr 44px 92px 26px;align-items:center;gap:10px;
+  .fr{display:grid;grid-template-columns:26px 1fr 44px 92px 34px;align-items:center;gap:10px;
     border-bottom:1px solid rgba(236,236,255,.07);min-height:0}
   .fr:last-child{border-bottom:0}
   .fp{font-size:13px;font-weight:800;color:var(--muted-2);text-align:right}
-  .fc i{display:block;width:30px;height:30px;border-radius:50%;background-size:cover;
-    background-position:50% 8%;background-color:rgba(236,236,255,.07)}
   .fn{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .fnat{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--muted-2)}
   .fm{font-size:19px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;
     letter-spacing:-.01em}
-  .fpb{font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--gold)}
+  .frec i{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.1em;
+    color:var(--muted-2);padding:2px 4px;border-radius:3px}
+  .frec i.big{color:var(--bg0);background:var(--flare)}
   .fr.out .fn,.fr.out .fp{color:var(--muted-2)}
   .fr.out .fm{color:var(--bad);font-size:13px;letter-spacing:.08em}
   .field.tight .fn{font-size:13.5px}
   .field.tight .fm{font-size:16.5px}
-  .field.tight .fc i{width:24px;height:24px}
   .field.tight .fp{font-size:12px}
   .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     background:linear-gradient(180deg,var(--bg1),#0d0d12);min-height:172px;display:flex;
@@ -127,7 +126,9 @@
   .pod .bio b{color:var(--muted);font-weight:800}
   .pod .bio .best{color:var(--gold)}
   .pod .tag{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.12em;
-    text-transform:uppercase;color:var(--bg0);background:var(--gold);border-radius:5px;padding:3px 6px;margin-top:6px}
+    text-transform:uppercase;color:var(--muted);border:1px solid var(--line);
+    border-radius:5px;padding:3px 6px;margin-top:6px}
+  .pod .tag.big{color:var(--bg0);background:var(--flare);border-color:transparent}
 
 
   .tabs{display:flex;gap:7px;margin-top:12px}
@@ -434,7 +435,7 @@ const EVORDER = ['100 Metres', '200 Metres', '400 Metres', '800 Metres', '1500 M
   'Discus Throw', 'Hammer Throw', 'Javelin Throw', 'Decathlon', 'Heptathlon',
   '4x100 Metres Relay', '4x400 Metres Relay'];
 const evIx = n => { const i = EVORDER.indexOf(n); return i < 0 ? EVORDER.length : i; };
-const sexIx = s => s === 'M' ? 0 : s === 'W' ? 1 : 2;
+const sexIx = s => s === 'W' ? 0 : s === 'M' ? 1 : 2;   // women lead each event
 
 function boot(d){
   D = d;
@@ -465,21 +466,23 @@ const markJump = () => document.querySelectorAll('.jitem')
 const isFinal = r => /final/i.test(r.name) && !/semi/i.test(r.name);
 const racesOf = ev => ev.races.filter(isFinal).concat(ev.races.filter(r => /semi/i.test(r.name)));
 
+// a world lead or a national record is a headline; a personal best is a footnote
+const BIG_REC = /^(WR|AR|NR|CR|MR|WL|OR|NU|=WR|=AR|=NR|=CR|=WL)$/i;
+const recTag = r => r ? `<i class="${BIG_REC.test(r) ? 'big' : ''}">${esc(r)}</i>` : '';
+
 function field(race, when, disc){
   const rest = race.rows.slice(1);
   if (!rest.length) return '';
   // a deep field takes the type down a step rather than pushing the card past its own height
   return `<div class="field${rest.length >= 10 ? ' tight' : ''}"
     style="grid-template-rows:repeat(${rest.length},1fr)">${rest.map(r => {
-    const out = !r.place, cut = CUT.has(String(r.wa));
-    const p = (D.profiles || {})[r.wa] || {}, m = (p.marks || {})[disc] || {};
+    const out = !r.place;
     return `<div class="fr${out ? ' out' : ''}">
       <span class="fp">${out ? '' : esc((r.place || '').replace('.', ''))}</span>
-      <span class="fc">${cut ? `<i style="background-image:url('img/ath/${r.wa}.webp')"></i>` : ''}</span>
       <span class="fn">${esc(r.name)}</span>
       <span class="fnat">${esc(r.nat)}</span>
       <span class="fm">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</span>
-      <span class="fpb">${m.pb && m.pb === r.mark ? 'PB' : ''}</span></div>`;
+      <span class="frec">${recTag(r.record)}</span></div>`;
   }).join('')}</div>`;
 }
 
@@ -534,7 +537,8 @@ function podium(race, when, disc){
       </div>
       <div class="mk">${esc(r.mark)}</div>
       ${bits.length ? `<div class="bio">${bits.join('')}</div>` : ''}
-      ${r.record ? `<div><span class="tag">${esc(r.record)}</span></div>` : ''}</div>`;
+      ${r.record ? `<div><span class="tag${BIG_REC.test(r.record) ? ' big' : ''}"
+        >${esc(r.record)}</span></div>` : ''}</div>`;
   }).join('');
 }
 
