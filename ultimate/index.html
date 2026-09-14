@@ -627,16 +627,17 @@ const ageAt = (born, on) => {
 // the relays have no athlete to look up, so their background is the card's own team picture
 const TEAMBG = {'mixed-4x100-metres-relay': [85, 49], 'mixed-4x400-metres-relay': [56, 15]};
 // champions World Athletics has no picture of: their background is the meet's own photograph
-const OWNBG = new Set(['14659011','14704467','14715835','14753981','14877871','14886862','14976579']);
+const OWNBG = new Set(['14659011','14704467','14715835','14753981','14877871','14886862',
+                       '14976579','14827877','14894836','15129238','14373498']);
 
 function podium(race, when, disc, slug){
   return race.rows.slice(0, 1).map((r, i) => {
     const p = (D.profiles || {})[r.wa] || {};
     const m = (p.marks || {})[disc] || {};      // bests are per event: a sprinter has two of them
     // two pictures where two exist: the action shot fills the box, the portrait sits by the name
-    const pic = r.wa && D.photos[r.wa];
-    const team = !pic && i === 0 && TEAMBG[slug];
-    const own = !pic && !team && OWNBG.has(String(r.wa));
+    const own = OWNBG.has(String(r.wa));        // our own pick from the meet comes first
+    const pic = !own && r.wa && D.photos[r.wa];
+    const team = !pic && !own && i === 0 && TEAMBG[slug];
     const face = typeof p.face === 'string' ? p.face : null;
     const age = ageAt(p.born, when);
     const bits = [];
