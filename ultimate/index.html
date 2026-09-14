@@ -62,13 +62,16 @@
   /* the winner takes half the row, the other two share the rest */
   .top2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:13px;align-items:stretch}
   /* the field the champion beat, one line each, big enough to read across the room */
-  .field{display:grid;gap:0;align-content:stretch;min-height:0}
+  /* named .beaten, not .field: .card carries a .field class of its own for field events */
+  .beaten{display:grid;gap:0;align-content:stretch;min-height:0}
   .fr{display:grid;grid-template-columns:26px 1fr 44px 92px 34px;align-items:center;gap:10px;
     border-bottom:1px solid rgba(236,236,255,.07);min-height:0}
   .fr:last-child{border-bottom:0}
   .fp{font-size:13px;font-weight:800;color:var(--muted-2);text-align:right}
   .fn{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .fnat{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--muted-2)}
+  .fnat{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:var(--muted-2);
+    white-space:nowrap}
+  .fg{margin-right:5px;letter-spacing:0;font-size:1.15em;vertical-align:-.08em}
   .fm{font-size:19px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;
     letter-spacing:-.01em}
   .frec i{font-style:normal;font-size:8.5px;font-weight:800;letter-spacing:.1em;
@@ -76,9 +79,9 @@
   .frec i.big{color:var(--bg0);background:var(--flare)}
   .fr.out .fn,.fr.out .fp{color:var(--muted-2)}
   .fr.out .fm{color:var(--bad);font-size:13px;letter-spacing:.08em}
-  .field.tight .fn{font-size:13.5px}
-  .field.tight .fm{font-size:16.5px}
-  .field.tight .fp{font-size:12px}
+  .beaten.tight .fn{font-size:13.5px}
+  .beaten.tight .fm{font-size:16.5px}
+  .beaten.tight .fp{font-size:12px}
   .pod{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;
     background:linear-gradient(180deg,var(--bg1),#0d0d12);min-height:172px;display:flex;
     flex-direction:column;justify-content:flex-end;padding:13px 15px}
@@ -182,6 +185,28 @@
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:calc(var(--gw) + 12px);width:2px;
     background:rgba(255,90,197,.4)}
+  /* the series tab: the same columns, given the whole card. Not .series — .race.series is
+     already the pit that carries attempt columns */
+  .sertab{margin-top:16px;flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+  .shead,.srow{display:grid;align-items:center;gap:10px}
+  .shead{padding-bottom:7px;border-bottom:1px solid var(--line)}
+  .shead span{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted-2)}
+  .shead .sc{text-align:center}
+  .shead .sc:last-child{text-align:right}
+  .srow{flex:1 1 0;min-height:0;border-bottom:1px solid rgba(236,236,255,.06)}
+  .sp{font-size:12px;font-weight:800;color:var(--muted-2);text-align:right}
+  .sn{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .snat{font-size:10px;font-weight:800;letter-spacing:.08em;color:var(--muted-2);white-space:nowrap}
+  .sv{font-size:13px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;
+    color:var(--ink)}
+  .sv.out{color:var(--bad);opacity:.85}
+  .sv.pass{color:var(--muted-2)}
+  .sm{font-size:16px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+  .srow.win .sm{background:var(--flare);-webkit-background-clip:text;background-clip:text;
+    color:transparent}
+  .skey{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted-2);padding-top:9px}
   /* the four attempts, in their own columns, the one that counted lit where it happened */
   .race.series{--gw:232px}
   .atthead{display:grid;grid-template-columns:var(--nw) 1fr var(--gw);gap:12px;margin-bottom:5px}
@@ -466,21 +491,69 @@ const markJump = () => document.querySelectorAll('.jitem')
 const isFinal = r => /final/i.test(r.name) && !/semi/i.test(r.name);
 const racesOf = ev => ev.races.filter(isFinal).concat(ev.races.filter(r => /semi/i.test(r.name)));
 
+// IOC three-letter codes are not ISO two-letter ones, and a flag emoji is built from the ISO pair
+const ISO2 = {ALG:'DZ',AUS:'AU',BAH:'BS',BDI:'BI',BEL:'BE',BOT:'BW',BRA:'BR',BRN:'BH',BUL:'BG',
+  BUR:'BF',CAN:'CA',CHI:'CL',CHN:'CN',CMR:'CM',COL:'CO',CRO:'HR',CUB:'CU',CZE:'CZ',DMA:'DM',
+  DOM:'DO',ESP:'ES',ETH:'ET',FRA:'FR',GBR:'GB',GER:'DE',GRE:'GR',GRN:'GD',HUN:'HU',IRL:'IE',
+  ITA:'IT',JAM:'JM',JPN:'JP',KEN:'KE',LAT:'LV',LCA:'LC',LUX:'LU',MAR:'MA',MEX:'MX',NED:'NL',
+  NGR:'NG',NOR:'NO',NZL:'NZ',PAK:'PK',PAN:'PA',POL:'PL',POR:'PT',PUR:'PR',QAT:'QA',RSA:'ZA',
+  SEN:'SN',SLO:'SI',SRB:'RS',SRI:'LK',SUI:'CH',SVK:'SK',SWE:'SE',TTO:'TT',TUR:'TR',UGA:'UG',
+  UKR:'UA',USA:'US',UZB:'UZ',VIN:'VC',ZAM:'ZM',ZIM:'ZW'};
+const flag = nat => {
+  const i = ISO2[(nat || '').toUpperCase()];
+  return i ? String.fromCodePoint(...[...i].map(c => 0x1f1a5 + c.charCodeAt(0))) : '';
+};
+const natCell = nat => `${flag(nat) ? `<span class="fg">${flag(nat)}</span>` : ''}${esc(nat || '')}`;
+
 // a world lead or a national record is a headline; a personal best is a footnote
 const BIG_REC = /^(WR|AR|NR|CR|MR|WL|OR|NU|=WR|=AR|=NR|=CR|=WL)$/i;
 const recTag = r => r ? `<i class="${BIG_REC.test(r) ? 'big' : ''}">${esc(r)}</i>` : '';
+
+// The whole series, laid out the way the attempt columns are: every athlete a row, every attempt
+// or every bar a column, and the one that counted lit. A high jump names its columns by the bar
+// it was set at, which is what makes the card readable as a competition.
+function seriesTable(race){
+  const rows = race.rows.filter(r => (r.att || []).length);
+  if (!rows.length) return '';
+  const names = rows[0].atn || [];
+  const n = Math.max(...rows.map(r => r.att.length));
+  const bars = names.some(x => /^\d/.test(x || ''));
+  const cols = `28px minmax(190px,1.6fr) 76px repeat(${n},minmax(40px,1fr)) 84px`;
+  const cell = v => {
+    const t = (v || '').trim();
+    if (!t) return '<span class="sv none"></span>';
+    if (/^X+$/.test(t)) return `<span class="sv out">${esc(t)}</span>`;
+    if (t === '-') return '<span class="sv pass">&ndash;</span>';
+    return `<span class="sv">${esc(t)}</span>`;
+  };
+  return `<div class="sertab">
+    <div class="shead" style="grid-template-columns:${cols}">
+      <span></span><span>Athlete</span><span></span>
+      ${Array.from({length: n}, (_, i) => `<span class="sc">${
+        esc(bars ? (names[i] || '') : 'Att. ' + (i + 1))}</span>`).join('')}
+      <span class="sc">${bars ? 'Height' : 'Mark'}</span></div>
+    ${rows.map((r, i) => `<div class="srow${i === 0 ? ' win' : ''}"
+      style="grid-template-columns:${cols}">
+      <span class="sp">${esc((r.place || '').replace('.', ''))}</span>
+      <span class="sn">${esc(r.name)}</span>
+      <span class="snat">${natCell(r.nat)}</span>
+      ${Array.from({length: n}, (_, k) => cell((r.att || [])[k])).join('')}
+      <span class="sm">${esc(r.mark)}</span></div>`).join('')}
+    <div class="skey">O cleared &middot; XO cleared on the second &middot; X failed &middot;
+      &ndash; passed</div></div>`;
+}
 
 function field(race, when, disc){
   const rest = race.rows.slice(1);
   if (!rest.length) return '';
   // a deep field takes the type down a step rather than pushing the card past its own height
-  return `<div class="field${rest.length >= 10 ? ' tight' : ''}"
+  return `<div class="beaten${rest.length >= 10 ? ' tight' : ''}"
     style="grid-template-rows:repeat(${rest.length},1fr)">${rest.map(r => {
     const out = !r.place;
     return `<div class="fr${out ? ' out' : ''}">
       <span class="fp">${out ? '' : esc((r.place || '').replace('.', ''))}</span>
       <span class="fn">${esc(r.name)}</span>
-      <span class="fnat">${esc(r.nat)}</span>
+      <span class="fnat">${natCell(r.nat)}</span>
       <span class="fm">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</span>
       <span class="frec">${recTag(r.record)}</span></div>`;
   }).join('')}</div>`;
@@ -495,7 +568,7 @@ function restList(race, skip){
     const out = !r.place;
     return `<div class="ritem${out ? ' out' : (r.qualified ? ' q' : '')}">
       <span class="p">${out ? '' : esc(r.place)}</span><span class="n">${esc(r.name)}</span>
-      <span class="c">${esc(r.nat)}</span>
+      <span class="c">${natCell(r.nat)}</span>
       <span class="m">${esc(out ? (r.remark || r.mark || '-') : r.mark)}</span></div>`;
   }).join('')}</div>`;
 }
@@ -533,7 +606,7 @@ function podium(race, when, disc){
       <div class="pos">${(r.place || '').replace('.', '')}</div>
       <div class="idrow">
         ${face ? `<div class="face" style="background-image:url('${D.photoBase}${face}')"></div>` : ''}
-        <div><div class="nm">${esc(r.name)}</div><div class="nat">${esc(r.nat)}</div></div>
+        <div><div class="nm">${esc(r.name)}</div><div class="nat">${natCell(r.nat)}</div></div>
       </div>
       <div class="mk">${esc(r.mark)}</div>
       ${bits.length ? `<div class="bio">${bits.join('')}</div>` : ''}
@@ -563,7 +636,7 @@ function raceStrip(race, dist, label){
       <button class="replay" id="replay">&#9654; Wind it back</button></div>
     <div class="rrow"><div class="rleft"><div class="lanes" id="lanes"><div class="finish"></div>
       ${runners.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
-        <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
+        <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${natCell(r.nat)}</span></div>
         <div class="strip"><div class="trail"></div><div class="dot"></div></div><div class="dm"></div>
         <div class="gap">${esc(r.mark)}</div></div>`).join('')}
     </div></div>${race.pf ? `<figure class="pf">
@@ -664,7 +737,7 @@ function pitStrip(race, disc, label){
         <div class="atts">${[1,2,3,4].map(n => `<span>Att. ${n}</span>`).join('')}</div></div>` : ''}
       <div class="lanes ${kind}" id="lanes">
       ${rows.map((r, i) => `<div class="lane${i === 0 ? ' win' : ''}">
-        <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${esc(r.nat)}</span></div>
+        <div class="who">${esc(r.name)} <span style="color:var(--muted-2)">${natCell(r.nat)}</span></div>
         <div class="strip"><div class="defi"></div>${thrown || jumped ? '<div class="fly"><i></i></div>' : ''}
           <div class="dot"></div></div><div class="dm"></div>
         ${series ? cell(r) : `<div class="gap">${esc(r.mark)}</div>`}</div>`).join('')}
@@ -777,8 +850,9 @@ function draw(){
   const when = new Date(c.when), dist = distOf(disc.name);
   const all = c.ev ? racesOf(c.ev) : [];
   const has = hasResult(c);
-  if (TAB >= all.length) TAB = 0;
-  const race = all[TAB], final = race && isFinal(race), anyFinal = all.some(isFinal);
+  if (TAB > all.length) TAB = 0;
+  const race = all[Math.min(TAB, all.length - 1)];
+  const final = race && isFinal(race) && TAB < all.length, anyFinal = all.some(isFinal);
   const card = document.getElementById('card');
   card.className = 'card' + (disc.isTrack ? ' track' : disc.isField ? ' field' : '');
 
@@ -807,14 +881,18 @@ function draw(){
   const rest = final ? '' : restList(race, 0);
   const strip = disc.isField ? pitStrip(race, disc, final ? 'final' : 'semifinal')
                              : raceStrip(race, dist, final ? 'final' : 'semifinal');
-  card.innerHTML = head
-    + (all.length > 1 ? `<div class="tabs">${all.map((r, i) =>
+  const series = all.some(r => r.rows.some(x => (x.att || []).length));
+  const onSeries = series && TAB === all.length;
+  const tabs = (all.length > 1 || series) ? `<div class="tabs">${all.map((r, i) =>
         `<button class="tab${i === TAB ? ' on' : ''}" data-i="${i}">${
           isFinal(r) ? 'Final' : 'Semifinal ' + r.n}
-          ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}</div>` : '')
-    + (final ? `<div class="top2">${podium(race, c.when, disc.name)}
-        ${field(race, c.when, disc.name)}</div>` : '')
-    + rest + strip + foot;
+          ${r.wind != null ? `<span class="w">${esc(r.wind)}</span>` : ''}</button>`).join('')}
+        ${series ? `<button class="tab${onSeries ? ' on' : ''}" data-i="${all.length}"
+          >Series</button>` : ''}</div>` : '';
+  card.innerHTML = head + tabs + (onSeries
+    ? seriesTable(all.find(r => r.rows.some(x => (x.att || []).length)))
+    : (final ? `<div class="top2">${podium(race, c.when, disc.name)}
+        ${field(race, c.when, disc.name)}</div>` : '') + rest + strip) + foot;
 
   card.querySelectorAll('.tab').forEach(b => b.onclick = () => { TAB = +b.dataset.i; draw(); });
   const rep = document.getElementById('replay');

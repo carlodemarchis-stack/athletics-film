@@ -175,7 +175,8 @@ def details(res, tt):
     q = """query($e:Int,$d:String,$s:String,$p:String){
       getEventPhaseByDiscipline(eventId:$e, disciplineCode:$d, sexCode:$s, phaseCode:$p){
         units{ results{ competitorName record reactionTime }
-          series{ competitorName attempts{ competitionIntermediateOrder intermediateMark } } } }}"""
+          series{ competitorName attempts{ competitionIntermediateOrder competitionIntermediateName
+            intermediateMark } } } }}"""
     for e in res:
         disc = re.sub(r"^(Men's |Women's |Mixed )", "", e["event"])
         for r in e["races"]:
@@ -191,7 +192,10 @@ def details(res, tt):
                     rec[(x.get("competitorName") or "").strip()] = (x.get("record"), x.get("reactionTime"))
                 for x in (u.get("series") or []):
                     a = sorted(x.get("attempts") or [], key=lambda v: v.get("competitionIntermediateOrder") or 0)
-                    by[(x.get("competitorName") or "").strip()] = [v.get("intermediateMark") for v in a]
+                    # a throw names its attempts "Attempt 1"; a high jump names them by the bar
+                    by[(x.get("competitorName") or "").strip()] = (
+                        [v.get("intermediateMark") for v in a],
+                        [v.get("competitionIntermediateName") for v in a])
             for row in r["rows"]:
                 who = (row.get("name") or "").strip()
                 if who in rec:
@@ -199,7 +203,7 @@ def details(res, tt):
                     if mark: row["record"] = mark; recs += 1
                     if rt: row["rt"] = rt
                 if (e["sex"], disc) in field and by.get(who):
-                    row["att"] = by[who]; atts += 1
+                    row["att"], row["atn"] = by[who]; atts += 1
     return recs, atts
 
 def photofinish(res):
