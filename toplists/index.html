@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>All-Time Film — Athletics</title>
+<meta name="description" content="The twenty best marks ever run, jumped and thrown in each athletics event, men's and women's — every performance, not one per athlete — as an interactive card film. By A guy with a scarf (Carlo De Marchis).">
+<link rel="canonical" href="https://athletics.aguywithascarf.com/toplists/">
+<meta name="theme-color" content="#0a0807">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="A guy with a scarf">
+<meta property="og:locale" content="en_GB">
+<meta property="og:title" content="All-Time Film — Athletics">
+<meta property="og:description" content="The twenty best marks ever in each event — every performance, not one per athlete. Duplantis holds 19 of the top 20 pole vaults; the women's shot put has not moved since 1987.">
+<meta property="og:url" content="https://athletics.aguywithascarf.com/toplists/">
+<meta property="og:image" content="https://athletics.aguywithascarf.com/img/og.jpg?v=1">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="All-Time Film — the twenty best marks ever in each athletics event">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="All-Time Film — Athletics">
+<meta name="twitter:description" content="The twenty best marks ever in each event — every performance, not one per athlete.">
+<meta name="twitter:image" content="https://athletics.aguywithascarf.com/img/og.jpg?v=1">
+<!-- read by the AGWAS capture extension, not by link scrapers; cta/tags are rewritten per card -->
+<meta name="agwas:title"    content="The all-time lists, as a film">
+<meta name="agwas:cta"      content="Full interactive athletics experience below">
+<meta name="agwas:tags"     content="athletics dataviz alltime trackandfield">
+<meta name="agwas:mentions" content="worldathletics">
+<meta name="agwas:bg"       content="https://athletics.aguywithascarf.com/img/event/all.jpg">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230a0807'/><g stroke='%23e2572f' stroke-width='2.2' stroke-linecap='round'><path d='M5 11h22M5 21h22'/></g><path d='M24 3.5v25' stroke='%23f2c14e' stroke-width='2.6'/></svg>">
+<style>
+  /* the record film's palette, because this is its parallel reel */
+  :root{
+    --bg0:#0a0807; --bg1:#1a100c; --bg2:#2b1610;
+    --ink:#f6efe9; --muted:#b39a8c; --muted-2:#7c675c;
+    --line:rgba(230,190,160,.14);
+    --gold:#f2c14e; --track:#e2572f;
+    --men:#6f8fb8; --women:#d9834a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%; overflow:hidden}
+  body{background:var(--bg0); color:var(--ink);
+    font-family:"Helvetica Neue",Arial,system-ui,sans-serif; -webkit-font-smoothing:antialiased}
+
+  .stage{position:fixed; inset:0; overflow:hidden}
+  .track{display:flex; height:100%; width:100%; transition:transform .55s cubic-bezier(.7,0,.2,1)}
+  .track.notrans{transition:none}
+  .card{flex:0 0 100%; height:100%; position:relative; display:flex; flex-direction:column;
+    padding:clamp(14px,2.4vh,30px) clamp(18px,3.2vw,54px) clamp(74px,10vh,98px); overflow:hidden;
+    content-visibility:auto; contain-intrinsic-size:100vw 100vh}
+  .card__bg{position:absolute; inset:0; z-index:0;
+    background:radial-gradient(120% 95% at 84% 8%, var(--bg2) 0%, var(--bg1) 45%, var(--bg0) 100%)}
+  .card__bg::after{content:""; position:absolute; inset:0; opacity:.5;
+    background:radial-gradient(60% 80% at 8% 115%, rgba(226,87,47,.16), transparent 62%)}
+  .ghostnum{position:absolute; z-index:1; right:-1.5vw; top:-3vh; font-weight:800;
+    font-size:min(44vh,30vw); line-height:.8; letter-spacing:-.05em; color:rgba(255,255,255,.037);
+    pointer-events:none; user-select:none; white-space:nowrap}
+  .inner{position:relative; z-index:2; display:flex; flex-direction:column; height:100%;
+    width:100%; max-width:1560px; margin:0 auto; gap:clamp(7px,1.2vh,14px)}
+
+  /* ---------- head ---------- */
+  .head{display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex:0 0 auto}
+  .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
+  .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
+  .title h1{font-size:clamp(26px,4.2vh,50px); font-weight:800; letter-spacing:-.025em; white-space:nowrap}
+  .kicker{display:flex; align-items:center; gap:14px}
+  .sexsw{display:flex; gap:6px; align-items:center}
+  .sx{font-size:10.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    padding:5px 12px; border-radius:999px; cursor:pointer; font-family:inherit; transition:.15s;
+    border:1px solid transparent; background:transparent; color:var(--muted-2)}
+  .sx:hover{color:var(--ink); background:rgba(255,255,255,.05)}
+  .sx.on{color:var(--track); border-color:rgba(226,87,47,.45); background:rgba(226,87,47,.08)}
+  .rec{text-align:right; line-height:1; min-width:0}
+  .rec .v{font-size:clamp(32px,5.8vh,70px); font-weight:800; letter-spacing:-.035em; color:var(--gold)}
+  .rec .v small{font-size:.34em; font-weight:700; color:var(--muted); letter-spacing:0; margin-left:8px}
+  .rec .who{display:flex; align-items:baseline; justify-content:flex-end; gap:10px; margin-top:8px;
+    font-size:clamp(16px,2.5vh,28px); font-weight:800; letter-spacing:-.02em; white-space:nowrap}
+  .rec .who .f{font-weight:300; opacity:.85}
+  .flag{font-size:1.05em; line-height:1}
+  .cc{font-size:.46em; font-weight:800; letter-spacing:.08em; color:var(--muted);
+    border:1px solid var(--line); border-radius:4px; padding:3px 6px; vertical-align:.28em}
+  .rec .w{font-size:12.5px; font-weight:600; color:var(--muted); margin-top:9px}
+  .rec .w b{color:var(--ink); font-weight:800; white-space:nowrap}
+
+  /* ---------- stat bar ---------- */
+  .statbar{display:flex; gap:clamp(14px,2.2vw,40px); align-items:flex-end; flex-wrap:wrap; flex:0 0 auto}
+  .stat .v{font-size:clamp(17px,2.6vh,28px); font-weight:800; letter-spacing:-.02em; line-height:1; white-space:nowrap}
+  .stat .v small{font-size:.55em; font-weight:700; color:var(--muted)}
+  .stat .v.hl{color:var(--gold)}
+  .stat .k{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted-2); margin-top:6px}
+
+  /* ---------- who owns the list ---------- */
+  .owners{display:flex; align-items:center; gap:14px; flex:0 0 auto;
+    padding:clamp(7px,1.1vh,12px) 0 clamp(8px,1.2vh,13px); border-bottom:1px solid var(--line)}
+  .ok{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--muted-2); white-space:nowrap}
+  .obar{display:flex; flex:1 1 auto; gap:2px; height:17px; min-width:0}
+  .oseg{display:flex; align-items:center; justify-content:center; gap:5px; padding:0 5px;
+    border-radius:3px; overflow:hidden; min-width:14px; background:var(--c)}
+  .oseg i{font-style:normal; font-size:9.5px; font-weight:800; letter-spacing:.04em;
+    color:rgba(10,8,7,.92); white-space:nowrap}
+  .oseg em{font-style:normal; font-size:9.5px; font-weight:700; color:rgba(10,8,7,.58)}
+
+  /* ---------- the two panes ---------- */
+  .body{display:grid; grid-template-columns:minmax(0,46fr) minmax(0,54fr);
+    gap:clamp(14px,2.4vw,38px); flex:1 1 auto; min-height:0}
+
+  /* the ladder */
+  .ladder{display:flex; flex-direction:column; min-height:0; font-size:var(--rf,12px)}
+  .lr{flex:1 1 0; min-height:0; display:grid; align-items:center; gap:0 8px;
+    grid-template-columns:2.1em 4.6em minmax(0,1fr) 3.3em 2.6em;
+    border-top:1px solid rgba(230,190,160,.07); opacity:0; transform:translateX(-7px);
+    transition:opacity .22s ease, transform .22s ease}
+  .lr.in{opacity:1; transform:none}
+  .lr:first-child{border-top:0}
+  .lr.top{background:linear-gradient(90deg,rgba(242,193,78,.10),transparent 72%)}
+  .lk{font-size:.85em; font-weight:800; color:var(--muted-2); text-align:right; letter-spacing:.02em}
+  .lr.tie .lk{opacity:.42}
+  .lr.top .lk{color:var(--gold)}
+  .lm{font-weight:800; font-size:1.12em; letter-spacing:-.02em; color:var(--ink); white-space:nowrap}
+  .lr.top .lm{color:var(--gold)}
+  .lm sup{font-size:.6em; color:var(--muted-2); font-weight:800; margin-left:2px; vertical-align:super}
+  .lnm{display:flex; align-items:baseline; gap:.5em; min-width:0; position:relative; padding-left:11px}
+  .lnm::before{content:""; position:absolute; left:0; top:50%; transform:translateY(-50%);
+    width:5px; height:5px; border-radius:50%; background:var(--c)}
+  .lr.same .lnm::before{opacity:.45}
+  .lnm .n{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:800; letter-spacing:-.01em}
+  .lnm .n .f{font-weight:300; opacity:.8}
+  .lnm .fl{flex:0 0 auto; font-size:1.05em}
+  /* the nations with no flag (ANA, URS, GDR) fall back to their code, which must not
+     inherit its way down to four pixels on a thirty-row card */
+  .lnm .cc{font-size:8.5px; padding:1px 3px; border-radius:3px; vertical-align:baseline}
+  .lw{font-size:.82em; font-weight:700; color:var(--muted-2); text-align:right; white-space:nowrap}
+  .ly{font-size:.85em; font-weight:800; color:var(--muted); text-align:right}
+
+  /* the era chart */
+  .chartwrap{position:relative; min-height:0}
+  .chartwrap svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
+  .lbl{font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; fill:var(--muted-2)}
+  .axv{font-size:10.5px; font-weight:700; fill:var(--muted-2)}
+  .dot{cursor:pointer}
+  .tip{position:absolute; z-index:9; pointer-events:none; opacity:0; transition:opacity .12s;
+    background:rgba(12,9,8,.94); border:1px solid var(--line); border-radius:10px;
+    padding:9px 12px; font-size:12px; line-height:1.45; white-space:nowrap;
+    box-shadow:0 10px 30px rgba(0,0,0,.5)}
+  .tip .p{font-weight:800; font-size:15px; letter-spacing:-.01em}
+  .tip .n{font-weight:700; color:var(--ink)}
+  .tip .m{color:var(--muted)}
+
+  .foot{position:absolute; left:clamp(18px,3.2vw,54px); bottom:clamp(8px,1.2vh,14px);
+    font-size:10px; color:var(--muted-2); z-index:3}
+
+  /* ---------- control bar ---------- */
+  .controls{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:40;
+    display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px;
+    background:rgba(14,9,7,.86); border:1px solid var(--line); backdrop-filter:blur(12px);
+    box-shadow:0 12px 40px rgba(0,0,0,.55)}
+  .controls > button:not(.counter),.controls > a{border:0; background:transparent; color:var(--muted);
+    cursor:pointer; border-radius:50%; width:38px; height:38px; display:flex; align-items:center;
+    justify-content:center; transition:.15s; font-size:15px; font-weight:800; font-family:inherit;
+    text-decoration:none; flex:0 0 auto}
+  .controls > button:not(.counter):hover,.controls > a:hover{color:var(--ink); background:rgba(255,255,255,.08)}
+  .controls > button svg,.controls > a svg{width:18px; height:18px; fill:currentColor}
+  .controls .play{width:50px; height:50px; background:var(--ink); color:#160d09}
+  .controls .play:hover{background:#fff; color:#160d09}
+  .controls .play svg{width:21px; height:21px}
+  .counter{display:flex; align-items:center; width:auto; height:auto;
+    gap:8px; padding:6px 10px 6px 14px; white-space:nowrap;
+    font-size:12px; font-weight:800; letter-spacing:.1em; color:var(--muted); cursor:pointer;
+    border-radius:999px; transition:.15s; border:0; background:transparent; font-family:inherit}
+  .counter:hover{color:var(--ink); background:rgba(255,255,255,.06)}
+  .counter b{color:var(--gold); font-size:14px}
+  .counter .lbl{color:var(--muted-2); letter-spacing:.16em}
+  .cchev{width:13px; height:13px; fill:var(--muted-2); transition:.18s}
+  body.jump-open .cchev{transform:rotate(180deg); fill:var(--gold)}
+  .sep{width:1px; height:24px; background:var(--line); margin:0 4px}
+  @media (max-width:520px){ #fs, .controls .sep{display:none} }
+
+  /* jump-to drop-up */
+  .jumppop{position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:41;
+    width:min(760px,92vw); max-height:58vh; overflow:auto; padding:10px;
+    background:#100a08; border:1px solid var(--line); border-radius:16px;
+    box-shadow:0 18px 50px rgba(0,0,0,.7)}
+  .jumppop[hidden]{display:none}
+  .jgrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px}
+  @media (max-width:640px){ .jgrid{grid-template-columns:1fr} }
+  .jitem{display:flex; align-items:center; gap:9px; width:100%; text-align:left; cursor:pointer;
+    border:0; background:transparent; border-radius:9px; padding:7px 10px; color:var(--muted);
+    font-family:inherit; font-size:12.5px; font-weight:700; transition:.12s}
+  .jitem:hover{background:rgba(255,255,255,.07); color:var(--ink)}
+  .jitem.on{background:rgba(242,193,78,.13); color:var(--gold)}
+  .jitem .ji{font-size:10px; font-weight:800; color:var(--muted-2); min-width:20px; text-align:right}
+  .jitem.on .ji{color:var(--gold)}
+  .jitem .jd{width:8px; height:8px; border-radius:2px; flex:0 0 auto}
+  .jitem .jn{flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .jitem .jy{font-size:10.5px; font-weight:800; color:var(--muted-2); white-space:nowrap}
+  .jitem.on .jy{color:var(--gold)}
+
+  /* ---------- modals ---------- */
+  .modal{position:fixed; inset:0; z-index:60; display:flex; align-items:center; justify-content:center;
+    padding:24px}
+  .modal[hidden]{display:none}
+  .modal__ov{position:absolute; inset:0; background:rgba(6,4,3,.78); backdrop-filter:blur(6px)}
+  .modal__box{position:relative; max-width:640px; width:100%; max-height:84vh; overflow:auto;
+    background:linear-gradient(180deg,#1b1109,#120c08); border:1px solid var(--line);
+    border-radius:18px; padding:30px 32px 26px; box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .modal__box h2{font-size:24px; letter-spacing:-.02em; margin-bottom:4px}
+  .modal__box .csub{font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--muted-2); margin-bottom:20px}
+  .modal__box p{font-size:13.5px; line-height:1.6; color:var(--muted); margin-bottom:12px}
+  .modal__box p b{color:var(--ink)}
+  .modal__box a{color:var(--gold)}
+  .keys{display:grid; grid-template-columns:auto 1fr; gap:7px 14px; font-size:13px; color:var(--muted);
+    margin-top:4px; align-items:center}
+  .keys kbd{background:rgba(255,255,255,.07); border:1px solid var(--line); border-radius:5px;
+    padding:3px 8px; font-family:inherit; font-size:11px; font-weight:800; color:var(--ink); text-align:center}
+  .mclose{position:absolute; top:14px; right:16px; background:transparent; border:0; color:var(--muted-2);
+    font-size:26px; cursor:pointer; line-height:1}
+  .mclose:hover{color:var(--ink)}
+  .morebtn{font-size:20px; font-weight:700}
+  .applist{display:flex; flex-direction:column; gap:2px; margin-top:2px}
+  .applist a{display:flex; align-items:center; gap:12px; padding:10px; border-radius:10px;
+    text-decoration:none; color:inherit; border:1px solid transparent}
+  .applist a:hover{background:rgba(255,255,255,.05); border-color:var(--line)}
+  .applist i{flex:0 0 auto; width:9px; height:9px; border-radius:50%}
+  .applist .t{display:flex; flex-direction:column; gap:1px; min-width:0}
+  .applist .n{font-size:13.5px; font-weight:800; color:var(--ink)}
+  .applist .k{font-size:11px; font-weight:700; color:var(--muted-2)}
+  .applist .go{margin-left:auto; color:var(--muted-2); font-size:14px; font-weight:700}
+  .applist a:hover .go{color:var(--gold)}
+  .allapps{margin-top:14px; padding-top:12px; border-top:1px solid var(--line); font-size:12px;
+    font-weight:700; color:var(--muted-2)}
+  .allapps a{color:var(--muted-2); text-decoration:none}
+  .allapps a:hover{color:var(--gold)}
+
+  .loading{position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:800; letter-spacing:.24em; text-transform:uppercase; color:var(--muted-2)}
+
+  /* ---------- the phone reads the card as a list ---------- */
+  @media (max-width:860px), (max-height:540px){
+    html,body{height:auto; overflow:visible}
+    .stage{position:static; overflow:visible}
+    .track{display:block; height:auto; transform:none!important; transition:none!important}
+    .card{height:auto; min-height:0; padding:14px 16px 96px; content-visibility:visible}
+    .card:not(.on){display:none}            /* one card at a time, since the track no longer slides */
+    .card__bg{position:fixed}
+    .ghostnum{font-size:34vw; top:-1vh}
+    .head{flex-direction:column; align-items:flex-start; gap:10px}
+    .rec{text-align:left}
+    .rec .who{justify-content:flex-start}
+    .title h1{font-size:clamp(26px,8vw,40px); white-space:normal}
+    .body{grid-template-columns:1fr; gap:16px}
+    .ladder{font-size:12px!important}
+    .lr{flex:0 0 auto; height:30px; grid-template-columns:2em 4.4em minmax(0,1fr) 2.8em 2.4em}
+    .chartwrap{height:42vw; min-height:200px}
+    .foot{position:static; margin-top:14px}
+    .controls{left:0; right:0; bottom:0; transform:none; width:100%; border-radius:0;
+      border-width:1px 0 0; justify-content:space-around; gap:2px;
+      padding:6px 6px calc(6px + env(safe-area-inset-bottom)); background:rgba(14,9,7,.95)}
+    .controls > button:not(.counter),.controls > a{width:clamp(30px,9.2vw,38px); height:clamp(30px,9.2vw,38px)}
+    .controls .play{width:clamp(38px,11.5vw,50px); height:clamp(38px,11.5vw,50px)}
+    .jumppop{left:10px; right:10px; transform:none; width:auto;
+      bottom:calc(62px + env(safe-area-inset-bottom)); max-height:56vh}
+    .modal__box{padding:24px 20px}
+  }
+</style>
+</head>
+<body>
+
+<div class="stage"><div class="track" id="track"><div class="loading">Loading the lists…</div></div></div>
+
+<div class="controls">
+  <button id="restart" title="First card (Home)"><svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg></button>
+  <button id="prev" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15.5 5v14l-11-7z"/><rect x="16.5" y="5" width="2.4" height="14" rx="1"/></svg></button>
+  <button class="play" id="play" title="Play / pause (Space)"><svg id="playIcon" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></button>
+  <button id="next" title="Next (→)"><svg viewBox="0 0 24 24"><path d="M8.5 5v14l11-7z"/><rect x="5.1" y="5" width="2.4" height="14" rx="1"/></svg></button>
+  <button class="counter" id="counter" title="Jump to a card"><b id="cnum">1</b><span class="lbl">/ <span id="ctot">–</span></span><svg class="cchev" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5z"/></svg></button>
+  <div class="sep"></div>
+  <a href="../" id="recbtn" title="World Record Film"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></a>
+  <button id="helpbtn" title="Help (H)">?</button>
+  <button id="fs" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5v2H6v3zm11-5h5v5h-2V6h-3zM6 15v3h3v2H4v-5zm12 3v-3h2v5h-5v-2z"/></svg></button>
+  <button id="morebtn" class="morebtn" title="More sports experiences">+</button>
+</div>
+
+<div class="jumppop" id="jumppop" hidden><div class="jgrid" id="jgrid"></div></div>
+
+<div class="modal" id="more" hidden>
+  <div class="modal__ov" onclick="closeMore()"></div>
+  <div class="modal__box" style="max-width:400px">
+    <button class="mclose" onclick="closeMore()" aria-label="Close">&times;</button>
+    <h2>More sports experiences</h2>
+    <div class="csub">A guy with a scarf</div>
+    <div class="applist">
+      <a href="https://f1.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#00d7b6"></i>
+        <span class="t"><span class="n">Formula 1</span><span class="k">A season read lap by lap</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://tennis.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#f2c14e"></i>
+        <span class="t"><span class="n">Tennis</span><span class="k">The season, one player at a time</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://top5.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#3fbe72"></i>
+        <span class="t"><span class="n">Top 5 Leagues</span><span class="k">Wins up, losses down</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://nfl.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#4d94e0"></i>
+        <span class="t"><span class="n">NFL</span><span class="k">The season as a tower</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://worldcupbracket.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#8f7ad6"></i>
+        <span class="t"><span class="n">World Cup</span><span class="k">Road to the Final</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://golf.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#57a34a"></i>
+        <span class="t"><span class="n">PGA TOUR</span><span class="k">Season Film</span></span>
+        <span class="go">&#8599;</span></a>
+    </div>
+    <div class="allapps"><a href="https://dataviz.aguywithascarf.com/" target="_blank"
+      rel="noopener noreferrer">See them all &rarr;</a></div>
+  </div>
+</div>
+
+<div class="modal" id="help" hidden>
+  <div class="modal__ov" onclick="closeHelp()"></div>
+  <div class="modal__box">
+    <button class="mclose" onclick="closeHelp()" aria-label="Close">&times;</button>
+    <h2>The All-Time Film</h2>
+    <div class="csub">A guy with a scarf</div>
+    <p>One card per event, women's reel and men's reel, in the order World Athletics lists
+    them. Each card holds the <b>twenty best marks ever</b> in that event — every performance,
+    not one per athlete, so the same name can appear again and again. That repetition is the
+    point: Mondo Duplantis owns nineteen of the twenty best pole vaults ever cleared.</p>
+    <p>Because marks tie, twenty is a rank and not a row count. Everyone ranked twentieth or
+    better is here, so a card may carry <b>21, 23, even 30 marks</b> — the women's high jump
+    has thirty, since so many share 2.06. Tied marks keep World Athletics' shared rank and the
+    repeated number is dimmed.</p>
+    <p>The <b>ladder</b> on the left ranks them, each bar a name, one colour per athlete. The
+    <b>chart</b> on the right puts the same marks where they happened in time, which is where
+    each event tells on itself: the men's marathon list is almost entirely the last ten years,
+    the women's shot put has not admitted a new mark since 1987.</p>
+    <p>Marks are wind-legal and electronically timed. An <b>i</b> beside a mark means it was
+    set indoors. The bar at the top of the card shows who owns the list.</p>
+    <div class="keys">
+      <kbd>&larr;</kbd><span>Previous card</span>
+      <kbd>&rarr;</kbd><span>Next card</span>
+      <kbd>Space</kbd><span>Play / pause</span>
+      <kbd>R</kbd><span>Play it again</span>
+      <kbd>F</kbd><span>Fullscreen</span>
+      <kbd>H</kbd><span>This panel</span>
+    </div>
+    <p style="margin-top:18px; font-size:12px">Data: <a href="https://worldathletics.org/records/all-time-toplists"
+      target="_blank" rel="noopener noreferrer">World Athletics all-time toplists</a>.
+      Its companion reel is the <a href="../">World Record Film</a>.</p>
+  </div>
+</div>
+
+<script>
+/* ---------------------------------------------------------------- helpers */
+const MONTHS = {JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};
+const TODAY = new Date();
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const parseDate = s => { const p = String(s || '').trim().split(/\s+/);
+  if (p.length !== 3 || !(p[1].toUpperCase() in MONTHS)) return null;
+  const d = new Date(+p[2], MONTHS[p[1].toUpperCase()], +p[0]);
+  return isNaN(d) ? null : d; };
+const yearOf = s => { const d = parseDate(s); return d ? d.getFullYear() : +String(s).slice(-4); };
+/* the year plus how far into it, so a dozen marks from one season spread across that season */
+const whenOf = s => { const d = parseDate(s);
+  return d ? d.getFullYear() + (d - new Date(d.getFullYear(), 0, 1)) / 31536e6
+           : +String(s).slice(-4); };
+
+/* IOC → ISO2 for the flag emoji. Nations that no longer exist (URS, GDR, FRG, TCH) and the
+   neutral entries (ANA, INT) have no flag codepoint and fall back to the code itself. */
+const ISO2 = {ALG:'DZ',AUS:'AU',BAH:'BS',BEL:'BE',BLR:'BY',BOT:'BW',BRA:'BR',BRN:'BH',BUL:'BG',
+  BUR:'BF',CAN:'CA',CHN:'CN',CMR:'CM',COL:'CO',CRO:'HR',CUB:'CU',CZE:'CZ',DEN:'DK',DOM:'DO',
+  ERI:'ER',ESP:'ES',EST:'EE',ETH:'ET',FIN:'FI',FRA:'FR',GBR:'GB',GER:'DE',GRE:'GR',GRN:'GD',
+  HUN:'HU',IRL:'IE',ITA:'IT',IVB:'VG',JAM:'JM',JPN:'JP',KEN:'KE',LCA:'LC',LTU:'LT',MAR:'MA',
+  MEX:'MX',NED:'NL',NGR:'NG',NOR:'NO',NZL:'NZ',PAK:'PK',PAN:'PA',POL:'PL',POR:'PT',QAT:'QA',
+  ROU:'RO',RSA:'ZA',RUS:'RU',SLO:'SI',SUI:'CH',SWE:'SE',SYR:'SY',TTO:'TT',TUR:'TR',UGA:'UG',
+  UKR:'UA',USA:'US',UZB:'UZ',VEN:'VE',ZAM:'ZM',ZIM:'ZW'};
+const flagEmoji = c => { const i = ISO2[(c || '').toUpperCase()];
+  return i ? i.replace(/./g, ch => String.fromCodePoint(127397 + ch.charCodeAt())) : null; };
+const flagOf = c => { const f = flagEmoji(c);
+  return f ? `<span class="flag">${f}</span>` : `<span class="cc">${esc(c || '')}</span>`; };
+
+/* "Usain BOLT" → first name light, surname bold. Relay teams ("United States") stay as they are. */
+const isTeam = n => !/\p{Lu}{2}/u.test(n);
+const nameHTML = n => /\p{Lu}{2}/u.test(n)
+  ? esc(n).replace(/^(.*?)\s([\p{Lu}\p{Lm}'’.\-\s]+)$/u, '<span class="f">$1</span> $2')
+  : esc(n);
+const surnameOf = n => { const m = n.match(/([\p{Lu}\p{Lm}'’.\-\s]+)$/u); return (m ? m[1] : n).trim(); };
+const shortName = n => isTeam(n) ? n           /* a relay team is not a surname to trim */
+  : surnameOf(n).split(' ').pop().toLowerCase()
+      .replace(/(^|[-'’])(\p{L})/gu, (_, a, b) => a + b.toUpperCase());
+
+/* "9.58" · "1:53.28" · "2:09:56" · "9126" (points) · "8.95" (metres) */
+const parseMark = p => String(p).split('(')[0].replace(/[^\d:.]/g, '')
+  .split(':').reduce((a, x) => a * 60 + parseFloat(x), 0);
+const TIMED = /Metres|Miles|Marathon|Hurdles|Relay|Kilometres|Yards/;
+const betterIsLower = d => TIMED.test(d) && !/Jump|Vault|Put|Throw/.test(d);
+const windy = d => /100 Metres|200 Metres|Hurdles|Long Jump|Triple Jump/.test(d)
+  && !/400|800|4x/.test(d);
+
+/* the watermark: the event in as few characters as it survives */
+function shortEv(d){
+  const m = d.match(/^([\d,]+)\s*Metres(\s+Hurdles)?$/);
+  if (m) return m[1].replace(',', '') + (m[2] ? 'H' : '');
+  if (/^4x(\d+)/.test(d)) return '4×' + d.match(/^4x(\d+)/)[1];
+  if (/Marathon/.test(d)) return 'MAR';
+  return d.split(' ').map(w => w[0]).join('').toUpperCase();
+}
+
+/* one hue per athlete on a card — the record film's own palette, gold reserved for the best mark */
+const HUES = ['#d9834a','#6f8fb8','#8fb98a','#b98aa8','#6fa9b8','#c0a05c','#9a8fc4','#b8836f',
+              '#7fae9b','#c4a2a2','#8aa2c4','#bfa06f','#9fb87f','#ad8fa6','#7fa8ad','#c08f7f'];
+
+/* ---------------------------------------------------------------- model */
+function model(card){
+  const lower = betterIsLower(card.discipline);
+  const rows = card.rows.map(r => ({...r, v: parseMark(r.mark), year: yearOf(r.date),
+                                    when: whenOf(r.date)}));
+
+  /* the order marks come in already, but make the ranking explicit */
+  const best = rows[0].v, worst = rows[rows.length - 1].v;
+  const span = Math.abs(best - worst) || 1;
+
+  const byWho = new Map();
+  rows.forEach(r => byWho.set(r.name, (byWho.get(r.name) || 0) + 1));
+  const owners = [...byWho.entries()].sort((a, b) => b[1] - a[1]);
+  const hue = new Map(owners.map(([n], i) => [n, HUES[i % HUES.length]]));
+
+  rows.forEach((r, i) => {
+    r.c = hue.get(r.name);
+    r.tie = i > 0 && rows[i - 1].rank === r.rank;
+    r.same = i > 0 && rows[i - 1].name === r.name;
+    /* 1 for the best mark on the list, 0 for the last one in */
+    r.k = Math.abs(r.v - worst) / span;
+  });
+
+  const years = rows.map(r => r.year);
+  const since = rows.filter(r => r.year >= TODAY.getFullYear() - 10).length;
+  const spread = lower ? worst - best : best - worst;
+
+  return {card, rows, lower, owners, hue, best: rows[0],
+          spread, span, minYear: Math.min(...years), maxYear: Math.max(...years),
+          maxWhen: Math.max(...rows.map(r => r.when)),
+          since, people: byWho.size};
+}
+
+/* the gap between first and last, said the way the event says it */
+function fmtSpread(M){
+  const d = M.card.discipline, s = M.spread;
+  if (/Decathlon|Heptathlon/.test(d)) return Math.round(s) + ' pts';
+  if (!M.lower) return s.toFixed(2) + ' m';
+  if (s >= 60) return Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
+  return s.toFixed(2) + ' s';
+}
+
+/* ---------------------------------------------------------------- the card */
+function cardHTML(M, sex){
+  const c = M.card, b = M.best;
+  const wind = windy(c.discipline);
+  const venue = b.venue.replace(/\s*\((?:[A-Z]{3}|i)\)\s*$/g, '');
+  return `<div class="card__bg"></div>
+  <div class="ghostnum">${esc(shortEv(c.discipline))}</div>
+  <div class="inner">
+    <div class="head">
+      <div>
+        <div class="kicker">
+          <div class="disc">${esc(c.group)}</div>
+          <div class="sexsw">
+            <button class="sx ${sex === 'women' ? 'on' : ''}" data-sex="women">Women</button>
+            <button class="sx ${sex === 'men' ? 'on' : ''}" data-sex="men">Men</button>
+          </div>
+        </div>
+        <div class="title"><h1>${esc(c.discipline)}</h1></div>
+      </div>
+      <div class="rec">
+        <div class="v">${esc(b.mark)}${wind && b.wind ? `<small>${esc(b.wind)}</small>` : ''}</div>
+        <div class="who">${nameHTML(b.name)} ${flagOf(b.nat)}</div>
+        <div class="w">Best ever &middot; <b>${esc(venue)}</b> &middot; ${esc(b.date)}</div>
+      </div>
+    </div>
+
+    <div class="statbar">
+      <div class="stat"><div class="v">${M.rows.length}</div><div class="k">marks in the top 20</div></div>
+      <div class="stat"><div class="v">${M.people}</div><div class="k">athletes</div></div>
+      <div class="stat"><div class="v hl">${fmtSpread(M)}</div><div class="k">1st to last</div></div>
+      <div class="stat"><div class="v">${M.since}<small> / ${M.rows.length}</small></div>
+        <div class="k">in the last ten years</div></div>
+      <div class="stat"><div class="v">${M.minYear}</div><div class="k">oldest mark</div></div>
+    </div>
+
+    <div class="owners">
+      <div class="ok">Who owns it</div>
+      <div class="obar">${M.owners.map(([n, k]) => {
+        const w = k / M.rows.length * 100;
+        return `<div class="oseg" style="--c:${M.hue.get(n)}; flex:0 0 ${w.toFixed(2)}%"
+          title="${esc(n)} — ${k} of ${M.rows.length}">${w > 9 ? `<i>${esc(shortName(n))}</i>` : ''}${
+          w > 5 ? `<em>${k}</em>` : ''}</div>`;
+      }).join('')}</div>
+    </div>
+
+    <div class="body">
+      <div class="ladder">${M.rows.map(r => `
+        <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''}"
+             style="--c:${r.c}">
+          <span class="lk">${r.tie ? '=' : r.rank}</span>
+          <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
+          <span class="lnm"><span class="n">${nameHTML(r.name)}</span>${flagOf(r.nat)}</span>
+          <span class="lw">${wind && r.wind ? esc(r.wind) : ''}</span>
+          <span class="ly">${r.year}</span>
+        </div>`).join('')}</div>
+      <div class="chartwrap"><svg></svg><div class="tip"></div></div>
+    </div>
+  </div>
+  <div class="foot">Data: World Athletics all-time toplists &middot; A guy with a scarf</div>`;
+}
+
+/* ---------------------------------------------------------------- the era chart */
+const NS = 'http://www.w3.org/2000/svg';
+const el = (t, a = {}) => { const n = document.createElementNS(NS, t);
+  for (const k in a) n.setAttribute(k, a[k]); return n; };
+
+function drawEra(M, root, animate){
+  const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
+  svg.innerHTML = '';
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  if (W < 80 || H < 60) return;
+
+  const pad = {t: 26, r: 14, b: 26, l: 46};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+  const now = TODAY.getFullYear() + (TODAY - new Date(TODAY.getFullYear(), 0, 1)) / 31536e6;
+  const w0 = M.minYear - .5, w1 = Math.max(M.maxWhen, now) + .5;
+  const X = w => pad.l + (w - w0) / ((w1 - w0) || 1) * iw;
+  /* better marks sit higher, whichever way the event counts */
+  const Y = k => pad.t + (1 - k) * ih;
+
+  svg.appendChild(el('line', {x1: pad.l, y1: pad.t + ih, x2: pad.l + iw, y2: pad.t + ih,
+    stroke: 'var(--line)'}));
+
+  /* the grid steps at whatever reads: decades for a long list, single years for a new one */
+  const span = w1 - w0;
+  const stp = span > 46 ? 10 : span > 22 ? 5 : span > 9 ? 2 : 1;
+  for (let y = Math.ceil(w0 / stp) * stp; y <= w1; y += stp){
+    svg.appendChild(el('line', {x1: X(y), y1: pad.t - 6, x2: X(y), y2: pad.t + ih,
+      stroke: 'rgba(230,190,160,.07)'}));
+    const t = el('text', {x: X(y), y: pad.t + ih + 15, class: 'axv', 'text-anchor': 'middle'});
+    t.textContent = "'" + String(y).slice(2);
+    svg.appendChild(t);
+  }
+
+  /* the best and the twentieth, as the two rails the marks live between */
+  [[1, M.rows[0].mark], [0, M.rows[M.rows.length - 1].mark]].forEach(([k, mark], i) => {
+    svg.appendChild(el('line', {x1: pad.l, y1: Y(k), x2: pad.l + iw, y2: Y(k),
+      stroke: i ? 'rgba(230,190,160,.13)' : 'rgba(242,193,78,.34)',
+      'stroke-dasharray': i ? '2 4' : ''}));
+    const t = el('text', {x: pad.l - 8, y: Y(k) + 4, class: 'axv', 'text-anchor': 'end',
+      fill: i ? 'var(--muted-2)' : 'var(--gold)'});
+    t.textContent = mark;
+    svg.appendChild(t);
+  });
+
+  const lab = el('text', {x: pad.l, y: pad.t - 12, class: 'lbl'});
+  lab.textContent = 'When each mark was set';
+  svg.appendChild(lab);
+
+  const tip = root.querySelector('.tip');
+  M.rows.forEach((r, i) => {
+    const g = el('g', {class: 'dot'});
+    const cx = X(r.when), cy = Y(r.k);
+    const halo = el('circle', {cx, cy, r: 9, fill: 'transparent'});
+    const dot = el('circle', {cx, cy, r: r.rank === 1 ? 6 : 4.6,
+      fill: r.rank === 1 ? 'var(--gold)' : r.c,
+      stroke: 'rgba(10,8,7,.55)', 'stroke-width': 1});
+    if (animate){
+      dot.setAttribute('opacity', '0');
+      dot.setAttribute('transform', `translate(${cx} ${cy}) scale(.2) translate(${-cx} ${-cy})`);
+      setTimeout(() => {
+        dot.style.transition = 'opacity .2s ease, transform .3s cubic-bezier(.3,1.5,.5,1)';
+        dot.setAttribute('opacity', '1');
+        dot.setAttribute('transform', 'translate(0 0)');
+      }, 120 + i * 46);
+    }
+    g.appendChild(dot); g.appendChild(halo);
+    halo.addEventListener('mouseenter', () => {
+      tip.innerHTML = `<div class="p">${esc(r.mark)}</div>`
+        + `<div class="n">${esc(r.name)} ${esc(r.nat)}</div>`
+        + `<div class="m">${esc(r.venue)} &middot; ${esc(r.date)}</div>`;
+      tip.style.opacity = 1;
+      const tw = tip.offsetWidth;
+      tip.style.left = Math.max(2, Math.min(W - tw - 2, cx - tw / 2)) + 'px';
+      tip.style.top = Math.max(2, cy - tip.offsetHeight - 12) + 'px';
+    });
+    halo.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+    svg.appendChild(g);
+  });
+}
+
+/* the ladder fills from the best mark down, the way the chart fills */
+let LADDER_T = [];
+function runLadder(root, animate){
+  LADDER_T.forEach(clearTimeout); LADDER_T = [];
+  const ladder = root.querySelector('.ladder');
+  const rows = [...ladder.querySelectorAll('.lr')];
+  /* the rows share whatever height is left, so the type has to be measured, not guessed */
+  const rh = ladder.clientHeight / (rows.length || 1);
+  if (rh > 4) ladder.style.setProperty('--rf',
+    Math.max(8.5, Math.min(14.5, rh * 0.52)).toFixed(1) + 'px');
+  rows.forEach((r, i) => {
+    if (!animate){ r.classList.add('in'); return; }
+    r.classList.remove('in');
+    LADDER_T.push(setTimeout(() => r.classList.add('in'), 80 + i * 42));
+  });
+}
+
+/* ---------------------------------------------------------------- the deck */
+let SLIDES = [], IDX = 0, TIMER = null, SEX = 'women';
+const FILMS = {};
+
+fetch('data/toplists.json').then(r => r.json()).then(build).catch(e => {
+  document.getElementById('track').innerHTML =
+    `<div class="loading">Could not load the lists — ${esc(e.message)}</div>`;
+});
+
+function build(D){
+  const track = document.getElementById('track');
+  track.innerHTML = '';
+  const cards = D.cards.slice().sort((a, b) =>
+    (a.gender === b.gender ? 0 : a.gender === 'women' ? -1 : 1) || a.order - b.order);
+
+  cards.forEach(c => {
+    const M = model(c);
+    const node = document.createElement('section');
+    node.className = 'card';
+    node.innerHTML = cardHTML(M, c.gender);
+    track.appendChild(node);
+    SLIDES.push({M, el: node, sex: c.gender, title: c.discipline,
+                 slug: (c.gender === 'women' ? 'w' : 'm') + '-' + c.slug});
+  });
+
+  ['women', 'men'].forEach(s => {
+    const start = SLIDES.findIndex(x => x.sex === s);
+    FILMS[s] = {start, len: SLIDES.filter(x => x.sex === s).length};
+  });
+
+  track.addEventListener('click', e => {
+    const b = e.target.closest('.sx');
+    if (b) switchSex(b.dataset.sex);
+  });
+
+  const want = decodeURIComponent(location.hash.slice(1))
+    || (() => { try { return localStorage.getItem('atf.card') || ''; } catch(e){ return ''; } })();
+  const at = SLIDES.findIndex(s => s.slug === want);
+  track.classList.add('notrans');
+  go(at >= 0 ? at : 0);
+  requestAnimationFrame(() => track.classList.remove('notrans'));
+  try { if (localStorage.getItem('atf.play') === '1') setPlaying(true); } catch(e){}
+}
+
+const NARROW = () => matchMedia('(max-width:860px), (max-height:540px)').matches;
+
+function go(i, fromHash){
+  IDX = (i + SLIDES.length) % SLIDES.length;
+  SEX = SLIDES[IDX].sex;
+  const f = FILMS[SEX];
+  document.getElementById('track').style.transform = `translateX(${-IDX * 100}%)`;
+  SLIDES.forEach((s, k) => s.el.classList.toggle('on', k === IDX));
+  document.getElementById('cnum').textContent = IDX - f.start + 1;
+  document.getElementById('ctot').textContent = f.len;
+  const slug = SLIDES[IDX].slug;
+  if (!fromHash) history.replaceState(null, '', '#' + slug);
+  try { localStorage.setItem('atf.card', slug); } catch(e){}
+  buildJump(); markJump(); updateSocialMeta();
+  if (NARROW()) scrollTo(0, 0);
+  paint(true);
+}
+
+addEventListener('hashchange', () => {
+  const i = SLIDES.findIndex(s => s.slug === decodeURIComponent(location.hash.slice(1)));
+  if (i >= 0 && i !== IDX) go(i, true);
+});
+
+/* SVGs are sized from their flex containers, so only ever paint after layout */
+let pt = null;
+function paint(animate){
+  clearTimeout(pt);
+  pt = setTimeout(() => {
+    const s = SLIDES[IDX];
+    if (!s) return;
+    runLadder(s.el, !!animate);
+    drawEra(s.M, s.el, !!animate);
+  }, 60);
+}
+
+function updateSocialMeta(){
+  const s = SLIDES[IDX]; if (!s) return;
+  const M = s.M, b = M.best, ev = M.card.discipline, who = shortName(b.name);
+  const set = (n, v) => { const m = document.querySelector(`meta[name="${n}"]`);
+    if (m) m.setAttribute('content', v); };
+  set('agwas:title', `${ev}, ${s.sex} — the twenty best ever`);
+  set('agwas:cta', M.people <= 6
+    ? `${M.people} athletes hold the twenty best ${ev.toLowerCase()} marks ever — ${who} has ${
+        M.owners[0][1]} of them`
+    : `${b.mark} by ${who} still leads the all-time ${ev.toLowerCase()} list`);
+  set('agwas:tags', 'athletics alltime dataviz ' + shortEv(ev).toLowerCase());
+}
+
+/* ---- jump-to drop-up ---- */
+function buildJump(){
+  const f = FILMS[SEX];
+  document.getElementById('jgrid').innerHTML = SLIDES.slice(f.start, f.start + f.len)
+    .map((s, k) => {
+      const i = f.start + k, M = s.M;
+      return `<button class="jitem" data-i="${i}"><span class="ji">${k + 1}</span>`
+        + `<span class="jd" style="background:var(--${SEX})"></span>`
+        + `<span class="jn">${esc(s.title)} <span style="opacity:.55">&middot; ${
+            esc(M.card.group)}</span></span>`
+        + `<span class="jy">${M.people} athletes</span></button>`;
+    }).join('');
+  document.querySelectorAll('.jitem').forEach(b =>
+    b.onclick = () => { go(+b.dataset.i); closeJump(); });
+}
+const markJump = () => document.querySelectorAll('.jitem')
+  .forEach(b => b.classList.toggle('on', +b.dataset.i === IDX));
+function openJump(){
+  document.getElementById('jumppop').hidden = false;
+  document.body.classList.add('jump-open');
+  const on = document.querySelector('.jitem.on');
+  if (on) on.scrollIntoView({block: 'nearest'});
+}
+function closeJump(){
+  document.getElementById('jumppop').hidden = true;
+  document.body.classList.remove('jump-open');
+}
+const toggleJump = () => document.getElementById('jumppop').hidden ? openJump() : closeJump();
+
+/* the two reels are separate — stepping off the end wraps inside the reel you are in */
+const step = d => { const f = FILMS[SEX];
+  go(f.start + ((IDX - f.start + d + f.len) % f.len)); };
+const next = () => step(1), prev = () => step(-1);
+
+/* switching sex holds your place: the same event if it exists, else the same slot */
+function switchSex(sex){
+  if (sex === SEX || !FILMS[sex]) return;
+  const cur = SLIDES[IDX], f = FILMS[sex];
+  let to = SLIDES.findIndex(s => s.sex === sex && s.title === cur.title);
+  if (to < 0) to = f.start + Math.min(IDX - FILMS[SEX].start, f.len - 1);
+  go(to);
+}
+
+function setPlaying(on){
+  clearInterval(TIMER);
+  TIMER = on ? setInterval(next, 11000) : null;
+  try { localStorage.setItem('atf.play', on ? '1' : '0'); } catch(e){}
+  document.getElementById('playIcon').innerHTML = on
+    ? '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>'
+    : '<path d="M7 5v14l12-7z"/>';
+}
+
+const openHelp  = () => { document.getElementById('help').hidden = false; setPlaying(false); };
+const closeHelp = () => { document.getElementById('help').hidden = true; };
+const openMore  = () => { document.getElementById('more').hidden = false; setPlaying(false); };
+const closeMore = () => { document.getElementById('more').hidden = true; };
+const toggleFS  = () => document.fullscreenElement
+  ? document.exitFullscreen()
+  : document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+
+document.getElementById('next').onclick = next;
+document.getElementById('prev').onclick = prev;
+document.getElementById('restart').onclick = () => go(0);
+document.getElementById('play').onclick = () => setPlaying(!TIMER);
+document.getElementById('helpbtn').onclick = openHelp;
+document.getElementById('morebtn').onclick = openMore;
+document.getElementById('fs').onclick = toggleFS;
+document.getElementById('counter').onclick = e => { e.stopPropagation(); toggleJump(); };
+document.addEventListener('click', e => {
+  if (!e.target.closest('.jumppop') && !e.target.closest('#counter')) closeJump();
+});
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ closeJump(); closeMore(); return closeHelp(); }
+  if (!document.getElementById('help').hidden || !document.getElementById('more').hidden) return;
+  if (e.key === 'ArrowRight') next();
+  else if (e.key === 'ArrowLeft') prev();
+  else if (e.key === ' ') { e.preventDefault(); setPlaying(!TIMER); }
+  else if (e.key === 'Home') go(0);
+  else if (e.key.toLowerCase() === 'f') toggleFS();
+  else if (e.key.toLowerCase() === 'h') openHelp();
+  else if (e.key.toLowerCase() === 'r') paint(true);
+});
+
+new ResizeObserver(() => paint(false)).observe(document.getElementById('track'));
+document.addEventListener('fullscreenchange', () => setTimeout(() => paint(false), 140));
+</script>
+
+<!-- Cloudflare Web Analytics -->
+<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0e11f639978547d6a4c33b703dbdf568"}'></script>
+<!-- End Cloudflare Web Analytics -->
+</body>
+</html>
