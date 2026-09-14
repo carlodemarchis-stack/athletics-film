@@ -197,6 +197,33 @@
   .lanes.zoomed .lane.win .gap{color:var(--gold)}
   .finish{position:absolute;top:0;bottom:0;right:calc(var(--gw) + 12px);width:2px;
     background:rgba(255,90,197,.4)}
+  /* the last card: every champion of the meet, one tile each */
+  .wall{flex:1 1 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:14px;
+    min-height:0}
+  .ch{position:relative;display:flex;flex-direction:column;min-height:0;text-decoration:none;
+    color:inherit;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(236,236,255,.05),rgba(236,236,255,.01));
+    padding:0 10px 9px;transition:border-color .15s,transform .15s}
+  .ch:hover{border-color:rgba(255,90,197,.5);transform:translateY(-2px)}
+  .ch::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--flare)}
+  .ch.m::before{background:linear-gradient(90deg,#2bdde1,#77a7f3)}
+  .ch.w::before{background:linear-gradient(90deg,#ae81e6,#ff5ac5)}
+  .chpic{flex:1 1 auto;min-height:0;position:relative;margin:0 -10px}
+  .chpic i{position:absolute;inset:6px 0 0;background-size:contain;background-repeat:no-repeat;
+    background-position:50% 100%}
+  .chpic i.team{background-size:cover;background-position:50% 30%;inset:0;opacity:.85}
+  .chev{font-size:8.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted-2);margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chnm{font-size:13px;font-weight:800;letter-spacing:-.01em;margin-top:2px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .chrow{display:flex;align-items:baseline;gap:6px;margin-top:2px}
+  .chmk{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;
+    background:var(--flare);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .chrec{font-size:8px;font-weight:800;letter-spacing:.1em;color:var(--muted-2)}
+  .chrec.big{color:var(--bg0);background:var(--flare);border-radius:3px;padding:1px 4px}
+  .chnat{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--muted-2);margin-top:3px;
+    display:grid;grid-template-columns:15px auto;gap:4px;align-items:center;justify-items:start}
+  .kicker .sx.x{color:var(--gold)}
   /* a vertical event, drawn vertically: height up the side, a column per athlete. The plot and
      the axis share one row so a rule, a label and a mark at the same height all line up */
   .vwrap{display:grid;grid-template-columns:52px 1fr;grid-template-rows:1fr 52px;
@@ -490,6 +517,9 @@ function buildDeck(){
   }).sort((a, b) => evIx(a.disc.name) - evIx(b.disc.name)
                  || sexIx(a.sex) - sexIx(b.sex)
                  || a.when.localeCompare(b.when));
+  const last = DECK[DECK.length - 1];
+  DECK.push({kind: 'champions', sex: 'X', disc: {name: 'Class of One', typeName: 'Champions'},
+             day: last.day, when: last.when, slug: 'champions'});
 }
 
 // the running order of an athletics programme, the same sequence the record film uses:
@@ -949,6 +979,7 @@ function runPit(race){
 
 function draw(){
   const c = DECK[IDX], disc = c.disc;
+  if (c.kind === 'champions') return drawChampions(c);
   const sexw = c.sex === 'W', sex = sexw ? "Women's" : c.sex === 'M' ? "Men's" : 'Mixed';
   const when = new Date(c.when), dist = distOf(disc.name);
   const all = c.ev ? racesOf(c.ev) : [];
@@ -1029,6 +1060,56 @@ function slide(ghost, dir){
   card.style.transform = '';
   ghost.style.transform = 'translateX(' + (dir * -100) + '%)';
   setTimeout(() => ghost.remove(), 700);
+}
+
+// One card for the whole championship: every title, its winner, the mark, and what it was worth.
+function champions(){
+  const out = [];
+  for (const card of DECK){
+    if (card.kind || !card.ev) continue;
+    const fin = racesOf(card.ev).find(isFinal);
+    const w = fin && fin.rows[0];
+    if (!w) continue;
+    out.push({sex: card.sex, event: card.disc.name, slug: card.slug, name: w.name, nat: w.nat,
+              mark: w.mark, wa: w.wa, record: w.record});
+  }
+  return out;
+}
+
+function drawChampions(c){
+  const card = document.getElementById('card');
+  card.className = 'card champs';
+  const all = champions();
+  // World Athletics writes the family name in capitals, so that is what a surname is here —
+  // all of it: DOS SANTOS and RUIZ HURTADO, not SANTOS and HURTADO. A team keeps its whole name.
+  const short = (n, team) => team ? (n || '')
+    : ((n || '').match(/[A-ZÀ-ÿ''\-]{2,}(?:\s+[A-ZÀ-ÿ''\-]{2,})*$/) || [n])[0];
+  card.innerHTML = `<div class="head"><div>
+      <div class="kicker"><span class="sx x">Budapest 2026</span> &middot;
+        <span class="type">${all.length} titles</span></div>
+      <h1>Class of One</h1></div>
+    <div class="when"><div class="st">Champions</div>
+      <div class="dt">11 &ndash; 13 September</div></div></div>
+    <div class="wall">${all.map(w => {
+      const cut = CUT.has(String(w.wa)), team = TEAMBG[w.slug];
+      return `<a class="ch${w.sex === 'W' ? ' w' : w.sex === 'M' ? ' m' : ' x'}" href="#${w.slug}">
+        <div class="chpic">${
+          cut ? `<i style="background-image:url('img/ath/${w.wa}.webp')"></i>`
+          : team ? `<i class="team" style="background-image:url('img/team/${w.slug}.webp')"></i>`
+          : ''}</div>
+        <div class="chev">${esc(w.event)}</div>
+        <div class="chnm">${esc(short(w.name, !!team))}</div>
+        <div class="chrow"><span class="chmk">${esc(w.mark)}</span>
+          ${w.record ? `<span class="chrec${BIG_REC.test(w.record) ? ' big' : ''}"
+            >${esc(w.record)}</span>` : ''}</div>
+        <div class="chnat">${natCell(w.nat)}</div></a>`;
+    }).join('')}</div>
+    <div class="foot">Data: World Athletics &middot; A guy with a scarf</div>`;
+  card.querySelectorAll('.ch').forEach(a => a.onclick = e => {
+    e.preventDefault();
+    const i = DECK.findIndex(x => x.slug === a.getAttribute('href').slice(1));
+    if (i >= 0) go(i);
+  });
 }
 
 function go(i, fromHash){
