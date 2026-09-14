@@ -16,7 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128 Safari/537.36"}
 
-DEPTH = 20                                       # everyone ranked 20th or better, ties included
+DEPTH = 50                                       # everyone ranked 50th or better, ties included
 
 # the same deck as the record film
 EVENTS = [
@@ -47,7 +47,7 @@ SLUG = {
     "4x400 Metres Relay": "relays/4x400-metres-relay",
 }
 
-QS = ("?regionType=world&timing=electronic&windReading=regular&page=1&bestResultsOnly=false"
+QS = ("?regionType=world&timing=electronic&windReading=regular&page={page}&bestResultsOnly=false"
       "&firstDay=1900-01-01&lastDay={last}&maxResultsByCountry=all&ageCategory=senior")
 
 
@@ -86,19 +86,37 @@ def clean(s):
     return ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', s)).split())
 
 
-def toplist(path, gender, last_day, tries=3):
+def fetch(path, gender, last_day, page_no, tries=3):
     url = f"https://worldathletics.org/records/all-time-toplists/{path}/all/{gender}/senior" \
-          + QS.format(last=last_day)
+          + QS.format(last=last_day, page=page_no)
     for n in range(tries):
         try:
-            page = urllib.request.urlopen(urllib.request.Request(url, headers=UA),
-                                          timeout=45).read().decode("utf-8", "replace")
-            break
+            return url, urllib.request.urlopen(urllib.request.Request(url, headers=UA),
+                                               timeout=45).read().decode("utf-8", "replace")
         except Exception:
             if n == tries - 1:
                 raise
             time.sleep(2 * (n + 1))
 
+
+def toplist(path, gender, last_day):
+    """A page holds 100 rows. A deep cut through a field event can tie its way past that,
+    so keep turning pages until one ends below the cut."""
+    rows, url, page_no = [], None, 1
+    while True:
+        url1, page = fetch(path, gender, last_day, page_no)
+        if page_no == 1:
+            url = url1
+        got = parse_rows(page)
+        rows += got
+        if len(got) < 100 or (got and got[-1]["rank"] > DEPTH) or page_no >= 4:
+            break
+        page_no += 1
+        time.sleep(.45)
+    return [r for r in rows if r["rank"] <= DEPTH], url
+
+
+def parse_rows(page):
     rows = []
     for tr in re.findall(r'<tr>(.*?)</tr>', page, re.S):
         if 'data-th="Rank"' not in tr:
@@ -106,10 +124,12 @@ def toplist(path, gender, last_day, tries=3):
         cell = {m.group(1): m.group(2) for m in
                 re.finditer(r'<td data-th="([^"]*)"[^>]*>(.*?)</td>', tr, re.S)}
         rank = re.sub(r'\D', '', clean(cell.get("Rank", "")))
-        if not rank or int(rank) > DEPTH:          # ties are already inside the cut
-            break
+        if not rank:
+            continue
         who = cell.get("Competitor", "")
-        aid = re.search(r'athlete(?:=|s/)(\d+)', who)
+        # two link shapes in the same table: /athletes/athlete=14209691 and
+        # /athletes/united-states/cooper-lutkenhaus-15152457
+        aid = re.search(r'href="/athletes/[^"]*?(\d{6,})', who)
         venue = clean(cell.get("Venue", ""))
         rows.append({
             "rank": int(rank),
@@ -125,7 +145,7 @@ def toplist(path, gender, last_day, tries=3):
             "score": clean(cell.get("Results Score", "")) or None,
             "indoor": venue.endswith("(i)"),
         })
-    return rows, url
+    return rows
 
 
 def main():

@@ -4,22 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>All-Time Film — Athletics</title>
-<meta name="description" content="The twenty best marks ever run, jumped and thrown in each athletics event, men's and women's — every performance, not one per athlete — as an interactive card film. By A guy with a scarf (Carlo De Marchis).">
+<meta name="description" content="The fifty best marks ever run, jumped and thrown in each athletics event, men's and women's — every performance, not one per athlete — as an interactive card film. By A guy with a scarf (Carlo De Marchis).">
 <link rel="canonical" href="https://athletics.aguywithascarf.com/toplists/">
 <meta name="theme-color" content="#0a0807">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="A guy with a scarf">
 <meta property="og:locale" content="en_GB">
 <meta property="og:title" content="All-Time Film — Athletics">
-<meta property="og:description" content="The twenty best marks ever in each event — every performance, not one per athlete. Duplantis holds 19 of the top 20 pole vaults; the women's shot put has not moved since 1987.">
+<meta property="og:description" content="The fifty best marks ever in each event — every performance, not one per athlete. Duplantis holds 19 of the top 20 pole vaults; the women's shot put has not moved since 1988.">
 <meta property="og:url" content="https://athletics.aguywithascarf.com/toplists/">
 <meta property="og:image" content="https://athletics.aguywithascarf.com/img/og.jpg?v=1">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="All-Time Film — the twenty best marks ever in each athletics event">
+<meta property="og:image:alt" content="All-Time Film — the fifty best marks ever in each athletics event">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="All-Time Film — Athletics">
-<meta name="twitter:description" content="The twenty best marks ever in each event — every performance, not one per athlete.">
+<meta name="twitter:description" content="The fifty best marks ever in each event — every performance, not one per athlete.">
 <meta name="twitter:image" content="https://athletics.aguywithascarf.com/img/og.jpg?v=1">
 <!-- read by the AGWAS capture extension, not by link scrapers; cta/tags are rewritten per card -->
 <meta name="agwas:title"    content="The all-time lists, as a film">
@@ -103,17 +103,19 @@
   .oseg em{font-style:normal; font-size:9.5px; font-weight:700; color:rgba(10,8,7,.58)}
 
   /* ---------- the two panes ---------- */
-  .body{display:grid; grid-template-columns:minmax(0,46fr) minmax(0,54fr);
-    gap:clamp(14px,2.4vw,38px); flex:1 1 auto; min-height:0}
+  .body{display:grid; grid-template-columns:minmax(0,60fr) minmax(0,40fr);
+    gap:clamp(14px,2.2vw,32px); flex:1 1 auto; min-height:0}
 
-  /* the ladder */
-  .ladder{display:flex; flex-direction:column; min-height:0; font-size:var(--rf,12px)}
-  .lr{flex:1 1 0; min-height:0; display:grid; align-items:center; gap:0 8px;
-    grid-template-columns:2.1em 4.6em minmax(0,1fr) 3.3em 2.6em;
+  /* the ladder — two columns, filled down the first and on down the second */
+  .ladder{display:grid; grid-auto-flow:column; grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-rows:repeat(var(--half,25),minmax(0,1fr));
+    column-gap:clamp(10px,1.5vw,26px); min-height:0; font-size:var(--rf,12px)}
+  .lr{min-width:0; min-height:0; display:grid; align-items:center; gap:0 7px;
+    grid-template-columns:2.2em 4.5em minmax(0,1fr) 2.9em 2.5em;
     border-top:1px solid rgba(230,190,160,.07); opacity:0; transform:translateX(-7px);
     transition:opacity .22s ease, transform .22s ease}
   .lr.in{opacity:1; transform:none}
-  .lr:first-child{border-top:0}
+  .lr.nb{border-top:0}
   .lr.top{background:linear-gradient(90deg,rgba(242,193,78,.10),transparent 72%)}
   .lk{font-size:.85em; font-weight:800; color:var(--muted-2); text-align:right; letter-spacing:.02em}
   .lr.tie .lk{opacity:.42}
@@ -131,6 +133,7 @@
   /* the nations with no flag (ANA, URS, GDR) fall back to their code, which must not
      inherit its way down to four pixels on a thirty-row card */
   .lnm .cc{font-size:8.5px; padding:1px 3px; border-radius:3px; vertical-align:baseline}
+  .ladder.nowind .lr{grid-template-columns:2.2em 4.5em minmax(0,1fr) 2.5em}
   .lw{font-size:.82em; font-weight:700; color:var(--muted-2); text-align:right; white-space:nowrap}
   .ly{font-size:.85em; font-weight:800; color:var(--muted); text-align:right}
 
@@ -251,8 +254,8 @@
     .rec .who{justify-content:flex-start}
     .title h1{font-size:clamp(26px,8vw,40px); white-space:normal}
     .body{grid-template-columns:1fr; gap:16px}
-    .ladder{font-size:12px!important}
-    .lr{flex:0 0 auto; height:30px; grid-template-columns:2em 4.4em minmax(0,1fr) 2.8em 2.4em}
+    .ladder{font-size:12px!important; display:flex; flex-direction:column}
+    .lr{flex:0 0 auto; height:29px; grid-template-columns:2em 4.4em minmax(0,1fr) 2.8em 2.4em}
     .chartwrap{height:42vw; min-height:200px}
     .foot{position:static; margin-top:14px}
     .controls{left:0; right:0; bottom:0; transform:none; width:100%; border-radius:0;
@@ -323,14 +326,15 @@
     <h2>The All-Time Film</h2>
     <div class="csub">A guy with a scarf</div>
     <p>One card per event, women's reel and men's reel, in the order World Athletics lists
-    them. Each card holds the <b>twenty best marks ever</b> in that event — every performance,
+    them. Each card holds the <b>fifty best marks ever</b> in that event — every performance,
     not one per athlete, so the same name can appear again and again. That repetition is the
     point: Mondo Duplantis owns nineteen of the twenty best pole vaults ever cleared.</p>
-    <p>Because marks tie, twenty is a rank and not a row count. Everyone ranked twentieth or
-    better is here, so a card may carry <b>21, 23, even 30 marks</b> — the women's high jump
-    has thirty, since so many share 2.06. Tied marks keep World Athletics' shared rank and the
-    repeated number is dimmed.</p>
-    <p>The <b>ladder</b> on the left ranks them, each bar a name, one colour per athlete. The
+    <p>Because marks tie, fifty is a rank and not a row count. Everyone ranked fiftieth or
+    better is here, so a card may carry <b>more than fifty</b> — the women's high jump carries
+    sixty-six, since so many share the same heights. Tied marks keep World Athletics' shared
+    rank and the repeated number is dimmed to <b>=</b>.</p>
+    <p>The <b>ladder</b> on the left ranks them down one column and on down the next, one
+    colour per athlete. The
     <b>chart</b> on the right puts the same marks where they happened in time, which is where
     each event tells on itself: the men's marathon list is almost entirely the last ten years,
     the women's shot put has not admitted a new mark since 1987.</p>
@@ -382,12 +386,20 @@ const flagOf = c => { const f = flagEmoji(c);
   return f ? `<span class="flag">${f}</span>` : `<span class="cc">${esc(c || '')}</span>`; };
 
 /* "Usain BOLT" → first name light, surname bold. Relay teams ("United States") stay as they are. */
-const isTeam = n => !/\p{Lu}{2}/u.test(n);
-const nameHTML = n => /\p{Lu}{2}/u.test(n)
-  ? esc(n).replace(/^(.*?)\s([\p{Lu}\p{Lm}'’.\-\s]+)$/u, '<span class="f">$1</span> $2')
-  : esc(n);
+const TEAMNAME = {'German Democratic Republic': 'East Germany'};
+const teamOf = n => TEAMNAME[n] || n;
+const nameHTML = (n, team) => team ? esc(teamOf(n))
+  : esc(n).replace(/^(.*?)\s([\p{Lu}\p{Lm}'’.\-\s]+)$/u, '<span class="f">$1</span> $2');
 const surnameOf = n => { const m = n.match(/([\p{Lu}\p{Lm}'’.\-\s]+)$/u); return (m ? m[1] : n).trim(); };
-const shortName = n => isTeam(n) ? n           /* a relay team is not a surname to trim */
+/* fifty marks in two columns leaves about twenty characters for a name, so the ladder
+   carries initials — "Sabastian Kimaru SAWE" as "S. K. SAWE" — and the head the full name */
+const ladderName = (n, team) => {
+  const m = team ? null : n.match(/^(.*?)\s([\p{Lu}\p{Lm}'’.\-\s]+)$/u);
+  if (!m) return esc(teamOf(n));
+  const ini = m[1].split(/\s+/).filter(Boolean).map(w => w[0] + '.').join('\u2009');
+  return `<span class="f">${esc(ini)}</span> ${esc(m[2])}`;
+};
+const shortName = (n, team) => team ? teamOf(n)   /* a relay team is not a surname to trim */
   : surnameOf(n).split(' ').pop().toLowerCase()
       .replace(/(^|[-'’])(\p{L})/gu, (_, a, b) => a + b.toUpperCase());
 
@@ -424,10 +436,12 @@ function model(card){
 
   const byWho = new Map();
   rows.forEach(r => byWho.set(r.name, (byWho.get(r.name) || 0) + 1));
+  const team = new Set(rows.filter(r => r.id == null).map(r => r.name));
   const owners = [...byWho.entries()].sort((a, b) => b[1] - a[1]);
   const hue = new Map(owners.map(([n], i) => [n, HUES[i % HUES.length]]));
 
   rows.forEach((r, i) => {
+    r.team = r.id == null;
     r.c = hue.get(r.name);
     r.tie = i > 0 && rows[i - 1].rank === r.rank;
     r.same = i > 0 && rows[i - 1].name === r.name;
@@ -439,7 +453,7 @@ function model(card){
   const since = rows.filter(r => r.year >= TODAY.getFullYear() - 10).length;
   const spread = lower ? worst - best : best - worst;
 
-  return {card, rows, lower, owners, hue, best: rows[0],
+  return {card, rows, lower, owners, hue, team, best: rows[0],
           spread, span, minYear: Math.min(...years), maxYear: Math.max(...years),
           maxWhen: Math.max(...rows.map(r => r.when)),
           since, people: byWho.size};
@@ -475,13 +489,14 @@ function cardHTML(M, sex){
       </div>
       <div class="rec">
         <div class="v">${esc(b.mark)}${wind && b.wind ? `<small>${esc(b.wind)}</small>` : ''}</div>
-        <div class="who">${nameHTML(b.name)} ${flagOf(b.nat)}</div>
+        <div class="who">${nameHTML(b.name, b.team)} ${flagOf(b.nat)}</div>
         <div class="w">Best ever &middot; <b>${esc(venue)}</b> &middot; ${esc(b.date)}</div>
       </div>
     </div>
 
     <div class="statbar">
-      <div class="stat"><div class="v">${M.rows.length}</div><div class="k">marks in the top 20</div></div>
+      <div class="stat"><div class="v">${M.rows.length}</div>
+        <div class="k">marks in the top ${TOP}</div></div>
       <div class="stat"><div class="v">${M.people}</div><div class="k">athletes</div></div>
       <div class="stat"><div class="v hl">${fmtSpread(M)}</div><div class="k">1st to last</div></div>
       <div class="stat"><div class="v">${M.since}<small> / ${M.rows.length}</small></div>
@@ -494,19 +509,23 @@ function cardHTML(M, sex){
       <div class="obar">${M.owners.map(([n, k]) => {
         const w = k / M.rows.length * 100;
         return `<div class="oseg" style="--c:${M.hue.get(n)}; flex:0 0 ${w.toFixed(2)}%"
-          title="${esc(n)} — ${k} of ${M.rows.length}">${w > 9 ? `<i>${esc(shortName(n))}</i>` : ''}${
+          title="${esc(teamOf(n))} — ${k} of ${M.rows.length}">${
+          w > 9 ? `<i>${esc(shortName(n, M.team.has(n)))}</i>` : ''}${
           w > 5 ? `<em>${k}</em>` : ''}</div>`;
       }).join('')}</div>
     </div>
 
     <div class="body">
-      <div class="ladder">${M.rows.map(r => `
-        <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''}"
-             style="--c:${r.c}">
+      <div class="ladder ${wind ? '' : 'nowind'}" style="--half:${
+        Math.ceil(M.rows.length / 2)}">${M.rows.map((r, i) => `
+        <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''} ${
+               i === 0 || i === Math.ceil(M.rows.length / 2) ? 'nb' : ''}" style="--c:${r.c}">
           <span class="lk">${r.tie ? '=' : r.rank}</span>
           <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
-          <span class="lnm"><span class="n">${nameHTML(r.name)}</span>${flagOf(r.nat)}</span>
-          <span class="lw">${wind && r.wind ? esc(r.wind) : ''}</span>
+          <span class="lnm" title="${esc(teamOf(r.name))}"><span class="n">${
+            ladderName(r.name, r.team)}</span>${
+            flagOf(r.nat)}</span>
+          ${wind ? `<span class="lw">${esc(r.wind || '')}</span>` : ''}
           <span class="ly">${r.year}</span>
         </div>`).join('')}</div>
       <div class="chartwrap"><svg></svg><div class="tip"></div></div>
@@ -579,7 +598,7 @@ function drawEra(M, root, animate){
         dot.style.transition = 'opacity .2s ease, transform .3s cubic-bezier(.3,1.5,.5,1)';
         dot.setAttribute('opacity', '1');
         dot.setAttribute('transform', 'translate(0 0)');
-      }, 120 + i * 46);
+      }, 120 + i * 17);
     }
     g.appendChild(dot); g.appendChild(halo);
     halo.addEventListener('mouseenter', () => {
@@ -602,19 +621,19 @@ function runLadder(root, animate){
   LADDER_T.forEach(clearTimeout); LADDER_T = [];
   const ladder = root.querySelector('.ladder');
   const rows = [...ladder.querySelectorAll('.lr')];
-  /* the rows share whatever height is left, so the type has to be measured, not guessed */
-  const rh = ladder.clientHeight / (rows.length || 1);
+  /* the rows share the height of one column, so the type has to be measured, not guessed */
+  const rh = ladder.clientHeight / Math.max(1, Math.ceil(rows.length / 2));
   if (rh > 4) ladder.style.setProperty('--rf',
     Math.max(8.5, Math.min(14.5, rh * 0.52)).toFixed(1) + 'px');
   rows.forEach((r, i) => {
     if (!animate){ r.classList.add('in'); return; }
     r.classList.remove('in');
-    LADDER_T.push(setTimeout(() => r.classList.add('in'), 80 + i * 42));
+    LADDER_T.push(setTimeout(() => r.classList.add('in'), 80 + i * 18));
   });
 }
 
 /* ---------------------------------------------------------------- the deck */
-let SLIDES = [], IDX = 0, TIMER = null, SEX = 'women';
+let SLIDES = [], IDX = 0, TIMER = null, SEX = 'women', TOP = 50;
 const FILMS = {};
 
 fetch('data/toplists.json').then(r => r.json()).then(build).catch(e => {
@@ -623,6 +642,7 @@ fetch('data/toplists.json').then(r => r.json()).then(build).catch(e => {
 });
 
 function build(D){
+  TOP = D.depth || 50;
   const track = document.getElementById('track');
   track.innerHTML = '';
   const cards = D.cards.slice().sort((a, b) =>
@@ -694,12 +714,12 @@ function paint(animate){
 
 function updateSocialMeta(){
   const s = SLIDES[IDX]; if (!s) return;
-  const M = s.M, b = M.best, ev = M.card.discipline, who = shortName(b.name);
+  const M = s.M, b = M.best, ev = M.card.discipline, who = shortName(b.name, b.team);
   const set = (n, v) => { const m = document.querySelector(`meta[name="${n}"]`);
     if (m) m.setAttribute('content', v); };
   set('agwas:title', `${ev}, ${s.sex} — the twenty best ever`);
   set('agwas:cta', M.people <= 6
-    ? `${M.people} athletes hold the twenty best ${ev.toLowerCase()} marks ever — ${who} has ${
+    ? `${M.people} athletes hold the ${TOP} best ${ev.toLowerCase()} marks ever — ${who} has ${
         M.owners[0][1]} of them`
     : `${b.mark} by ${who} still leads the all-time ${ev.toLowerCase()} list`);
   set('agwas:tags', 'athletics alltime dataviz ' + shortEv(ev).toLowerCase());
