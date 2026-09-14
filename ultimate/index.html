@@ -659,6 +659,8 @@ const ageAt = (born, on) => {
 // whole left of the card and everyone they beat is listed down the right.
 // the relays have no athlete to look up, so their background is the card's own team picture
 const TEAMBG = {'mixed-4x100-metres-relay': [85, 49], 'mixed-4x400-metres-relay': [56, 15]};
+// champions World Athletics has no picture of: their background is the meet's own photograph
+const OWNBG = new Set(['14659011','14704467','14715835','14753981','14877871','14886862','14976579']);
 
 function podium(race, when, disc, slug){
   return race.rows.slice(0, 1).map((r, i) => {
@@ -667,6 +669,7 @@ function podium(race, when, disc, slug){
     // two pictures where two exist: the action shot fills the box, the portrait sits by the name
     const pic = r.wa && D.photos[r.wa];
     const team = !pic && i === 0 && TEAMBG[slug];
+    const own = !pic && !team && OWNBG.has(String(r.wa));
     const face = typeof p.face === 'string' ? p.face : null;
     const age = ageAt(p.born, when);
     const bits = [];
@@ -679,7 +682,9 @@ function podium(race, when, disc, slug){
         (D.focus || {})[r.wa] ? `background-position:${D.focus[r.wa][0]}% ${D.focus[r.wa][1]}%` : ''
       }"></div>`
       : team ? `<div class="ph" style="background-image:url('img/team/${slug}.webp');
-        background-position:${team[0]}% ${team[1]}%"></div>` : ''}
+        background-position:${team[0]}% ${team[1]}%"></div>`
+      : own ? `<div class="ph" style="background-image:url('img/bg/${r.wa}.webp');
+        background-position:50% 30%"></div>` : ''}
       <div class="scrim"></div>
       ${cut ? `<div class="cut" style="background-image:url('img/ath/${r.wa}.webp')"></div>` : ''}
       <div class="pos">${(r.place || '').replace('.', '')}</div>
