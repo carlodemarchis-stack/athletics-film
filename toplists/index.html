@@ -138,6 +138,12 @@
   /* the nations with no flag (ANA, URS, GDR) fall back to their code, which must not
      inherit its way down to four pixels on a thirty-row card */
   .lnm .cc{font-size:8.5px; padding:1px 3px; border-radius:3px; vertical-align:baseline}
+  /* the marks that were world records when they were set */
+  .lnm .wr{margin-left:auto; flex:0 0 auto; font-style:normal; font-size:.74em; font-weight:800;
+    letter-spacing:.04em; line-height:1.3; padding:0 3px; border-radius:3px;
+    color:var(--gold); border:1px solid rgba(242,193,78,.42); background:rgba(242,193,78,.08)}
+  .lnm .wr.eq{color:var(--muted); border-color:var(--line); background:transparent}
+  .dot.wr .d{stroke:var(--gold); stroke-width:1.5}
   .ladder.nowind .lr{grid-template-columns:2.2em 4.5em 2.6em minmax(0,1fr)}
   .lr:hover,.lr.lit{background:rgba(255,255,255,.06)}
   .lr.lit .lnm .n{color:var(--gold)}
@@ -376,6 +382,10 @@
     bright as the number of marks it holds. <b>Hovering</b> anything lights everything it
     belongs to: a row rings its mark on the chart, a name lights all of theirs, a decade
     lights its own.</p>
+    <p>A mark flagged <b>WR</b> was a world record the day it was set, and <b>=WR</b> equalled
+    one; its dot on the chart wears a gold ring. Rank 1 is always the record still standing.
+    The records come from this page's companion, the <a href="../">World Record Film</a>, which
+    holds every ratified progression &mdash; so the two reels agree by construction.</p>
     <p>Marks are wind-legal and electronically timed. An <b>i</b> beside a mark means it was
     set indoors.</p>
     <div class="keys">
@@ -513,12 +523,13 @@ function model(card, mode){
 
   const years = rows.map(r => r.year);
   const since = rows.filter(r => r.year >= TODAY.getFullYear() - 10).length;
+  const wr = rows.filter(r => r.wr).length;
   const spread = lower ? worst - best : best - worst;
 
   return {card, rows, lower, owners, hue, team, label, best: rows[0], once,
           spread, span, minYear: Math.min(...years), maxYear: Math.max(...years),
           maxWhen: Math.max(...rows.map(r => r.when)),
-          since, people: new Set(rows.map(r => r.name)).size,
+          since, wr, people: new Set(rows.map(r => r.name)).size,
           nations: new Set(rows.map(r => r.nat)).size};
 }
 
@@ -570,6 +581,8 @@ function cardHTML(M, sex){
       <div class="stat"><div class="v">${M.since}<small> / ${M.rows.length}</small></div>
         <div class="k">in the last ten years</div></div>
       <div class="stat"><div class="v">${M.minYear}</div><div class="k">oldest mark</div></div>
+      ${M.wr ? `<div class="stat"><div class="v hl">${M.wr}</div>
+        <div class="k">were world records</div></div>` : ''}
     </div>
 
     <div class="owners">
@@ -594,9 +607,11 @@ function cardHTML(M, sex){
           <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
           ${wind ? `<span class="lw">${esc(r.wind || '')}</span>` : ''}
           <span class="ly">${r.year}</span>
-          <span class="lnm" title="${esc(teamOf(r.name))}"><span class="n">${
-            ladderName(r.name, r.team)}</span>${
-            flagOf(r.nat)}</span>
+          <span class="lnm" title="${esc(teamOf(r.name))}${
+            r.wr ? r.wr === 2 ? ' — equalled the world record' : ' — world record' : ''}"><span
+            class="n">${ladderName(r.name, r.team)}</span>${flagOf(r.nat)}${
+            r.wr ? `<i class="wr${r.wr === 2 ? ' eq' : ''}">${r.wr === 2 ? '=WR' : 'WR'}</i>` : ''
+            }</span>
         </div>`).join('')}</div>
       <div class="chartwrap"><svg></svg><div class="decbar"></div><div class="tip"></div></div>
     </div>
@@ -656,7 +671,8 @@ function drawEra(M, root, animate){
   const tip = root.querySelector('.tip');
   const at = [];                       /* where each mark ended up, for whoever asks */
   M.rows.forEach((r, i) => {
-    const g = el('g', {class: 'dot', 'data-i': i, 'data-a': r.a, 'data-d': r.d});
+    const g = el('g', {class: 'dot' + (r.wr ? ' wr' : ''),
+      'data-i': i, 'data-a': r.a, 'data-d': r.d});
     const cx = X(r.when), cy = Y(r.k);
     const halo = el('circle', {cx, cy, r: 9, fill: 'transparent'});
     const rad = r.rank === 1 ? 6 : 4.6;
@@ -709,7 +725,9 @@ function drawEra(M, root, animate){
     tip.innerHTML = `<div class="p">${esc(r.mark)}${
         r.wind ? ` <span class="m">${esc(r.wind)}</span>` : ''}</div>`
       + `<div class="n">${esc(teamOf(r.name))} ${esc(r.nat)}</div>`
-      + `<div class="m">${esc(r.venue)} &middot; ${esc(r.date)}</div>`;
+      + `<div class="m">${esc(r.venue)} &middot; ${esc(r.date)}</div>`
+      + (r.wr ? `<div class="m" style="color:var(--gold)">${
+          r.wr === 2 ? 'Equalled the world record' : 'World record'}</div>` : '');
     tip.style.opacity = 1;
     const tw = tip.offsetWidth;
     tip.style.left = Math.max(2, Math.min(W - tw - 2, p.cx - tw / 2)) + 'px';

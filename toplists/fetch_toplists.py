@@ -152,6 +152,37 @@ def parse_rows(page):
     return rows
 
 
+def records(cards):
+    """Mark the rows that were world records, from the progressions the record film already
+    holds. A mark and its date identify a performance exactly, and both files come from the
+    same source. Progressions are newest first, so entries[0] is the record still standing —
+    which, on all 42 events, is also rank 1 of the all-time list."""
+    src = os.path.join(HERE, "..", "data", "progressions.json")
+    if not os.path.exists(src):
+        print("  !! no progressions.json — rows will carry no world records", file=sys.stderr)
+        return 0
+    with open(src, encoding="utf-8") as fh:
+        prog = json.load(fh)
+
+    idx = {}
+    for c in prog["cards"]:
+        idx[(c["gender"], c["discipline"])] = {
+            (e["performance"].strip(), e["date"].strip()): e for e in c["entries"]}
+
+    n = 0
+    for c in cards:
+        pool = idx.get((c["gender"], c["discipline"]))
+        if not pool:
+            continue
+        for key in ("rows", "once"):
+            for r in c.get(key, []):
+                e = pool.get((r["mark"].strip(), r["date"].strip()))
+                if e:
+                    r["wr"] = 2 if e.get("equal") else 1
+                    n += 1
+    return n
+
+
 def main():
     last_day = time.strftime("%Y-%m-%d")
     cards = []
@@ -173,12 +204,13 @@ def main():
                       "rows": rows, "once": once})
         time.sleep(.45)
 
+    wr = records(cards)
     out = {"fetched": last_day, "depth": DEPTH, "cards": cards}
     dest = os.path.join(HERE, "data", "toplists.json")
     with open(dest, "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
     print(f"\n{len(cards)} cards, {sum(len(c['rows']) for c in cards)} performances, "
-          f"{sum(len(c['once']) for c in cards)} performers -> {dest}")
+          f"{sum(len(c['once']) for c in cards)} performers, {wr} world records -> {dest}")
 
 
 if __name__ == "__main__":
