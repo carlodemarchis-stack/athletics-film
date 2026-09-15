@@ -71,6 +71,10 @@
     border:1px solid transparent; background:transparent; color:var(--muted-2)}
   .sx:hover{color:var(--ink); background:rgba(255,255,255,.05)}
   .sx.on{color:var(--track); border-color:rgba(226,87,47,.45); background:rgba(226,87,47,.08)}
+  .modesw{padding-left:14px; margin-left:2px; border-left:1px solid var(--line)}
+  .modesw .sx{cursor:default}
+  .modesw a.sx{cursor:pointer; text-decoration:none; display:inline-flex; align-items:center}
+  .modesw .sx.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
   .rec{text-align:right; line-height:1; min-width:0}
   .recline{display:flex; align-items:baseline; justify-content:flex-end; flex-wrap:wrap;
     gap:4px clamp(10px,1.6vw,22px)}
@@ -1107,7 +1111,10 @@ function eventCardHTML(sex){
   return `<div class="card__bg"></div><div class="ghostnum"></div>
     <div class="inner">
       <div class="head">
-        <div><div class="kicker"><div class="disc">World record progression</div>${sexTabs(sex)}</div>
+        <div><div class="kicker"><div class="disc">World record progression</div>${sexTabs(sex)}
+          <div class="sexsw modesw"><span class="sx on">World records</span>
+            <a class="sx tl" data-m="perf">Performances</a>
+            <a class="sx tl" data-m="once">Performers</a></div></div>
           <div class="title"><h1></h1><button class="notebtn" data-note title="About this chart">?</button></div></div>
         <div class="rec">
           <div class="recline"><div class="who"></div><div class="v"></div></div>
@@ -1182,9 +1189,17 @@ function eventNote(M){
   return out.join('');
 }
 
+/* The all-time film addresses its cards as "w-100-metres", after the toplist's own URL;
+   this one as "women-100-metres". Both are derived from the event, so each page can name a
+   card on the other and the tabs cross between them on the same event. */
+const tlSlug = c => (c.gender === 'women' ? 'w' : 'm') + '-'
+  + c.discipline.toLowerCase().replace(/,/g, '').replace(/[^a-z0-9]+/g, '-');
+
 function fillEventCard(root, M){
   const c = M.card;
   root.querySelector('.title h1').textContent = c.discipline;
+  root.querySelectorAll('.modesw a.tl').forEach(a =>
+    a.href = `toplists/?m=${a.dataset.m}#${tlSlug(c)}`);
   root.querySelector('.ghostnum').textContent = M.cur.perf;
   root.querySelector('.rec .v').innerHTML = M.cur.perf + (M.cur.wind ? `<small>${M.cur.wind}</small>` : '');
   root.querySelector('.rec .who').innerHTML = flagOf(M.cur.country) + nameHTML(M.cur.who);

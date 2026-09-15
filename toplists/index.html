@@ -59,7 +59,16 @@
     width:100%; max-width:1560px; margin:0 auto; gap:clamp(7px,1.2vh,14px)}
 
   /* ---------- head ---------- */
-  .head{display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex:0 0 auto}
+  /* the mark spans the title and the stats when the row can hold both, and only the title
+     when it cannot — a narrow window would otherwise wrap the stats onto a second line and
+     cost the ladder more height than the mark ever gained */
+  .top2{display:grid; grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:"tl rec" "sb rec";
+    gap:clamp(7px,1.2vh,14px) clamp(18px,2.4vw,40px); align-items:stretch; flex:0 0 auto}
+  .top2.narrow{grid-template-areas:"tl rec" "sb sb"}
+  .tl{grid-area:tl; display:flex; flex-direction:column; gap:clamp(7px,1.2vh,14px); min-width:0}
+  .rec{grid-area:rec}
+  .statbar{grid-area:sb}
   .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
   .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
   .title h1{font-size:clamp(26px,4.2vh,50px); font-weight:800; letter-spacing:-.025em; white-space:nowrap}
@@ -72,7 +81,9 @@
   .sx.on{color:var(--track); border-color:rgba(226,87,47,.45); background:rgba(226,87,47,.08)}
   .modesw{padding-left:14px; margin-left:2px; border-left:1px solid var(--line)}
   .modesw .sx.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
-  .rec{text-align:right; line-height:1; min-width:0}
+  .modesw a.sx{text-decoration:none; display:inline-flex; align-items:center}
+  .rec{display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+    text-align:right; line-height:1; min-width:0}
   .rec .v{font-size:calc(clamp(32px,5.8vh,70px) * var(--rs,1));
     font-weight:800; letter-spacing:-.035em; color:var(--gold)}
   .rec .v small{font-size:.34em; font-weight:700; color:var(--muted); letter-spacing:0; margin-left:8px}
@@ -117,7 +128,8 @@
     gap:clamp(14px,2.2vw,32px); flex:1 1 auto; min-height:0}
 
   /* the ladder — two columns, filled down the first and on down the second */
-  .ladder{display:grid; grid-auto-flow:column; grid-template-columns:repeat(2,minmax(0,1fr));
+  .ladder{display:grid; grid-auto-flow:column;
+    grid-template-columns:repeat(var(--cols,2),minmax(0,1fr));
     grid-template-rows:repeat(var(--half,25),minmax(0,1fr));
     column-gap:clamp(10px,1.5vw,26px); min-height:0; font-size:var(--rf,12px)}
   .lr{min-width:0; min-height:0; display:grid; align-items:center; gap:0 7px;
@@ -286,7 +298,8 @@
     .card:not(.on){display:none}            /* one card at a time, since the track no longer slides */
     .card__bg{position:fixed}
     .ghostnum{font-size:34vw; top:-1vh}
-    .head{flex-direction:column; align-items:flex-start; gap:10px}
+    .top2{grid-template-columns:1fr; gap:10px}
+    .rec{align-items:flex-start}
     /* four pills do not fit a phone's width, and the card clips what overflows — which
        would put Performers off the screen with no way to reach it */
     .kicker{flex-wrap:wrap; gap:8px 10px; max-width:100%}
@@ -475,6 +488,12 @@ const betterIsLower = d => TIMED.test(d) && !/Jump|Vault|Put|Throw/.test(d);
 const windy = d => /100 Metres|200 Metres|Hurdles|Long Jump|Triple Jump/.test(d)
   && !/400|800|4x/.test(d);
 
+/* The record film addresses its cards as "women-100-metres"; this one as "w-100-metres",
+   after the toplist's own URL. Both are derived from the event, so either page can name a
+   card on the other and the tabs can cross between them on the same event. */
+const recSlug = c => (c.gender + '-' + c.discipline)
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
 /* the watermark: the event in as few characters as it survives */
 function shortEv(d){
   const m = d.match(/^([\d,]+)\s*Metres(\s+Hurdles)?$/);
@@ -500,7 +519,7 @@ function model(card, mode){
   const src = (once ? card.once : card.rows) || card.rows;
   const rows = src.map(r => ({...r, v: parseMark(r.mark), year: yearOf(r.date),
                               when: whenOf(r.date)}));
-  const keyOf = r => once ? (r.nat || '—') : r.name;
+  const keyOf = r => once ? (r.nat || '—') : r.name;   /* a nation, or the athlete */
 
   /* the order marks come in already, but make the ranking explicit */
   const best = rows[0].v, worst = rows[rows.length - 1].v;
@@ -563,11 +582,15 @@ function cardHTML(M, sex){
   const c = M.card, b = M.best;
   const wind = windy(c.discipline);
   const venue = cityOf(b.venue);
+  /* a short list reads better down one column: two would grow the type, and the fixed rank,
+     mark, wind and year columns grow with it, leaving the name less room than it started */
+  const cols = M.rows.length > 34 ? 2 : 1;
+  const half = Math.ceil(M.rows.length / cols);
   return `<div class="card__bg"></div>
   <div class="ghostnum">${esc(shortEv(c.discipline))}</div>
   <div class="inner">
-    <div class="head">
-      <div>
+    <div class="top2">
+      <div class="tl">
         <div class="kicker">
           <div class="disc">${esc(c.group)}</div>
           <div class="sexsw">
@@ -577,18 +600,13 @@ function cardHTML(M, sex){
           <div class="sexsw modesw">
             <button class="sx ${M.once ? '' : 'on'}" data-mode="perf">Performances</button>
             <button class="sx ${M.once ? 'on' : ''}" data-mode="once">Performers</button>
+            <a class="sx" href="../#${esc(recSlug(c))}">World records</a>
           </div>
         </div>
         <div class="title"><h1>${esc(c.discipline)}</h1></div>
       </div>
-      <div class="rec">
-        <div class="v">${esc(b.mark)}${wind && b.wind ? `<small>${esc(b.wind)}</small>` : ''}</div>
-        <div class="who">${nameHTML(b.name, b.team)} ${flagOf(b.nat)}</div>
-        <div class="w">Best ever &middot; <b>${esc(venue)}</b> &middot; ${esc(b.date)}</div>
-      </div>
-    </div>
 
-    <div class="statbar">
+      <div class="statbar">
       <div class="stat"><div class="v">${M.rows.length}</div>
         <div class="k">marks in the top ${TOP}</div></div>
       <div class="stat"><div class="v">${M.once ? M.nations : M.people}</div>
@@ -599,6 +617,13 @@ function cardHTML(M, sex){
       <div class="stat"><div class="v">${M.minYear}</div><div class="k">oldest mark</div></div>
       ${M.wr ? `<div class="stat"><div class="v hl">${M.wr}</div>
         <div class="k">were world records</div></div>` : ''}
+      </div>
+
+      <div class="rec">
+        <div class="v">${esc(b.mark)}${wind && b.wind ? `<small>${esc(b.wind)}</small>` : ''}</div>
+        <div class="who">${nameHTML(b.name, b.team)} ${flagOf(b.nat)}</div>
+        <div class="w">Best ever &middot; <b>${esc(venue)}</b> &middot; ${esc(b.date)}</div>
+      </div>
     </div>
 
     <div class="owners">
@@ -614,10 +639,10 @@ function cardHTML(M, sex){
     </div>
 
     <div class="body">
-      <div class="ladder ${wind ? '' : 'nowind'}" style="--half:${
-        Math.ceil(M.rows.length / 2)}">${M.rows.map((r, i) => `
+      <div class="ladder ${wind ? '' : 'nowind'}" style="--cols:${cols}; --half:${half}"
+        >${M.rows.map((r, i) => `
         <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''} ${
-               i === 0 || i === Math.ceil(M.rows.length / 2) ? 'nb' : ''}"
+               i === 0 || (cols > 1 && i === half) ? 'nb' : ''}"
              data-i="${i}" data-a="${r.a}" data-d="${r.d}" style="--c:${r.c}">
           <span class="lk">${r.tie ? '=' : r.rank}</span>
           <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
@@ -626,8 +651,8 @@ function cardHTML(M, sex){
           <span class="lnm" title="${esc(teamOf(r.name))}${
             r.wr ? r.wr === 2 ? ' — equalled the world record' : ' — world record' : ''}"><span
             class="n">${ladderName(r.name, r.team)}</span>${flagOf(r.nat)}${
-            r.wr ? `<i class="wr${r.wr === 2 ? ' eq' : ''}">${r.wr === 2 ? '=WR' : 'WR'}</i>` : ''
-            }</span>
+            r.wr ? `<i class="wr${r.wr === 2 ? ' eq' : ''}">${
+              r.wr === 2 ? '=WR' : 'WR'}</i>` : ''}</span>
         </div>`).join('')}</div>
       <div class="chartwrap"><svg></svg><div class="decbar"></div><div class="tip"></div></div>
     </div>
@@ -766,20 +791,64 @@ function drawEra(M, root, animate){
    the left one and the head as tall as the taller of the two. Rather than restructure it, the
    three lines scale together until they sit inside the room the left column already takes —
    and only then, so a card whose lines already fit keeps its type at full size. */
+/* The left column holds the kicker, the title and the stats; the mark holds the whole of
+   that height beside them. Its type is grown until it fills that height or reaches the width
+   the left column can spare, and shrunk in the rare case it starts out taller — the air
+   between its lines going first, since that costs nothing to read.
+
+   Both heights are measured from the children rather than the boxes: the two are grid
+   columns of one row, so a stretched box would report the row's height and grow on itself. */
+function natural(el){
+  const gap = parseFloat(getComputedStyle(el).rowGap) || 0;
+  const kids = [...el.children];
+  return kids.reduce((a, e) => a + e.getBoundingClientRect().height, 0)
+         + gap * Math.max(0, kids.length - 1);
+}
+
 function fitRec(root){
-  const rec = root.querySelector('.rec'), left = root.querySelector('.head > div');
+  const rec = root.querySelector('.rec'), left = root.querySelector('.tl');
   if (!rec || !left) return;
-  rec.style.setProperty('--rg', 1);
-  rec.style.setProperty('--rs', 1);
-  /* a phone stacks the head and scrolls the card, so nothing there is competing for height */
+  const set = k => { rec.style.setProperty('--rs', k); rec.style.setProperty('--rg', k); };
+  set(1);
+  /* a phone stacks the head and scrolls the card, so nothing there competes for height */
   if (NARROW()) return;
-  const room = left.getBoundingClientRect().height;
-  if (room < 20) return;
-  const tall = () => rec.getBoundingClientRect().height > room + .5;
-  /* the air between the lines goes first — it costs nothing to read */
-  for (let g = 1; g > .28 && tall(); g -= .09) rec.style.setProperty('--rg', g.toFixed(2));
-  /* and only then the type, down to a floor that keeps the mark the largest thing here */
-  for (let k = 1; k > .82 && tall(); k -= .02) rec.style.setProperty('--rs', k.toFixed(2));
+  /* Does the row have width for the stats and the mark side by side? The stats are measured
+     from their own children, since they may already have wrapped. If not, the mark keeps to
+     the title's row and the stats take the full width under both, as they used to. */
+  const top2 = root.querySelector('.inner').querySelector('.top2');
+  const inner = root.querySelector('.inner').clientWidth;
+  const sb = root.querySelector('.statbar');
+  const sgap = parseFloat(getComputedStyle(sb).columnGap) || 0;
+  const kids = [...sb.children];
+  const need = kids.reduce((a, e) => a + e.getBoundingClientRect().width, 0)
+               + sgap * Math.max(0, kids.length - 1);
+  const grid = parseFloat(getComputedStyle(top2).columnGap) || 0;
+  const rowGap = parseFloat(getComputedStyle(top2).rowGap) || 0;
+  const MINREC = 260;
+  const wide = need + MINREC + grid + 8 <= inner;
+  top2.classList.toggle('narrow', !wide);
+
+  const room = wide
+    ? natural(left) + rowGap + sb.getBoundingClientRect().height
+    : natural(left);
+  if (room < 30) return;
+  const maxW = Math.max(MINREC, inner - need - grid - 8);
+  const over = () => natural(rec) > room - .5 || rec.getBoundingClientRect().width > maxW;
+
+  if (over()){
+    for (let g = 1; g > .28 && natural(rec) > room - .5; g -= .09)
+      rec.style.setProperty('--rg', g.toFixed(2));
+    for (let k = 1; k > .7 && over(); k -= .02) rec.style.setProperty('--rs', k.toFixed(2));
+    return;
+  }
+  let k = 1;
+  while (k < 2.4){
+    const nk = +(k + .04).toFixed(2);
+    set(nk);
+    if (over()) break;
+    k = nk;
+  }
+  set(k.toFixed(2));
 }
 
 const GAP = 2, PAD = 7, FMAX = 9.5, FMIN = 6.5;
@@ -885,10 +954,25 @@ function runLadder(root, animate){
   LADDER_T.forEach(clearTimeout); LADDER_T = [];
   const ladder = root.querySelector('.ladder');
   const rows = [...ladder.querySelectorAll('.lr')];
+  const H = ladder.clientHeight;
+
+  /* One column or two, decided by what the rows would be left with. A short list down one
+     column keeps its names whole; splitting it would only grow the type, and the rank, mark,
+     wind and year columns are set in em and grow with it — so the name ends up with less
+     room than it had. Two columns are for when one would squeeze the rows below reading. */
+  if (H > 40 && rows.length){
+    const cols = H / rows.length >= 16 ? 1 : 2;
+    const half = Math.ceil(rows.length / cols);
+    ladder.style.setProperty('--cols', cols);
+    ladder.style.setProperty('--half', half);
+    rows.forEach((r, i) => r.classList.toggle('nb', i === 0 || (cols > 1 && i === half)));
+  }
+
+  const half = +ladder.style.getPropertyValue('--half') || rows.length || 1;
+  const rh = H / half;
   /* the rows share the height of one column, so the type has to be measured, not guessed */
-  const rh = ladder.clientHeight / Math.max(1, Math.ceil(rows.length / 2));
   if (rh > 4) ladder.style.setProperty('--rf',
-    Math.max(8.5, Math.min(14.5, rh * 0.52)).toFixed(1) + 'px');
+    Math.max(7.5, Math.min(14.5, rh * 0.52)).toFixed(1) + 'px');
   rows.forEach((r, i) => {
     if (!animate){ r.classList.add('in'); return; }
     r.classList.remove('in');
@@ -898,8 +982,12 @@ function runLadder(root, animate){
 
 /* ---------------------------------------------------------------- the deck */
 let SLIDES = [], IDX = 0, TIMER = null, SEX = 'women', TOP = 50;
-let MODE = (() => { try { return localStorage.getItem('atf.mode') || 'perf'; }
-                    catch(e){ return 'perf'; } })();
+/* ?m=perf|once lets the record film link straight to the reading it names */
+let MODE = (() => {
+  const q = new URLSearchParams(location.search).get('m');
+  if (q === 'perf' || q === 'once') return q;
+  try { return localStorage.getItem('atf.mode') || 'perf'; } catch(e){ return 'perf'; }
+})();
 const FILMS = {};
 
 function render(s){
@@ -912,8 +1000,15 @@ function setMode(m){
   MODE = m;
   try { localStorage.setItem('atf.mode', m); } catch(e){}
   render(SLIDES[IDX]);            /* the rest are redrawn as they are reached */
-  buildJump(); markJump(); updateSocialMeta();
+  buildJump(); markJump(); updateSocialMeta(); syncURL();
   paint(true);
+}
+
+/* The address bar carries the whole of what you are looking at — the card and which reading
+   of it — so a reload lands back here and a copied link opens on the same thing. */
+function syncURL(){
+  const s = SLIDES[IDX];
+  if (s) history.replaceState(null, '', `?m=${MODE}#${s.slug}`);
 }
 
 /* GitHub Pages serves both files with max-age=600, so a freshly deployed page can otherwise
@@ -973,7 +1068,7 @@ function go(i, fromHash){
   document.getElementById('cnum').textContent = IDX - f.start + 1;
   document.getElementById('ctot').textContent = f.len;
   const slug = SLIDES[IDX].slug;
-  if (!fromHash) history.replaceState(null, '', '#' + slug);
+  syncURL();
   try { localStorage.setItem('atf.card', slug); } catch(e){}
   buildJump(); markJump(); updateSocialMeta();
   if (NARROW()) scrollTo(0, 0);
