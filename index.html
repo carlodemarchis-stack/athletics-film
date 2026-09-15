@@ -431,6 +431,13 @@
     older lists carrying marks from lineages that were later dropped — the men's 400 m goes 47.8 in 1900
     then 48.2 in 1912, when the IAAF ratified its first list. None of it is smoothed over.</p>
 
+    <h3>The all-time lists</h3>
+    <p>This film is one of two. A record progression says how the limit moved; the
+    <b>all-time lists</b> say who else got near it. The tabs at the top of each card cross to the
+    same event there: <b>Performances</b> is the fifty best marks ever set, where a name repeats as
+    often as it earned the place, and <b>Performers</b> is the fifty best athletes, one mark each.
+    Every mark that was a world record is flagged there, from this film's own data.</p>
+
     <h3>Keys</h3>
     <div class="keys">
       <kbd>←</kbd><span>Previous card</span>
@@ -439,6 +446,9 @@
       <kbd>R</kbd><span>Replay the ghost race</span>
       <kbd>F</kbd><span>Fullscreen</span>
       <kbd>S</kbd><span>Whole-sport stats</span>
+      <kbd>W</kbd><span>World records &mdash; this film</span>
+      <kbd>T</kbd><span>All-time list, one mark per athlete</span>
+      <kbd>P</kbd><span>All-time list, every performance</span>
       <kbd>H</kbd><span>This panel</span>
     </div>
 
@@ -2837,6 +2847,13 @@ addEventListener('keydown', e => {
   else if (e.key.toLowerCase() === 'h') openHelp();
   else if (e.key.toLowerCase() === 'r'){ const s = SLIDES[IDX];
     if (s && s.M) (s.M.field ? drawPit : drawRace)(s.M, s.el); }
+  /* W is this film; T and P cross to the all-time lists on the same event. The links are
+     already on the card, so there is one place that knows how to name the other page. */
+  else if ('tp'.includes(e.key.toLowerCase())){
+    const a = SLIDES[IDX].el.querySelector(
+      `.modesw a.tl[data-m="${e.key.toLowerCase() === 't' ? 'once' : 'perf'}"]`);
+    if (a) location.href = a.href;
+  }
 });
 
 new ResizeObserver(paint).observe(document.getElementById('track'));

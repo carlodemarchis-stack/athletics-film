@@ -407,6 +407,10 @@
     one; its dot on the chart wears a gold ring. Rank 1 is always the record still standing.
     The records come from this page's companion, the <a href="../">World Record Film</a>, which
     holds every ratified progression &mdash; so the two reels agree by construction.</p>
+    <p>The tabs at the top of the card cross between the two on the same event: <b>World
+    records</b> opens the progression there, <b>Performers</b> and <b>Performances</b> are the
+    two readings here. The address bar carries both the card and the reading, so a reload lands
+    back where you were and a copied link opens on the same thing.</p>
     <p>Marks are wind-legal and electronically timed. An <b>i</b> beside a mark means it was
     set indoors.</p>
     <div class="keys">
@@ -414,6 +418,9 @@
       <kbd>&rarr;</kbd><span>Next card</span>
       <kbd>Space</kbd><span>Play / pause</span>
       <kbd>R</kbd><span>Play it again</span>
+      <kbd>P</kbd><span>Performances &mdash; every mark</span>
+      <kbd>T</kbd><span>Performers &mdash; one each</span>
+      <kbd>W</kbd><span>World records, same event</span>
       <kbd>F</kbd><span>Fullscreen</span>
       <kbd>H</kbd><span>This panel</span>
     </div>
@@ -1203,6 +1210,13 @@ addEventListener('keydown', e => {
   else if (e.key.toLowerCase() === 'f') toggleFS();
   else if (e.key.toLowerCase() === 'h') openHelp();
   else if (e.key.toLowerCase() === 'r') paint(true);
+  /* T and P are the two readings here; W crosses to the record film on the same event */
+  else if (e.key.toLowerCase() === 't') setMode('once');
+  else if (e.key.toLowerCase() === 'p') setMode('perf');
+  else if (e.key.toLowerCase() === 'w'){
+    const a = SLIDES[IDX].el.querySelector('.modesw a.sx');
+    if (a) location.href = a.href;
+  }
 });
 
 document.addEventListener('mouseover', e => {
