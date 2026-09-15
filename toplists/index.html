@@ -72,18 +72,20 @@
   .sx.on{color:var(--track); border-color:rgba(226,87,47,.45); background:rgba(226,87,47,.08)}
   .modesw{padding-left:14px; margin-left:2px; border-left:1px solid var(--line)}
   .modesw .sx.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
-  .rec{display:flex; align-items:baseline; justify-content:flex-end;
-    gap:clamp(11px,1.5vw,22px); text-align:right; line-height:1; min-width:0}
-  .rec .lines{display:flex; flex-direction:column; align-items:flex-end; gap:8px; min-width:0}
-  .rec .v{font-size:clamp(32px,5.8vh,70px); font-weight:800; letter-spacing:-.035em; color:var(--gold)}
+  .rec{text-align:right; line-height:1; min-width:0}
+  .rec .v{font-size:calc(clamp(32px,5.8vh,70px) * var(--rs,1));
+    font-weight:800; letter-spacing:-.035em; color:var(--gold)}
   .rec .v small{font-size:.34em; font-weight:700; color:var(--muted); letter-spacing:0; margin-left:8px}
   .rec .who{display:flex; align-items:baseline; justify-content:flex-end; gap:10px;
-    font-size:clamp(16px,2.5vh,28px); font-weight:800; letter-spacing:-.02em; white-space:nowrap}
+    margin-top:calc(8px * var(--rg,1));
+    font-size:calc(clamp(16px,2.5vh,28px) * var(--rs,1));
+    font-weight:800; letter-spacing:-.02em; white-space:nowrap}
   .rec .who .f{font-weight:300; opacity:.85}
   .flag{font-size:1.05em; line-height:1}
   .cc{font-size:.46em; font-weight:800; letter-spacing:.08em; color:var(--muted);
     border:1px solid var(--line); border-radius:4px; padding:3px 6px; vertical-align:.28em}
-  .rec .w{font-size:12.5px; font-weight:600; color:var(--muted);
+  .rec .w{font-size:calc(12.5px * var(--rs,1)); font-weight:600; color:var(--muted);
+    margin-top:calc(9px * var(--rg,1));
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%}
   .rec .w b{color:var(--ink); font-weight:800; white-space:nowrap}
 
@@ -289,8 +291,7 @@
        would put Performers off the screen with no way to reach it */
     .kicker{flex-wrap:wrap; gap:8px 10px; max-width:100%}
     .modesw{padding-left:0; margin-left:0; border-left:0}
-    .rec{display:block; text-align:left}
-    .rec .lines{align-items:flex-start; margin-top:8px}
+    .rec{text-align:left}
     .rec .who{justify-content:flex-start}
     .title h1{font-size:clamp(26px,8vw,40px); white-space:normal}
     .body{grid-template-columns:1fr; gap:16px}
@@ -582,10 +583,8 @@ function cardHTML(M, sex){
       </div>
       <div class="rec">
         <div class="v">${esc(b.mark)}${wind && b.wind ? `<small>${esc(b.wind)}</small>` : ''}</div>
-        <div class="lines">
-          <div class="who">${nameHTML(b.name, b.team)} ${flagOf(b.nat)}</div>
-          <div class="w">Best ever &middot; <b>${esc(venue)}</b> &middot; ${esc(b.date)}</div>
-        </div>
+        <div class="who">${nameHTML(b.name, b.team)} ${flagOf(b.nat)}</div>
+        <div class="w">Best ever &middot; <b>${esc(venue)}</b> &middot; ${esc(b.date)}</div>
       </div>
     </div>
 
@@ -763,6 +762,26 @@ function drawEra(M, root, animate){
    bends by a few pixels rather than dropping a name, and only wraps when even the shrunken
    names cannot fit — a 10,000m card carries thirty-two athletes, and no single seventeen
    pixel bar was ever going to hold thirty-two names. */
+/* The mark, the name and the venue stack on the right, which makes that column taller than
+   the left one and the head as tall as the taller of the two. Rather than restructure it, the
+   three lines scale together until they sit inside the room the left column already takes —
+   and only then, so a card whose lines already fit keeps its type at full size. */
+function fitRec(root){
+  const rec = root.querySelector('.rec'), left = root.querySelector('.head > div');
+  if (!rec || !left) return;
+  rec.style.setProperty('--rg', 1);
+  rec.style.setProperty('--rs', 1);
+  /* a phone stacks the head and scrolls the card, so nothing there is competing for height */
+  if (NARROW()) return;
+  const room = left.getBoundingClientRect().height;
+  if (room < 20) return;
+  const tall = () => rec.getBoundingClientRect().height > room + .5;
+  /* the air between the lines goes first — it costs nothing to read */
+  for (let g = 1; g > .28 && tall(); g -= .09) rec.style.setProperty('--rg', g.toFixed(2));
+  /* and only then the type, down to a floor that keeps the mark the largest thing here */
+  for (let k = 1; k > .82 && tall(); k -= .02) rec.style.setProperty('--rs', k.toFixed(2));
+}
+
 const GAP = 2, PAD = 7, FMAX = 9.5, FMIN = 6.5;
 
 /* A partial decade can be two years wide; drop its count, then its label, rather than
@@ -975,6 +994,7 @@ function paint(animate){
     if (!s) return;
     runLadder(s.el, !!animate);
     drawEra(s.M, s.el, !!animate);
+    fitRec(s.el);
     fitOwners(s.el);
   }, 60);
 }
