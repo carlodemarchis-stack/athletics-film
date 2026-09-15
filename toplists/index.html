@@ -72,7 +72,7 @@
   .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
   .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
   .title h1{font-size:clamp(26px,4.2vh,50px); font-weight:800; letter-spacing:-.025em; white-space:nowrap}
-  .kicker{display:flex; align-items:center; gap:14px}
+  .kicker{display:flex; align-items:center; gap:6px 14px; flex-wrap:wrap}
   .sexsw{display:flex; gap:6px; align-items:center}
   .sx{font-size:10.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
     padding:5px 12px; border-radius:999px; cursor:pointer; font-family:inherit; transition:.15s;
@@ -82,6 +82,9 @@
   .modesw{padding-left:14px; margin-left:2px; border-left:1px solid var(--line)}
   .modesw .sx.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
   .modesw a.sx{text-decoration:none; display:inline-flex; align-items:center}
+  .tlab{font-size:10.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--muted-2); white-space:nowrap; padding-left:13px; margin-left:3px;
+    border-left:1px solid var(--line)}
   .rec{display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
     text-align:right; line-height:1; min-width:0}
   .rec .v{font-size:calc(clamp(32px,5.8vh,70px) * var(--rs,1));
@@ -598,9 +601,10 @@ function cardHTML(M, sex){
             <button class="sx ${sex === 'men' ? 'on' : ''}" data-sex="men">Men</button>
           </div>
           <div class="sexsw modesw">
-            <button class="sx ${M.once ? '' : 'on'}" data-mode="perf">Performances</button>
-            <button class="sx ${M.once ? 'on' : ''}" data-mode="once">Performers</button>
             <a class="sx" href="../#${esc(recSlug(c))}">World records</a>
+            <span class="tlab">Top Lists</span>
+            <button class="sx ${M.once ? 'on' : ''}" data-mode="once">Performers</button>
+            <button class="sx ${M.once ? '' : 'on'}" data-mode="perf">Performances</button>
           </div>
         </div>
         <div class="title"><h1>${esc(c.discipline)}</h1></div>
@@ -818,10 +822,14 @@ function fitRec(root){
   const top2 = root.querySelector('.inner').querySelector('.top2');
   const inner = root.querySelector('.inner').clientWidth;
   const sb = root.querySelector('.statbar');
-  const sgap = parseFloat(getComputedStyle(sb).columnGap) || 0;
-  const kids = [...sb.children];
-  const need = kids.reduce((a, e) => a + e.getBoundingClientRect().width, 0)
-               + sgap * Math.max(0, kids.length - 1);
+  /* what the left column needs is the widest of its rows — the tabs or the stats */
+  const row = el => {
+    const g = parseFloat(getComputedStyle(el).columnGap) || 0;
+    const kids = [...el.children].filter(e => e.offsetParent !== null || e.getClientRects().length);
+    return kids.reduce((a, e) => a + e.getBoundingClientRect().width, 0)
+           + g * Math.max(0, kids.length - 1);
+  };
+  const need = Math.max(row(sb), row(root.querySelector('.kicker')));
   const grid = parseFloat(getComputedStyle(top2).columnGap) || 0;
   const rowGap = parseFloat(getComputedStyle(top2).rowGap) || 0;
   const MINREC = 260;

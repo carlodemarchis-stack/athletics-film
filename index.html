@@ -64,7 +64,7 @@
   .disc{font-size:11px; font-weight:800; letter-spacing:.24em; color:var(--muted-2); text-transform:uppercase}
   .title{display:flex; align-items:baseline; gap:14px; line-height:.92; margin-top:6px}
   .title h1{font-size:clamp(28px,4.5vh,52px); font-weight:800; letter-spacing:-.025em; white-space:nowrap}
-  .kicker{display:flex; align-items:center; gap:14px}
+  .kicker{display:flex; align-items:center; gap:6px 14px; flex-wrap:wrap}
   .sexsw{display:flex; gap:6px; align-items:center}
   .sx{font-size:10.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
     padding:5px 12px; border-radius:999px; cursor:pointer; font-family:inherit; transition:.15s;
@@ -75,6 +75,9 @@
   .modesw .sx{cursor:default}
   .modesw a.sx{cursor:pointer; text-decoration:none; display:inline-flex; align-items:center}
   .modesw .sx.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
+  .tlab{font-size:10.5px; font-weight:800; letter-spacing:.15em; text-transform:uppercase;
+    color:var(--muted-2); white-space:nowrap; padding-left:13px; margin-left:3px;
+    border-left:1px solid var(--line)}
   .rec{text-align:right; line-height:1; min-width:0}
   .recline{display:flex; align-items:baseline; justify-content:flex-end; flex-wrap:wrap;
     gap:4px clamp(10px,1.6vw,22px)}
@@ -1113,8 +1116,9 @@ function eventCardHTML(sex){
       <div class="head">
         <div><div class="kicker"><div class="disc">World record progression</div>${sexTabs(sex)}
           <div class="sexsw modesw"><span class="sx on">World records</span>
-            <a class="sx tl" data-m="perf">Performances</a>
-            <a class="sx tl" data-m="once">Performers</a></div></div>
+            <span class="tlab">Top Lists</span>
+            <a class="sx tl" data-m="once">Performers</a>
+            <a class="sx tl" data-m="perf">Performances</a></div></div>
           <div class="title"><h1></h1><button class="notebtn" data-note title="About this chart">?</button></div></div>
         <div class="rec">
           <div class="recline"><div class="who"></div><div class="v"></div></div>
