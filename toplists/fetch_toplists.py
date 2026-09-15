@@ -47,8 +47,9 @@ SLUG = {
     "4x400 Metres Relay": "relays/4x400-metres-relay",
 }
 
-QS = ("?regionType=world&timing=electronic&windReading=regular&page={page}&bestResultsOnly=false"
-      "&firstDay=1900-01-01&lastDay={last}&maxResultsByCountry=all&ageCategory=senior")
+QS = ("?regionType=world&timing=electronic&windReading=regular&page={page}"
+      "&bestResultsOnly={best}&firstDay=1900-01-01&lastDay={last}"
+      "&maxResultsByCountry=all&ageCategory=senior")
 
 
 def gql(query, tries=4):
@@ -86,9 +87,9 @@ def clean(s):
     return ' '.join(html.unescape(re.sub(r'<[^>]+>', ' ', s)).split())
 
 
-def fetch(path, gender, last_day, page_no, tries=3):
+def fetch(path, gender, last_day, page_no, best, tries=3):
     url = f"https://worldathletics.org/records/all-time-toplists/{path}/all/{gender}/senior" \
-          + QS.format(last=last_day, page=page_no)
+          + QS.format(last=last_day, page=page_no, best="true" if best else "false")
     for n in range(tries):
         try:
             return url, urllib.request.urlopen(urllib.request.Request(url, headers=UA),
@@ -99,12 +100,15 @@ def fetch(path, gender, last_day, page_no, tries=3):
             time.sleep(2 * (n + 1))
 
 
-def toplist(path, gender, last_day):
+def toplist(path, gender, last_day, best=False):
     """A page holds 100 rows. A deep cut through a field event can tie its way past that,
-    so keep turning pages until one ends below the cut."""
+    so keep turning pages until one ends below the cut.
+
+    best=False is every mark ever set. best=True is one row per athlete, their best — the
+    same fifty ranks read as fifty people instead of fifty performances."""
     rows, url, page_no = [], None, 1
     while True:
-        url1, page = fetch(path, gender, last_day, page_no)
+        url1, page = fetch(path, gender, last_day, page_no, best)
         if page_no == 1:
             url = url1
         got = parse_rows(page)
@@ -160,17 +164,21 @@ def main():
         if not rows:
             print(f"  !! empty list: {e['gender']} {e['discipline']}", file=sys.stderr)
             continue
+        time.sleep(.45)
+        once, _ = toplist(path, e["gender"], last_day, best=True)
         people = len({r["name"] for r in rows})
-        print(f"  {e['gender']:5} {e['discipline']:20} {len(rows):3} marks  {people:2} athletes"
-              f"  {rows[0]['mark']} … {rows[-1]['mark']}")
-        cards.append({**e, "slug": path.split("/")[1], "source": url, "rows": rows})
+        print(f"  {e['gender']:5} {e['discipline']:20} {len(rows):3} marks by {people:2}"
+              f"  |{len(once):4} performers   {rows[0]['mark']} … {rows[-1]['mark']}")
+        cards.append({**e, "slug": path.split("/")[1], "source": url,
+                      "rows": rows, "once": once})
         time.sleep(.45)
 
     out = {"fetched": last_day, "depth": DEPTH, "cards": cards}
     dest = os.path.join(HERE, "data", "toplists.json")
     with open(dest, "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
-    print(f"\n{len(cards)} cards, {sum(len(c['rows']) for c in cards)} marks -> {dest}")
+    print(f"\n{len(cards)} cards, {sum(len(c['rows']) for c in cards)} performances, "
+          f"{sum(len(c['once']) for c in cards)} performers -> {dest}")
 
 
 if __name__ == "__main__":

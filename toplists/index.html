@@ -70,6 +70,8 @@
     border:1px solid transparent; background:transparent; color:var(--muted-2)}
   .sx:hover{color:var(--ink); background:rgba(255,255,255,.05)}
   .sx.on{color:var(--track); border-color:rgba(226,87,47,.45); background:rgba(226,87,47,.08)}
+  .modesw{padding-left:14px; margin-left:2px; border-left:1px solid var(--line)}
+  .modesw .sx.on{color:var(--gold); border-color:rgba(242,193,78,.42); background:rgba(242,193,78,.1)}
   .rec{text-align:right; line-height:1; min-width:0}
   .rec .v{font-size:clamp(32px,5.8vh,70px); font-weight:800; letter-spacing:-.035em; color:var(--gold)}
   .rec .v small{font-size:.34em; font-weight:700; color:var(--muted); letter-spacing:0; margin-left:8px}
@@ -274,6 +276,10 @@
     .card__bg{position:fixed}
     .ghostnum{font-size:34vw; top:-1vh}
     .head{flex-direction:column; align-items:flex-start; gap:10px}
+    /* four pills do not fit a phone's width, and the card clips what overflows — which
+       would put Performers off the screen with no way to reach it */
+    .kicker{flex-wrap:wrap; gap:8px 10px; max-width:100%}
+    .modesw{padding-left:0; margin-left:0; border-left:0}
     .rec{text-align:left}
     .rec .who{justify-content:flex-start}
     .title h1{font-size:clamp(26px,8vw,40px); white-space:normal}
@@ -350,9 +356,11 @@
     <h2>The All-Time Film</h2>
     <div class="csub">A guy with a scarf</div>
     <p>One card per event, women's reel and men's reel, in the order World Athletics lists
-    them. Each card holds the <b>fifty best marks ever</b> in that event — every performance,
-    not one per athlete, so the same name can appear again and again. That repetition is the
-    point: Mondo Duplantis owns nineteen of the twenty best pole vaults ever cleared.</p>
+    them. Each card holds the <b>fifty best marks ever</b> in that event, read either way.
+    <b>Performances</b> counts every mark ever set, so a name repeats as often as it earned
+    the place — Mondo Duplantis has forty-three of the fifty best vaults. <b>Performers</b>
+    keeps one mark per athlete, their best, so the same fifty ranks become fifty different
+    people. The switch sits beside Women and Men, and changes the card in place.</p>
     <p>Because marks tie, fifty is a rank and not a row count. Everyone ranked fiftieth or
     better is here, so a card may carry <b>more than fifty</b> — the women's high jump carries
     sixty-six, since so many share the same heights. Tied marks keep World Athletics' shared
@@ -361,9 +369,15 @@
     colour per athlete. The
     <b>chart</b> on the right puts the same marks where they happened in time, which is where
     each event tells on itself: the men's marathon list is almost entirely the last ten years,
-    the women's shot put has not admitted a new mark since 1987.</p>
+    the women's shot put has not admitted a new mark since 1988.</p>
+    <p>The bar above the ladder is who owns the list &mdash; by athlete under Performances,
+    by nation under Performers, where one mark each would only make fifty identical segments.
+    The band under the chart is the decades, each as wide as its slice of the axis and as
+    bright as the number of marks it holds. <b>Hovering</b> anything lights everything it
+    belongs to: a row rings its mark on the chart, a name lights all of theirs, a decade
+    lights its own.</p>
     <p>Marks are wind-legal and electronically timed. An <b>i</b> beside a mark means it was
-    set indoors. The bar at the top of the card shows who owns the list.</p>
+    set indoors.</p>
     <div class="keys">
       <kbd>&larr;</kbd><span>Previous card</span>
       <kbd>&rarr;</kbd><span>Next card</span>
@@ -449,17 +463,25 @@ const HUES = ['#d9834a','#6f8fb8','#8fb98a','#b98aa8','#6fa9b8','#c0a05c','#9a8f
               '#7fae9b','#c4a2a2','#8aa2c4','#bfa06f','#9fb87f','#ad8fa6','#7fa8ad','#c08f7f'];
 
 /* ---------------------------------------------------------------- model */
-function model(card){
+/* Two readings of the same fifty ranks: every mark ever set, or one mark per athlete.
+   In the first, a name repeats as often as it earned the place and the bar groups by
+   athlete — that repetition is the whole point of it. In the second every athlete appears
+   once, so grouping by athlete would give fifty identical segments and say nothing; the
+   bar groups by nation there instead. */
+function model(card, mode){
+  const once = mode === 'once';
   const lower = betterIsLower(card.discipline);
-  const rows = card.rows.map(r => ({...r, v: parseMark(r.mark), year: yearOf(r.date),
-                                    when: whenOf(r.date)}));
+  const src = (once ? card.once : card.rows) || card.rows;
+  const rows = src.map(r => ({...r, v: parseMark(r.mark), year: yearOf(r.date),
+                              when: whenOf(r.date)}));
+  const keyOf = r => once ? (r.nat || '—') : r.name;
 
   /* the order marks come in already, but make the ranking explicit */
   const best = rows[0].v, worst = rows[rows.length - 1].v;
   const span = Math.abs(best - worst) || 1;
 
   const byWho = new Map();
-  rows.forEach(r => byWho.set(r.name, (byWho.get(r.name) || 0) + 1));
+  rows.forEach(r => byWho.set(keyOf(r), (byWho.get(keyOf(r)) || 0) + 1));
   const team = new Set(rows.filter(r => r.id == null).map(r => r.name));
   const owners = [...byWho.entries()].sort((a, b) => b[1] - a[1]);
   const hue = new Map(owners.map(([n], i) => [n, HUES[i % HUES.length]]));
@@ -468,11 +490,12 @@ function model(card){
   /* two of the fifty best 10,000m runs belong to a Nawowuna, and they are different women:
      where a surname is shared on one card the bar carries the initial too */
   const bySur = new Map();
-  owners.forEach(([n]) => {
+  if (!once) owners.forEach(([n]) => {
     const sn = shortName(n, team.has(n));
     bySur.set(sn, (bySur.get(sn) || []).concat(n));
   });
   const label = new Map(owners.map(([n]) => {
+    if (once) return [n, n];                          /* a nation is already its own label */
     const sn = shortName(n, team.has(n));
     return [n, bySur.get(sn).length > 1 && !team.has(n) ? n[0] + '. ' + sn : sn];
   }));
@@ -480,8 +503,8 @@ function model(card){
   rows.forEach((r, i) => {
     r.team = r.id == null;
     r.d = Math.floor(r.year / 10) * 10;
-    r.a = aIx.get(r.name);
-    r.c = hue.get(r.name);
+    r.a = aIx.get(keyOf(r));
+    r.c = hue.get(keyOf(r));
     r.tie = i > 0 && rows[i - 1].rank === r.rank;
     r.same = i > 0 && rows[i - 1].name === r.name;
     /* 1 for the best mark on the list, 0 for the last one in */
@@ -492,10 +515,11 @@ function model(card){
   const since = rows.filter(r => r.year >= TODAY.getFullYear() - 10).length;
   const spread = lower ? worst - best : best - worst;
 
-  return {card, rows, lower, owners, hue, team, label, best: rows[0],
+  return {card, rows, lower, owners, hue, team, label, best: rows[0], once,
           spread, span, minYear: Math.min(...years), maxYear: Math.max(...years),
           maxWhen: Math.max(...rows.map(r => r.when)),
-          since, people: byWho.size};
+          since, people: new Set(rows.map(r => r.name)).size,
+          nations: new Set(rows.map(r => r.nat)).size};
 }
 
 /* the gap between first and last, said the way the event says it */
@@ -523,6 +547,10 @@ function cardHTML(M, sex){
             <button class="sx ${sex === 'women' ? 'on' : ''}" data-sex="women">Women</button>
             <button class="sx ${sex === 'men' ? 'on' : ''}" data-sex="men">Men</button>
           </div>
+          <div class="sexsw modesw">
+            <button class="sx ${M.once ? '' : 'on'}" data-mode="perf">Performances</button>
+            <button class="sx ${M.once ? 'on' : ''}" data-mode="once">Performers</button>
+          </div>
         </div>
         <div class="title"><h1>${esc(c.discipline)}</h1></div>
       </div>
@@ -536,7 +564,8 @@ function cardHTML(M, sex){
     <div class="statbar">
       <div class="stat"><div class="v">${M.rows.length}</div>
         <div class="k">marks in the top ${TOP}</div></div>
-      <div class="stat"><div class="v">${M.people}</div><div class="k">athletes</div></div>
+      <div class="stat"><div class="v">${M.once ? M.nations : M.people}</div>
+        <div class="k">${M.once ? 'nations' : 'athletes'}</div></div>
       <div class="stat"><div class="v hl">${fmtSpread(M)}</div><div class="k">1st to last</div></div>
       <div class="stat"><div class="v">${M.since}<small> / ${M.rows.length}</small></div>
         <div class="k">in the last ten years</div></div>
@@ -544,7 +573,7 @@ function cardHTML(M, sex){
     </div>
 
     <div class="owners">
-      <div class="ok">Who owns it</div>
+      <div class="ok">${M.once ? 'By nation' : 'Who owns it'}</div>
       <div class="obar">${M.owners.map(([n, k], a) => {
         const w = k / M.rows.length * 100;
         /* the share is carried as data and the width resolved in fitOwners, which is the
@@ -815,7 +844,23 @@ function runLadder(root, animate){
 
 /* ---------------------------------------------------------------- the deck */
 let SLIDES = [], IDX = 0, TIMER = null, SEX = 'women', TOP = 50;
+let MODE = (() => { try { return localStorage.getItem('atf.mode') || 'perf'; }
+                    catch(e){ return 'perf'; } })();
 const FILMS = {};
+
+function render(s){
+  s.M = model(s.card, MODE);
+  s.el.innerHTML = cardHTML(s.M, s.sex);
+  s.mode = MODE;
+}
+function setMode(m){
+  if (m === MODE) return;
+  MODE = m;
+  try { localStorage.setItem('atf.mode', m); } catch(e){}
+  render(SLIDES[IDX]);            /* the rest are redrawn as they are reached */
+  buildJump(); markJump(); updateSocialMeta();
+  paint(true);
+}
 
 /* GitHub Pages serves both files with max-age=600, so a freshly deployed page can otherwise
    sit and read a ten-minute-old list. Revalidate against the etag instead of trusting the age. */
@@ -832,13 +877,13 @@ function build(D){
     (a.gender === b.gender ? 0 : a.gender === 'women' ? -1 : 1) || a.order - b.order);
 
   cards.forEach(c => {
-    const M = model(c);
     const node = document.createElement('section');
     node.className = 'card';
-    node.innerHTML = cardHTML(M, c.gender);
     track.appendChild(node);
-    SLIDES.push({M, el: node, sex: c.gender, title: c.discipline,
-                 slug: (c.gender === 'women' ? 'w' : 'm') + '-' + c.slug});
+    const s = {card: c, el: node, sex: c.gender, title: c.discipline,
+               slug: (c.gender === 'women' ? 'w' : 'm') + '-' + c.slug};
+    render(s);
+    SLIDES.push(s);
   });
 
   ['women', 'men'].forEach(s => {
@@ -848,7 +893,9 @@ function build(D){
 
   track.addEventListener('click', e => {
     const b = e.target.closest('.sx');
-    if (b) switchSex(b.dataset.sex);
+    if (!b) return;
+    if (b.dataset.mode) setMode(b.dataset.mode);
+    else switchSex(b.dataset.sex);
   });
 
   const want = decodeURIComponent(location.hash.slice(1))
@@ -864,6 +911,7 @@ const NARROW = () => matchMedia('(max-width:860px), (max-height:540px)').matches
 
 function go(i, fromHash){
   IDX = (i + SLIDES.length) % SLIDES.length;
+  if (SLIDES[IDX].mode !== MODE) render(SLIDES[IDX]);
   SEX = SLIDES[IDX].sex;
   const f = FILMS[SEX];
   document.getElementById('track').style.transform = `translateX(${-IDX * 100}%)`;
@@ -902,6 +950,12 @@ function updateSocialMeta(){
   const set = (n, v) => { const m = document.querySelector(`meta[name="${n}"]`);
     if (m) m.setAttribute('content', v); };
   set('agwas:title', `${ev}, ${s.sex} — the twenty best ever`);
+  if (M.once){
+    set('agwas:title', `${ev}, ${s.sex} — the fifty best ever, one each`);
+    set('agwas:cta', `${M.nations} nations hold the fifty best ${ev.toLowerCase()} marks ever`);
+    set('agwas:tags', 'athletics alltime dataviz ' + shortEv(ev).toLowerCase());
+    return;
+  }
   set('agwas:cta', M.people <= 6
     ? `${M.people} athletes hold the ${TOP} best ${ev.toLowerCase()} marks ever — ${who} has ${
         M.owners[0][1]} of them`
