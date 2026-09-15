@@ -1558,42 +1558,51 @@ function drawNations(svg, W, H, A, ui){
    both, so the bar carries the two apart: 70 of the USA's 376 marks equalled the record rather
    than beat it. */
 function drawSetters(svg, W, H, A, ui){
-  const pad = {l: 58, r: 96, t: 30, b: 22};
+  const pad = {l: 8, r: 8, t: 30, b: 22};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
   const all = [...A.cMarks.entries()].sort((a, b) => b[1] - a[1]);
   if (!all.length) return emptyState(svg, W, H, ui, 'no records to count');
 
-  const list = all.slice(0, Math.max(6, Math.min(20, Math.floor(ih / 19))));
-  const rowH = ih / list.length, max = list[0][1];
-  const X = v => v / max * iw;
+  /* every nation that has set one, which is 39 women and 44 men — more than a single column
+     can hold at a legible row, so it splits into two when it has to */
+  const cols = all.length > Math.floor(ih / 13) ? 2 : 1;
+  const per = Math.ceil(all.length / cols);
+  const rowH = ih / per;
+  const GAPX = 34, LAB = 40, VAL = cols > 1 ? 34 : 88;
+  const colW = (iw - (cols - 1) * GAPX) / cols;
+  const barW = colW - LAB - VAL;
+  const max = all[0][1];
+  const X = v => Math.max(1, v / max * barW);
   const total = all.reduce((a, [, n]) => a + n, 0);
   const eqAll = [...A.cEq.values()].reduce((a, b) => a + b, 0);
   const tip = ui.tip;
 
   const key = el('g');
   [['var(--gold)', 'beaten'], ['rgba(246,239,233,.32)', 'equalled']].forEach(([f, t], i) => {
-    key.appendChild(el('rect', {x: pad.l + i * 92, y: 8, width: 9, height: 9, rx: 2, fill: f}));
-    key.appendChild(txt(el('text', {x: pad.l + i * 92 + 14, y: 16.5, class: 'lbl'}), t));
+    key.appendChild(el('rect', {x: pad.l + LAB + i * 92, y: 8, width: 9, height: 9, rx: 2, fill: f}));
+    key.appendChild(txt(el('text', {x: pad.l + LAB + i * 92 + 14, y: 16.5, class: 'lbl'}), t));
   });
   svg.appendChild(key);
 
-  list.forEach(([c, n], i) => {
-    const y = pad.t + i * rowH, mid = y + rowH / 2;
-    const h = Math.max(6, Math.min(rowH - 5, 17));
+  all.forEach(([c, n], i) => {
+    const col = Math.floor(i / per), x0 = pad.l + col * (colW + GAPX);
+    const y = pad.t + (i % per) * rowH, mid = y + rowH / 2;
+    const h = Math.max(4, Math.min(rowH - 3, 17));
     const beat = A.cBeat.get(c) || 0, eq = A.cEq.get(c) || 0;
-    svg.appendChild(txt(el('text', {x: pad.l - 10, y: mid + 3.5, class: 'rowlbl',
+    svg.appendChild(txt(el('text', {x: x0 + LAB - 8, y: mid + 3.5, class: 'rowlbl',
       'text-anchor': 'end'}), c));
 
     const g = el('g');
-    g.appendChild(el('rect', {x: pad.l, y: mid - h / 2, width: Math.max(1, X(beat)), height: h,
+    g.appendChild(el('rect', {x: x0 + LAB, y: mid - h / 2, width: X(beat), height: h,
       rx: 2.5, fill: 'var(--gold)', opacity: .92}));
-    if (eq) g.appendChild(el('rect', {x: pad.l + X(beat), y: mid - h / 2, width: Math.max(1, X(eq)),
+    if (eq) g.appendChild(el('rect', {x: x0 + LAB + X(beat), y: mid - h / 2, width: X(eq),
       height: h, rx: 2.5, fill: 'rgba(246,239,233,.32)'}));
-    g.appendChild(txt(el('text', {x: pad.l + X(n) + 9, y: mid + 3.5, class: 'rowval'}), n));
-    g.appendChild(txt(el('text', {x: pad.l + X(n) + 9 + String(n).length * 7 + 8, y: mid + 3.5,
-      class: 'rowsub'}), eq ? `${beat}+${eq}` : ''));
+    g.appendChild(txt(el('text', {x: x0 + LAB + X(n) + 8, y: mid + 3.5, class: 'rowval'}), n));
+    if (cols === 1 && eq)
+      g.appendChild(txt(el('text', {x: x0 + LAB + X(n) + 8 + String(n).length * 7 + 8,
+        y: mid + 3.5, class: 'rowsub'}), `${beat}+${eq}`));
 
-    const hit = el('rect', {x: pad.l, y, width: iw, height: rowH, fill: 'transparent'});
+    const hit = el('rect', {x: x0, y, width: colW, height: rowH, fill: 'transparent'});
     hit.addEventListener('mouseenter', ev => {
       tip.innerHTML = `<div class="p">${n} <span class="m">record${n > 1 ? 's' : ''}</span></div>`
         + `<div class="n">${c}</div>`
@@ -1617,9 +1626,10 @@ function drawSetters(svg, W, H, A, ui){
     [(n1 / total * 100).toFixed(0) + '%', 'that nation\u2019s share'],
     [eqAll, 'were equalled, not beaten'],
   ]);
-  ui.note(`<p>Every ratified mark counted to the nation that set it, relays included. A record
-    can be <b>matched</b> as well as beaten and both are ratified, so the paler part of each bar
-    is the marks that equalled the record rather than moved it.</p>`);
+  ui.note(`<p>Every nation that has ever set one, in order. Each mark counts to the nation that
+    set it, relays included. A record can be <b>matched</b> as well as beaten and both are
+    ratified, so the paler part of each bar is the marks that equalled the record rather than
+    moved it.</p>`);
 }
 
 function drawAthletes(svg, W, H, A, ui){
