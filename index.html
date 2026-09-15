@@ -1563,15 +1563,38 @@ function drawSetters(svg, W, H, A, ui){
   const all = [...A.cMarks.entries()].sort((a, b) => b[1] - a[1]);
   if (!all.length) return emptyState(svg, W, H, ui, 'no records to count');
 
-  /* every nation that has set one, which is 39 women and 44 men — more than a single column
-     can hold at a legible row, so it splits into two when it has to */
-  const cols = all.length > Math.floor(ih / 13) ? 2 : 1;
-  const per = Math.ceil(all.length / cols);
-  const rowH = ih / per;
+  /* Every nation that has set one. A bar for a single record says nothing a three-letter code
+     cannot — nine women's nations and ten men's have exactly one — so those go in a line at
+     the foot and the bars keep the height. */
+  const multi = all.filter(([, n]) => n > 1);
+  const ones = all.filter(([, n]) => n === 1).map(([c]) => c).sort();
+  const list = multi.length ? multi : all;
+
+  /* the codes are wrapped by measuring them, since SVG text does not wrap on its own */
+  let onesLines = [];
+  if (multi.length && ones.length){
+    const probe = el('text', {class: 'rowsub', x: -999, y: -999});
+    svg.appendChild(probe);
+    let line = '';
+    ones.forEach(c => {
+      const next = line ? line + '  ·  ' + c : c;
+      probe.textContent = next;
+      if (probe.getComputedTextLength() > iw - 150 && line){ onesLines.push(line); line = c; }
+      else line = next;
+    });
+    if (line) onesLines.push(line);
+    svg.removeChild(probe);
+  }
+  const onesH = onesLines.length ? onesLines.length * 15 + 16 : 0;
+  const bh = ih - onesH;
+
+  const cols = list.length > Math.floor(bh / 13) ? 2 : 1;
+  const per = Math.ceil(list.length / cols);
+  const rowH = bh / per;
   const GAPX = 34, LAB = 40, VAL = cols > 1 ? 34 : 88;
   const colW = (iw - (cols - 1) * GAPX) / cols;
   const barW = colW - LAB - VAL;
-  const max = all[0][1];
+  const max = list[0][1];
   const X = v => Math.max(1, v / max * barW);
   const total = all.reduce((a, [, n]) => a + n, 0);
   const eqAll = [...A.cEq.values()].reduce((a, b) => a + b, 0);
@@ -1584,7 +1607,7 @@ function drawSetters(svg, W, H, A, ui){
   });
   svg.appendChild(key);
 
-  all.forEach(([c, n], i) => {
+  list.forEach(([c, n], i) => {
     const col = Math.floor(i / per), x0 = pad.l + col * (colW + GAPX);
     const y = pad.t + (i % per) * rowH, mid = y + rowH / 2;
     const h = Math.max(4, Math.min(rowH - 3, 17));
@@ -1616,6 +1639,14 @@ function drawSetters(svg, W, H, A, ui){
     hit.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
     g.appendChild(hit);
     svg.appendChild(g);
+  });
+
+  /* the ones, as a line of codes rather than 19 bars of the same length */
+  onesLines.forEach((ln, i) => {
+    const y = pad.t + bh + 12 + i * 15;
+    if (i === 0)
+      svg.appendChild(txt(el('text', {x: pad.l, y, class: 'lbl'}), 'one record each'));
+    svg.appendChild(txt(el('text', {x: pad.l + 132, y, class: 'rowsub'}), ln));
   });
 
   const [t1, n1] = all[0];
