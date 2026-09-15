@@ -1355,6 +1355,7 @@ let STATS_AGG = null, STAB = 'nations';
 function buildAgg(deck, label){
   const marks = new Map(), days = new Map(), evs = new Map();
   const cMarks = new Map(), cDays = new Map(), venues = new Map();
+  const cBeat = new Map(), cEq = new Map();   /* a record moved, or was only matched */
   const done = [], alive = [];
   const bump = (m,k,v) => m.set(k, (m.get(k) || 0) + v);
 
@@ -1367,6 +1368,7 @@ function buildAgg(deck, label){
         evs.get(r.who).add(M.card.gender + '|' + M.card.discipline);
       }
       bump(cMarks, r.country, 1); bump(cDays, r.country, r.reign);
+      bump(r.equal ? cEq : cBeat, r.country, 1);
       const v = r.venue.replace(/\s*\([A-Z]{3}\)\s*$/, '').trim();
       if (!venues.has(v)) venues.set(v, []);
       venues.get(v).push({r, M});
@@ -1392,7 +1394,7 @@ function buildAgg(deck, label){
     .sort((a,b) => b[1]-a[1] || (cDays.get(b[0])||0) - (cDays.get(a[0])||0))
     .slice(0, 12).map(([k]) => k);
   return {deck, label: label || 'the sport', single: deck.length === 1,
-          marks, days, evs, cMarks, cDays, venues, done, alive, byYear, topNations,
+          marks, days, evs, cMarks, cDays, cBeat, cEq, venues, done, alive, byYear, topNations,
           athletes: [...days.entries()].sort((a,b) => b[1]-a[1])};
 }
 
@@ -1551,6 +1553,75 @@ function drawNations(svg, W, H, A, ui){
 }
 
 /* --- 2. athletes: when they actually held a record --- */
+/* Nations by how many records they actually set — the companion to Nations, which counts how
+   long they held them. A record can be matched as well as beaten and World Athletics ratifies
+   both, so the bar carries the two apart: 70 of the USA's 376 marks equalled the record rather
+   than beat it. */
+function drawSetters(svg, W, H, A, ui){
+  const pad = {l: 58, r: 96, t: 30, b: 22};
+  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+  const all = [...A.cMarks.entries()].sort((a, b) => b[1] - a[1]);
+  if (!all.length) return emptyState(svg, W, H, ui, 'no records to count');
+
+  const list = all.slice(0, Math.max(6, Math.min(20, Math.floor(ih / 19))));
+  const rowH = ih / list.length, max = list[0][1];
+  const X = v => v / max * iw;
+  const total = all.reduce((a, [, n]) => a + n, 0);
+  const eqAll = [...A.cEq.values()].reduce((a, b) => a + b, 0);
+  const tip = ui.tip;
+
+  const key = el('g');
+  [['var(--gold)', 'beaten'], ['rgba(246,239,233,.32)', 'equalled']].forEach(([f, t], i) => {
+    key.appendChild(el('rect', {x: pad.l + i * 92, y: 8, width: 9, height: 9, rx: 2, fill: f}));
+    key.appendChild(txt(el('text', {x: pad.l + i * 92 + 14, y: 16.5, class: 'lbl'}), t));
+  });
+  svg.appendChild(key);
+
+  list.forEach(([c, n], i) => {
+    const y = pad.t + i * rowH, mid = y + rowH / 2;
+    const h = Math.max(6, Math.min(rowH - 5, 17));
+    const beat = A.cBeat.get(c) || 0, eq = A.cEq.get(c) || 0;
+    svg.appendChild(txt(el('text', {x: pad.l - 10, y: mid + 3.5, class: 'rowlbl',
+      'text-anchor': 'end'}), c));
+
+    const g = el('g');
+    g.appendChild(el('rect', {x: pad.l, y: mid - h / 2, width: Math.max(1, X(beat)), height: h,
+      rx: 2.5, fill: 'var(--gold)', opacity: .92}));
+    if (eq) g.appendChild(el('rect', {x: pad.l + X(beat), y: mid - h / 2, width: Math.max(1, X(eq)),
+      height: h, rx: 2.5, fill: 'rgba(246,239,233,.32)'}));
+    g.appendChild(txt(el('text', {x: pad.l + X(n) + 9, y: mid + 3.5, class: 'rowval'}), n));
+    g.appendChild(txt(el('text', {x: pad.l + X(n) + 9 + String(n).length * 7 + 8, y: mid + 3.5,
+      class: 'rowsub'}), eq ? `${beat}+${eq}` : ''));
+
+    const hit = el('rect', {x: pad.l, y, width: iw, height: rowH, fill: 'transparent'});
+    hit.addEventListener('mouseenter', ev => {
+      tip.innerHTML = `<div class="p">${n} <span class="m">record${n > 1 ? 's' : ''}</span></div>`
+        + `<div class="n">${c}</div>`
+        + `<div class="m">${beat} beaten · ${eq} equalled · `
+        + `${(n / total * 100).toFixed(1)}% of all</div>`;
+      tip.style.opacity = 1;
+      const b = svg.parentElement.getBoundingClientRect();
+      tip.style.left = Math.min(ev.clientX - b.left + 14, W - 220) + 'px';
+      tip.style.top = (mid + 8) + 'px';
+    });
+    hit.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+    g.appendChild(hit);
+    svg.appendChild(g);
+  });
+
+  const [t1, n1] = all[0];
+  ui.kpi([
+    [all.length, 'nations have set one'],
+    [t1, 'has set the most'],
+    [n1, `of the ${total} marks`],
+    [(n1 / total * 100).toFixed(0) + '%', 'that nation\u2019s share'],
+    [eqAll, 'were equalled, not beaten'],
+  ]);
+  ui.note(`<p>Every ratified mark counted to the nation that set it, relays included. A record
+    can be <b>matched</b> as well as beaten and both are ratified, so the paler part of each bar
+    is the marks that equalled the record rather than moved it.</p>`);
+}
+
 function drawAthletes(svg, W, H, A, ui){
   const pad = {l: 232, r: 96, t: 16, b: 26};
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
@@ -2544,7 +2615,9 @@ function drawPerDay(svg, W, H, A, ui){
     + `record rather than beating it.</p>`);
 }
 
-const STAT_TABS = [['nations','Nations', drawNations], ['athletes','Athletes', drawAthletes],
+const STAT_TABS = [['nations','Nations', drawNations],
+                   ['setters','Who Sets Them', drawSetters],
+                   ['athletes','Athletes', drawAthletes],
                    ['venues','Venues', drawVenues], ['meets','Where Records Fall', drawMeets],
                    ['bigmeets','The Biggest Meetings', drawBigMeets, true],
                    ['peryear','Records Per Year', drawPerYear],
