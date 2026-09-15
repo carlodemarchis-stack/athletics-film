@@ -1116,6 +1116,13 @@ function drawOpening(root, deck, gold){
 }
 
 /* ============================ card chrome ============================ */
+/* The cards that are about the whole sport have no one event to cross to, so their tabs
+   open the all-time film at that sex's first card rather than not being there at all. */
+const listTabs = sex => `<div class="sexsw modesw"><span class="sx on">World records</span>
+  <span class="tlab">Top Lists</span>
+  <a class="sx tl" data-m="once" href="toplists/?m=once#${sex === 'women' ? 'w' : 'm'}-100-metres">Performers</a>
+  <a class="sx tl" data-m="perf" href="toplists/?m=perf#${sex === 'women' ? 'w' : 'm'}-100-metres">Performances</a></div>`;
+
 const sexTabs = sex => `<div class="sexsw">`
   + ['men','women'].map(x => `<button class="sx${x === sex ? ' on' : ''}" data-sex="${x}">${x}</button>`).join('')
   + `</div>`;
@@ -1280,7 +1287,8 @@ function statCardHTML(sex, title, mixed){
     <div class="inner">
       <div class="head">
         <div><div class="kicker"><div class="disc">World record film · ${mixed ? 'men and women together'
-            : `every ${sex === 'women' ? "women's" : "men's"} event`}</div>${sexTabs(sex)}</div>
+            : `every ${sex === 'women' ? "women's" : "men's"} event`}</div>${sexTabs(sex)}${
+              listTabs(sex)}</div>
           <div class="title"><h1>${title}</h1><button class="notebtn" data-note title="About this chart">?</button></div></div>
       </div>
       <div class="statbar"></div>
@@ -1310,7 +1318,8 @@ function openingCardHTML(deck, sex, o){
   return `<div class="card__bg"></div><div class="ghostnum">${oldest.cur.date.getFullYear()}</div>
     <div class="inner">
       <div class="head">
-        <div><div class="kicker"><div class="disc">${o.kicker}</div>${sexTabs(sex)}</div>
+        <div><div class="kicker"><div class="disc">${o.kicker}</div>${sexTabs(sex)}${
+          listTabs(sex)}</div>
           <div class="title"><h1>${o.title}</h1>${o.note
             ? `<button class="notebtn" data-note title="About this chart">?</button>` : ''}</div>
           ${o.note ? '' : `<div class="sub">${o.sub}</div>`}</div>
