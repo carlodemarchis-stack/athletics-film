@@ -95,12 +95,15 @@
     padding:clamp(7px,1.1vh,12px) 0 clamp(8px,1.2vh,13px); border-bottom:1px solid var(--line)}
   .ok{font-size:9.5px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
     color:var(--muted-2); white-space:nowrap}
-  .obar{display:flex; flex:1 1 auto; gap:2px; height:17px; min-width:0}
-  .oseg{display:flex; align-items:center; justify-content:center; gap:5px; padding:0 5px;
-    border-radius:3px; overflow:hidden; min-width:14px; background:var(--c)}
-  .oseg i{font-style:normal; font-size:9.5px; font-weight:800; letter-spacing:.04em;
-    color:rgba(10,8,7,.92); white-space:nowrap}
-  .oseg em{font-style:normal; font-size:9.5px; font-weight:700; color:rgba(10,8,7,.58)}
+  .obar{display:flex; flex:1 1 auto; flex-wrap:wrap; gap:2px; min-width:0}
+  .oseg{height:17px}
+  .oseg{display:flex; align-items:center; justify-content:center; gap:4px; padding:0 3px;
+    border-radius:3px; overflow:hidden; min-width:0; background:var(--c); cursor:default}
+  .oseg i{font-style:normal; font-size:var(--of,9.5px); font-weight:800; letter-spacing:.02em;
+    color:rgba(10,8,7,.92); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .oseg em{font-style:normal; font-size:var(--of,9.5px); font-weight:700;
+    color:rgba(10,8,7,.58); flex:0 0 auto}
+  .oseg:hover,.oseg.lit{outline:1.5px solid var(--ink); outline-offset:-1px}
 
   /* ---------- the two panes ---------- */
   .body{display:grid; grid-template-columns:minmax(0,60fr) minmax(0,40fr);
@@ -448,9 +451,23 @@ function model(card){
   const team = new Set(rows.filter(r => r.id == null).map(r => r.name));
   const owners = [...byWho.entries()].sort((a, b) => b[1] - a[1]);
   const hue = new Map(owners.map(([n], i) => [n, HUES[i % HUES.length]]));
+  const aIx = new Map(owners.map(([n], i) => [n, i]));
+
+  /* two of the fifty best 10,000m runs belong to a Nawowuna, and they are different women:
+     where a surname is shared on one card the bar carries the initial too */
+  const bySur = new Map();
+  owners.forEach(([n]) => {
+    const sn = shortName(n, team.has(n));
+    bySur.set(sn, (bySur.get(sn) || []).concat(n));
+  });
+  const label = new Map(owners.map(([n]) => {
+    const sn = shortName(n, team.has(n));
+    return [n, bySur.get(sn).length > 1 && !team.has(n) ? n[0] + '. ' + sn : sn];
+  }));
 
   rows.forEach((r, i) => {
     r.team = r.id == null;
+    r.a = aIx.get(r.name);
     r.c = hue.get(r.name);
     r.tie = i > 0 && rows[i - 1].rank === r.rank;
     r.same = i > 0 && rows[i - 1].name === r.name;
@@ -462,7 +479,7 @@ function model(card){
   const since = rows.filter(r => r.year >= TODAY.getFullYear() - 10).length;
   const spread = lower ? worst - best : best - worst;
 
-  return {card, rows, lower, owners, hue, team, best: rows[0],
+  return {card, rows, lower, owners, hue, team, label, best: rows[0],
           spread, span, minYear: Math.min(...years), maxYear: Math.max(...years),
           maxWhen: Math.max(...rows.map(r => r.when)),
           since, people: byWho.size};
@@ -515,12 +532,13 @@ function cardHTML(M, sex){
 
     <div class="owners">
       <div class="ok">Who owns it</div>
-      <div class="obar">${M.owners.map(([n, k]) => {
+      <div class="obar">${M.owners.map(([n, k], a) => {
         const w = k / M.rows.length * 100;
-        return `<div class="oseg" style="--c:${M.hue.get(n)}; flex:0 0 ${w.toFixed(2)}%"
-          title="${esc(teamOf(n))} — ${k} of ${M.rows.length}">${
-          w > 9 ? `<i>${esc(shortName(n, M.team.has(n)))}</i>` : ''}${
-          w > 5 ? `<em>${k}</em>` : ''}</div>`;
+        /* the share is carried as data and the width resolved in fitOwners, which is the
+           only place that can see how much room a name actually needs */
+        return `<div class="oseg" data-a="${a}" data-w="${w.toFixed(3)}"
+          style="--c:${M.hue.get(n)}" title="${esc(teamOf(n))} — ${k} of ${M.rows.length}"
+          ><i>${esc(M.label.get(n))}</i><em>${k}</em></div>`;
       }).join('')}</div>
     </div>
 
@@ -529,7 +547,7 @@ function cardHTML(M, sex){
         Math.ceil(M.rows.length / 2)}">${M.rows.map((r, i) => `
         <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''} ${
                i === 0 || i === Math.ceil(M.rows.length / 2) ? 'nb' : ''}"
-             data-i="${i}" style="--c:${r.c}">
+             data-i="${i}" data-a="${r.a}" style="--c:${r.c}">
           <span class="lk">${r.tie ? '=' : r.rank}</span>
           <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
           ${wind ? `<span class="lw">${esc(r.wind || '')}</span>` : ''}
@@ -594,8 +612,9 @@ function drawEra(M, root, animate){
   svg.appendChild(lab);
 
   const tip = root.querySelector('.tip');
+  const at = [];                       /* where each mark ended up, for whoever asks */
   M.rows.forEach((r, i) => {
-    const g = el('g', {class: 'dot', 'data-i': i});
+    const g = el('g', {class: 'dot', 'data-i': i, 'data-a': r.a});
     const cx = X(r.when), cy = Y(r.k);
     const halo = el('circle', {cx, cy, r: 9, fill: 'transparent'});
     const rad = r.rank === 1 ? 6 : 4.6;
@@ -614,19 +633,92 @@ function drawEra(M, root, animate){
       }, 120 + i * 17);
     }
     g.appendChild(ring); g.appendChild(dot); g.appendChild(halo);
-    halo.addEventListener('mouseenter', () => {
-      tip.innerHTML = `<div class="p">${esc(r.mark)}</div>`
-        + `<div class="n">${esc(r.name)} ${esc(r.nat)}</div>`
-        + `<div class="m">${esc(r.venue)} &middot; ${esc(r.date)}</div>`;
-      tip.style.opacity = 1;
-      const tw = tip.offsetWidth;
-      tip.style.left = Math.max(2, Math.min(W - tw - 2, cx - tw / 2)) + 'px';
-      tip.style.top = Math.max(2, cy - tip.offsetHeight - 12) + 'px';
-    });
-    halo.addEventListener('mouseleave', () => { tip.style.opacity = 0; });
+    at[i] = {cx, cy};
     halo.addEventListener('mouseenter', () => link(root, i, true));
     halo.addEventListener('mouseleave', () => link(root, i, false));
     svg.appendChild(g);
+  });
+
+  root.__tip = (i, on) => {
+    const r = M.rows[i], p = at[i];
+    if (!on || !r || !p){ tip.style.opacity = 0; return; }
+    tip.innerHTML = `<div class="p">${esc(r.mark)}${
+        r.wind ? ` <span class="m">${esc(r.wind)}</span>` : ''}</div>`
+      + `<div class="n">${esc(teamOf(r.name))} ${esc(r.nat)}</div>`
+      + `<div class="m">${esc(r.venue)} &middot; ${esc(r.date)}</div>`;
+    tip.style.opacity = 1;
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.max(2, Math.min(W - tw - 2, p.cx - tw / 2)) + 'px';
+    tip.style.top = Math.max(2, p.cy - tip.offsetHeight - 12) + 'px';
+  };
+}
+
+/* Every segment says whose marks it is.
+
+   A segment's share of the bar is often narrower than the name it has to carry — Lavillenie
+   holds one of the fifty best vaults, which is twelve pixels. Flexbox will not solve this:
+   a wrapping row wraps before it shrinks, so one cramped name pushes the last segment onto a
+   second line even when there is room. So the widths are resolved here instead. Each segment
+   asks for its share, or for what its name needs, whichever is larger; the excess is taken
+   back from the segments with room to spare, in proportion to the room they have. The bar
+   bends by a few pixels rather than dropping a name, and only wraps when even the shrunken
+   names cannot fit — a 10,000m card carries thirty-two athletes, and no single seventeen
+   pixel bar was ever going to hold thirty-two names. */
+const GAP = 2, PAD = 7, FMAX = 9.5, FMIN = 6.5;
+function fitOwners(root){
+  const bar = root.querySelector('.obar');
+  const segs = [...bar.querySelectorAll('.oseg')].filter(s => s.querySelector('i'));
+  if (!segs.length || bar.clientWidth < 40) return;
+  /* floored, because the row wraps on an overflow of any size at all and the bar's own box
+     is fractional — a twelfth of a pixel over was enough to drop a segment onto a new line */
+  const avail = Math.floor(bar.getBoundingClientRect().width) - GAP * (segs.length - 1);
+
+  /* What each one wants, and the least it can be read at. The label clips its own overflow,
+     which makes the segment's max-content width collapse to nothing — scrollWidth is the only
+     measure here that reports the text that is actually there. */
+  const want = segs.map(seg => {
+    const i = seg.querySelector('i'), em = seg.querySelector('em');
+    seg.style.removeProperty('--of');
+    em.hidden = false;
+    const emW = em.getBoundingClientRect().width + 4;
+    const nameMax = i.scrollWidth;
+    seg.style.setProperty('--of', FMIN + 'px');
+    const nameMin = i.scrollWidth;
+    seg.style.removeProperty('--of');
+    return {seg, i, em, nameMax,
+            full: nameMax + emW + PAD, name: nameMax + PAD, least: nameMin + PAD,
+            share: +seg.dataset.w / 100 * avail};
+  });
+
+  /* the share, or the smallest legible name, whichever is larger */
+  want.forEach(w => { w.px = Math.max(w.share, w.least); });
+  let over = want.reduce((a, w) => a + w.px, 0) - avail;
+
+  /* give the excess back out of whoever has slack above what their name needs */
+  if (over > 0){
+    const slack = want.reduce((a, w) => a + Math.max(0, w.px - w.least), 0);
+    if (slack >= over)
+      want.forEach(w => { w.px -= Math.max(0, w.px - w.least) / slack * over; });
+    else
+      want.forEach(w => { w.px = w.least; });   /* nothing left to give: the bar wraps */
+  }
+
+  /* whole pixels, with whatever is left over handed back to the longest bars */
+  want.forEach(w => { w.px = Math.max(1, Math.floor(w.px)); });
+  const big = [...want].sort((a, b) => b.px - a.px);
+  for (let left = avail - want.reduce((a, w) => a + w.px, 0), k = 0; left > 0; k++, left--)
+    big[k % big.length].px++;
+
+  /* the largest type each one can now carry, and the count only if it still fits */
+  want.forEach(w => {
+    w.seg.style.flex = `0 0 ${w.px}px`;
+    w.seg.style.removeProperty('--of');
+    if (w.px >= w.full){ w.em.hidden = false; return; }
+    w.em.hidden = true;
+    if (w.px >= w.name) return;
+    const need = Math.max(0, w.px - PAD), have = Math.max(1, w.nameMax);
+    w.seg.style.setProperty('--of',
+      Math.max(FMIN, Math.min(FMAX, FMAX * need / have)).toFixed(2) + 'px');
   });
 }
 
@@ -636,6 +728,13 @@ function link(root, i, on){
   const g = root.querySelector(`.dot[data-i="${i}"]`);
   if (row) row.classList.toggle('lit', on);
   if (g) g.classList.toggle('pulse', on);
+  if (root.__tip) root.__tip(i, on);
+}
+function linkAthlete(root, a, on){
+  root.querySelectorAll(`.lr[data-a="${a}"]`).forEach(r => r.classList.toggle('lit', on));
+  root.querySelectorAll(`.dot[data-a="${a}"]`).forEach(g => g.classList.toggle('pulse', on));
+  root.querySelectorAll(`.oseg[data-a="${a}"]`).forEach(o => o.classList.toggle('lit', on));
+  if (root.__tip) root.__tip(-1, false);
 }
 
 /* the ladder fills from the best mark down, the way the chart fills */
@@ -734,6 +833,7 @@ function paint(animate){
     if (!s) return;
     runLadder(s.el, !!animate);
     drawEra(s.M, s.el, !!animate);
+    fitOwners(s.el);
   }, 60);
 }
 
@@ -835,10 +935,15 @@ addEventListener('keydown', e => {
 });
 
 document.addEventListener('mouseover', e => {
+  const seg = e.target.closest('.oseg');
+  if (seg) return linkAthlete(seg.closest('.card'), seg.dataset.a, true);
   const row = e.target.closest('.lr');
   if (row) link(row.closest('.card'), row.dataset.i, true);
 });
 document.addEventListener('mouseout', e => {
+  const seg = e.target.closest('.oseg');
+  if (seg && !seg.contains(e.relatedTarget))
+    return linkAthlete(seg.closest('.card'), seg.dataset.a, false);
   const row = e.target.closest('.lr');
   if (row && !row.contains(e.relatedTarget)) link(row.closest('.card'), row.dataset.i, false);
 });
