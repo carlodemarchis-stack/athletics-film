@@ -147,6 +147,18 @@
   .chartwrap svg{position:absolute; inset:0; width:100%; height:100%; overflow:visible}
   .lbl{font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; fill:var(--muted-2)}
   .axv{font-size:10.5px; font-weight:700; fill:var(--muted-2)}
+  /* the decades, laid under the axis on the axis's own scale — the first and the last are
+     partial, because a list rarely begins or ends on a round year */
+  .decbar{position:absolute; bottom:0; display:flex; gap:2px; height:16px}
+  .dseg{display:flex; align-items:center; justify-content:center; gap:5px; overflow:hidden;
+    min-width:0; border-radius:3px; cursor:default;
+    background:rgba(230,190,160,var(--tone,.07))}
+  .dseg i{font-style:normal; font-size:9px; font-weight:800; letter-spacing:.05em;
+    color:var(--ink); opacity:.82; white-space:nowrap}
+  .dseg em{font-style:normal; font-size:9px; font-weight:700; color:var(--muted)}
+  .dseg:hover,.dseg.lit{outline:1.5px solid var(--ink); outline-offset:-1px}
+  .dseg.none i{opacity:.4}
+
   .dot{cursor:pointer}
   .dot .ring{transform-box:fill-box; transform-origin:center; pointer-events:none; opacity:0}
   .dot.pulse .ring{animation:ping 1.05s cubic-bezier(.2,.6,.3,1) infinite}
@@ -467,6 +479,7 @@ function model(card){
 
   rows.forEach((r, i) => {
     r.team = r.id == null;
+    r.d = Math.floor(r.year / 10) * 10;
     r.a = aIx.get(r.name);
     r.c = hue.get(r.name);
     r.tie = i > 0 && rows[i - 1].rank === r.rank;
@@ -547,7 +560,7 @@ function cardHTML(M, sex){
         Math.ceil(M.rows.length / 2)}">${M.rows.map((r, i) => `
         <div class="lr ${r.rank === 1 ? 'top' : ''} ${r.tie ? 'tie' : ''} ${r.same ? 'same' : ''} ${
                i === 0 || i === Math.ceil(M.rows.length / 2) ? 'nb' : ''}"
-             data-i="${i}" data-a="${r.a}" style="--c:${r.c}">
+             data-i="${i}" data-a="${r.a}" data-d="${r.d}" style="--c:${r.c}">
           <span class="lk">${r.tie ? '=' : r.rank}</span>
           <span class="lm">${esc(r.mark)}${r.indoor ? '<sup>i</sup>' : ''}</span>
           ${wind ? `<span class="lw">${esc(r.wind || '')}</span>` : ''}
@@ -556,7 +569,7 @@ function cardHTML(M, sex){
             ladderName(r.name, r.team)}</span>${
             flagOf(r.nat)}</span>
         </div>`).join('')}</div>
-      <div class="chartwrap"><svg></svg><div class="tip"></div></div>
+      <div class="chartwrap"><svg></svg><div class="decbar"></div><div class="tip"></div></div>
     </div>
   </div>
   <div class="foot">Data: World Athletics all-time toplists &middot; A guy with a scarf</div>`;
@@ -573,7 +586,7 @@ function drawEra(M, root, animate){
   const W = wrap.clientWidth, H = wrap.clientHeight;
   if (W < 80 || H < 60) return;
 
-  const pad = {t: 26, r: 14, b: 26, l: 46};
+  const pad = {t: 26, r: 14, b: 48, l: 46};      /* the last 16 belong to the decade band */
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
 
   const now = TODAY.getFullYear() + (TODAY - new Date(TODAY.getFullYear(), 0, 1)) / 31536e6;
@@ -614,7 +627,7 @@ function drawEra(M, root, animate){
   const tip = root.querySelector('.tip');
   const at = [];                       /* where each mark ended up, for whoever asks */
   M.rows.forEach((r, i) => {
-    const g = el('g', {class: 'dot', 'data-i': i, 'data-a': r.a});
+    const g = el('g', {class: 'dot', 'data-i': i, 'data-a': r.a, 'data-d': r.d});
     const cx = X(r.when), cy = Y(r.k);
     const halo = el('circle', {cx, cy, r: 9, fill: 'transparent'});
     const rad = r.rank === 1 ? 6 : 4.6;
@@ -638,6 +651,28 @@ function drawEra(M, root, animate){
     halo.addEventListener('mouseleave', () => link(root, i, false));
     svg.appendChild(g);
   });
+
+  /* The decades under the axis, each as wide as the slice of the axis it covers — so the
+     first and the last are partial. The tone is how many of the marks landed in it, which
+     makes the band a histogram as well as a scale: the women's shot put lights one decade
+     and leaves four dark. */
+  const bar = root.querySelector('.decbar');
+  bar.style.left = pad.l + 'px';
+  bar.style.right = pad.r + 'px';
+  const cnt = new Map();
+  M.rows.forEach(r => cnt.set(r.d, (cnt.get(r.d) || 0) + 1));
+  const most = Math.max(...cnt.values(), 1);
+  const parts = [];
+  for (let d = Math.floor(w0 / 10) * 10; d <= w1; d += 10){
+    const a = Math.max(d, w0), b = Math.min(d + 10, w1);
+    if (b - a > .02) parts.push({d, n: cnt.get(d) || 0, share: (b - a) / (w1 - w0) * 100});
+  }
+  bar.innerHTML = parts.map(p =>
+    `<div class="dseg ${p.n ? '' : 'none'}" data-d="${p.d}" title="${p.d}s — ${
+      p.n} of ${M.rows.length}" style="--tone:${(.05 + .38 * p.n / most).toFixed(3)}; flex:0 0 calc(${
+      p.share.toFixed(3)}% - 2px)"><i>&rsquo;${String(p.d).slice(2)}s</i>${
+      p.n ? `<em>${p.n}</em>` : ''}</div>`).join('');
+  fitBand(bar);
 
   root.__tip = (i, on) => {
     const r = M.rows[i], p = at[i];
@@ -665,6 +700,24 @@ function drawEra(M, root, animate){
    names cannot fit — a 10,000m card carries thirty-two athletes, and no single seventeen
    pixel bar was ever going to hold thirty-two names. */
 const GAP = 2, PAD = 7, FMAX = 9.5, FMIN = 6.5;
+
+/* A partial decade can be two years wide; drop its count, then its label, rather than
+   letting "'60s 1" spill out of a segment eleven pixels across. The label is centred, so
+   scrollWidth rounds its overflow away — a 19px label sat in a 17.8px segment and reported
+   itself as fitting. Measure the label against the box instead. */
+function fitBand(bar){
+  bar.querySelectorAll('.dseg').forEach(seg => {
+    const i = seg.querySelector('i'), em = seg.querySelector('em');
+    i.hidden = false;
+    if (em) em.hidden = false;
+    const room = seg.clientWidth - 2;
+    const iw = () => i.getBoundingClientRect().width;
+    const ew = () => (em && !em.hidden) ? em.getBoundingClientRect().width + 5 : 0;
+    if (iw() + ew() <= room) return;
+    if (em) em.hidden = true;
+    if (iw() > room) i.hidden = true;
+  });
+}
 function fitOwners(root){
   const bar = root.querySelector('.obar');
   const segs = [...bar.querySelectorAll('.oseg')].filter(s => s.querySelector('i'));
@@ -729,6 +782,12 @@ function link(root, i, on){
   if (row) row.classList.toggle('lit', on);
   if (g) g.classList.toggle('pulse', on);
   if (root.__tip) root.__tip(i, on);
+}
+function linkDecade(root, d, on){
+  root.querySelectorAll(`.lr[data-d="${d}"]`).forEach(r => r.classList.toggle('lit', on));
+  root.querySelectorAll(`.dot[data-d="${d}"]`).forEach(g => g.classList.toggle('pulse', on));
+  root.querySelectorAll(`.dseg[data-d="${d}"]`).forEach(o => o.classList.toggle('lit', on));
+  if (root.__tip) root.__tip(-1, false);
 }
 function linkAthlete(root, a, on){
   root.querySelectorAll(`.lr[data-a="${a}"]`).forEach(r => r.classList.toggle('lit', on));
@@ -935,12 +994,17 @@ addEventListener('keydown', e => {
 });
 
 document.addEventListener('mouseover', e => {
+  const dec = e.target.closest('.dseg');
+  if (dec) return linkDecade(dec.closest('.card'), dec.dataset.d, true);
   const seg = e.target.closest('.oseg');
   if (seg) return linkAthlete(seg.closest('.card'), seg.dataset.a, true);
   const row = e.target.closest('.lr');
   if (row) link(row.closest('.card'), row.dataset.i, true);
 });
 document.addEventListener('mouseout', e => {
+  const dec = e.target.closest('.dseg');
+  if (dec && !dec.contains(e.relatedTarget))
+    return linkDecade(dec.closest('.card'), dec.dataset.d, false);
   const seg = e.target.closest('.oseg');
   if (seg && !seg.contains(e.relatedTarget))
     return linkAthlete(seg.closest('.card'), seg.dataset.a, false);
