@@ -2767,7 +2767,7 @@ function buildStatTabs(){
 const MINCHART = 640;
 function chartWidth(box, svg){
   const w = NARROW() ? Math.max(MINCHART, box.clientWidth) : box.clientWidth;
-  svg.style.width = w + 'px';
+  svg.style.width = w > box.clientWidth ? w + 'px' : '';   /* cleared again on rotation */
   return w;
 }
 
