@@ -301,18 +301,34 @@
     .card:not(.on){display:none}            /* one card at a time, since the track no longer slides */
     .card__bg{position:fixed}
     .ghostnum{font-size:34vw; top:-1vh}
-    .top2{grid-template-columns:1fr; gap:10px}
+    .top2,.top2.narrow{grid-template-columns:1fr;
+      grid-template-areas:"tl" "rec" "sb"; gap:12px}
     .rec{align-items:flex-start}
     /* four pills do not fit a phone's width, and the card clips what overflows — which
        would put Performers off the screen with no way to reach it */
     .kicker{flex-wrap:wrap; gap:8px 10px; max-width:100%}
-    .modesw{padding-left:0; margin-left:0; border-left:0}
+    /* four tabs and their heading cannot sit on one phone line. Wrapping them cost three
+       lines of header, so the group keeps one line and is swiped instead. */
+    .modesw{padding-left:0; margin-left:0; border-left:0; width:100%;
+      flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      scrollbar-width:none; padding-bottom:2px}
+    .modesw::-webkit-scrollbar{display:none}
+    .modesw > *{flex:0 0 auto}
+    .tlab{padding-left:0; margin-left:0; border-left:0}
+    /* the chip is pushed to the right edge on a wide card, where there is room for it;
+       on a phone that pushes it off the screen, so it follows the flag instead */
+    .lnm .wr{margin-left:6px}
+    .lnm{overflow:hidden}
     .rec{text-align:left}
     .rec .who{justify-content:flex-start}
     .title h1{font-size:clamp(26px,8vw,40px); white-space:normal}
     .body{grid-template-columns:1fr; gap:16px}
     .ladder{font-size:12px!important; display:flex; flex-direction:column}
-    .lr{flex:0 0 auto; height:29px; grid-template-columns:2em 4.4em minmax(0,1fr) 2.8em 2.4em}
+    /* the same order the wide card uses: rank, mark, wind, year, then the name takes the rest.
+       This template still described the old order, which left the name 29px on a phone. */
+    .lr{flex:0 0 auto; height:29px;
+      grid-template-columns:1.9em 4.3em 2.7em 2.5em minmax(0,1fr)}
+    .ladder.nowind .lr{grid-template-columns:1.9em 4.3em 2.5em minmax(0,1fr)}
     .chartwrap{height:42vw; min-height:200px}
     .foot{position:static; margin-top:14px}
     .controls{left:0; right:0; bottom:0; transform:none; width:100%; border-radius:0;
@@ -323,6 +339,15 @@
     .jumppop{left:10px; right:10px; transform:none; width:auto;
       bottom:calc(62px + env(safe-area-inset-bottom)); max-height:56vh}
     .modal__box{padding:24px 20px}
+  }
+
+  /* a phone on its side has 800 points of width and no height: the ladder goes back to two
+     columns there, which halves how far the page has to be scrolled */
+  @media (max-height:540px) and (min-width:640px){
+    .ladder{display:grid; grid-auto-flow:column;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      grid-template-rows:repeat(var(--half,25),auto); column-gap:24px}
+    .lr.nb{border-top:0}
   }
 </style>
 </head>
@@ -822,7 +847,11 @@ function fitRec(root){
   const set = k => { rec.style.setProperty('--rs', k); rec.style.setProperty('--rg', k); };
   set(1);
   /* a phone stacks the head and scrolls the card, so nothing there competes for height */
-  if (NARROW()) return;
+  if (NARROW()){
+    const t = root.querySelector('.top2');
+    if (t) t.classList.remove('narrow');
+    return;
+  }
   /* Does the row have width for the stats and the mark side by side? The stats are measured
      from their own children, since they may already have wrapped. If not, the mark keeps to
      the title's row and the stats take the full width under both, as they used to. */
