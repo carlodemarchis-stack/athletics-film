@@ -225,6 +225,86 @@
      fullscreen on every tablet and narrow laptop window for no reason. */
   @media (max-width:520px){ #fs, .controls .sep{display:none} }
 
+  /* ---------- the phone reads the card as a page ----------
+     The card is a fixed full screen everywhere else, with the chart the only thing free to
+     grow; on a phone the fixed blocks alone are taller than the screen, so the chart was
+     collapsing to nothing and the foot of the card was being cut off with no way to scroll.
+     Here the film stops being a viewport: one card at a time, stacked, and the page scrolls. */
+  @media (max-width:860px), (max-height:540px){
+    /* the card no longer clips, so the watermark and a stray axis label would otherwise
+       drag the whole page sideways */
+    html{overflow-x:hidden}
+    html,body{height:auto; overflow-y:visible}
+    .stage{position:static; overflow:visible}
+    .track{display:block; height:auto; width:auto;
+      transform:none!important; transition:none!important}
+    .card{flex:none; height:auto; min-height:0; overflow:visible;
+      padding:14px 16px calc(84px + env(safe-area-inset-bottom));
+      content-visibility:visible; contain-intrinsic-size:auto}
+    .card:not(.on){display:none}          /* the track no longer slides, so show one */
+    .card__bg{position:fixed}
+    .ghostnum{font-size:34vw; top:-1vh; right:0}
+    .inner{height:auto; gap:12px}
+
+    .head{flex-direction:column; align-items:stretch; gap:10px}
+    /* the kicker's label is one unbreakable line — "World record film · men and women
+       together" — and it was setting the width of the whole left column, and with it the
+       heading that would otherwise have wrapped */
+    .head > div{min-width:0; width:100%}
+    .disc{white-space:normal}
+    .kicker{flex-wrap:wrap; gap:8px 10px; max-width:100%}
+    .modesw{padding-left:0; margin-left:0; border-left:0; width:100%;
+      flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+      scrollbar-width:none; padding-bottom:2px}
+    .modesw::-webkit-scrollbar{display:none}
+    .modesw > *{flex:0 0 auto}
+    .tlab{padding-left:0; margin-left:0; border-left:0}
+    /* the title is a flex row, so the heading needs leave to shrink before it will wrap */
+    .title{flex-wrap:wrap; gap:8px}
+    .title h1{font-size:clamp(26px,8.5vw,42px); white-space:normal; min-width:0}
+    .rec{text-align:left; width:100%}
+    .recline{justify-content:flex-start}
+    .rec .who{justify-content:flex-start}
+    .rec .v{font-size:clamp(34px,11vw,54px)}
+    .rec .w{margin-top:8px}
+
+    .statbar{gap:12px 20px}
+    .stat .v{font-size:clamp(17px,5.2vw,24px)}
+    .nations{flex-wrap:wrap; gap:8px}
+    .nbar{flex:1 0 100%; height:15px}
+
+    /* every chart gets a real height of its own, since nothing is competing for it now.
+       A staircase reads at 250px; the whole-sport views are ranked lists of up to forty rows
+       and need the room, so they get their own. */
+    .chartwrap{flex:none; height:62vw; min-height:250px; max-height:420px}
+    .statcard .chartwrap{height:min(165vw,660px); max-height:none;
+      overflow-x:auto; -webkit-overflow-scrolling:touch}
+    .stats__body{overflow-x:auto; -webkit-overflow-scrolling:touch}
+    .race{flex:none}
+    .racewrap{height:clamp(120px,34vw,190px)}
+    .racehead{flex-wrap:wrap; gap:8px}
+    .foot,.note{position:static; margin-top:14px}
+
+    .controls{left:0; right:0; bottom:0; transform:none; width:100%; border-radius:0;
+      border-width:1px 0 0; justify-content:space-around; gap:2px;
+      padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+      background:rgba(14,9,7,.95)}
+    .controls > button:not(.counter),.controls > a{
+      width:clamp(30px,9.2vw,38px); height:clamp(30px,9.2vw,38px)}
+    .controls .play{width:clamp(38px,11.5vw,50px); height:clamp(38px,11.5vw,50px)}
+    .jumppop{left:10px; right:10px; transform:none; width:auto;
+      bottom:calc(62px + env(safe-area-inset-bottom)); max-height:56vh}
+    .modal__box{padding:24px 20px}
+
+    /* the whole-sport overlay scrolls too, rather than squeezing a chart into nothing */
+    .stats{overflow-y:auto; padding:14px 16px calc(84px + env(safe-area-inset-bottom))}
+    .stats__in{height:auto}
+    .stats__head{flex-direction:column; align-items:flex-start; gap:10px}
+    .stats__body{flex:none; height:78vw; min-height:300px}
+    .agefilter{margin-left:0}
+    .agefilter input[type=range]{width:min(420px,72vw)}
+  }
+
   /* ---------- stats overlay ---------- */
   .stats{position:fixed; inset:0; z-index:70; background:var(--bg0);
     display:flex; flex-direction:column; padding:clamp(16px,2.6vh,30px) clamp(18px,3.2vw,54px) clamp(16px,2.4vh,26px)}
@@ -369,13 +449,16 @@
       <a href="https://tennis.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#f2c14e"></i>
         <span class="t"><span class="n">Tennis</span><span class="k">The season, one player at a time</span></span>
         <span class="go">&#8599;</span></a>
-      <a href="https://top5.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#3fbe72"></i>
-        <span class="t"><span class="n">Top 5 Leagues</span><span class="k">Wins up, losses down</span></span>
+      <a href="https://top5.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#2f9e58"></i>
+        <span class="t"><span class="n">Football</span><span class="k">Season towers, top 5 leagues</span></span>
         <span class="go">&#8599;</span></a>
       <a href="https://nfl.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#4d94e0"></i>
-        <span class="t"><span class="n">NFL</span><span class="k">The season as a tower</span></span>
+        <span class="t"><span class="n">NFL</span><span class="k">Wins up, losses down</span></span>
         <span class="go">&#8599;</span></a>
-      <a href="https://worldcupbracket.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#8f7ad6"></i>
+      <a href="https://nba.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#e0453f"></i>
+        <span class="t"><span class="n">NBA</span><span class="k">Season film and towers</span></span>
+        <span class="go">&#8599;</span></a>
+      <a href="https://worldcupbracket.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#3fbe72"></i>
         <span class="t"><span class="n">World Cup</span><span class="k">Road to the Final</span></span>
         <span class="go">&#8599;</span></a>
       <a href="https://golf.aguywithascarf.com/" target="_blank" rel="noopener noreferrer"><i style="background:#57a34a"></i>
@@ -1050,7 +1133,7 @@ function drawPit(M, root){
 function drawOpening(root, deck, gold){
   const wrap = root.querySelector('.chartwrap'), svg = wrap.querySelector('svg');
   svg.innerHTML = '';
-  const W = wrap.clientWidth, H = wrap.clientHeight;
+  const W = chartWidth(wrap, svg), H = wrap.clientHeight;
   const colL = Math.min(186, W * .17), colR = Math.min(300, W * .27);
   const pad = {t: 22, b: 6};
   const iw = W - colL - colR, ih = H - pad.t - pad.b;
@@ -2679,6 +2762,15 @@ function buildStatTabs(){
   document.querySelectorAll('.stab').forEach(b => b.onclick = () => setTab(b.dataset.tab));
 }
 
+/* These draws hang their row labels off a left pad of 230-odd pixels, which is most of a
+   phone. Give them the width they were written for and let the box scroll sideways. */
+const MINCHART = 640;
+function chartWidth(box, svg){
+  const w = NARROW() ? Math.max(MINCHART, box.clientWidth) : box.clientWidth;
+  svg.style.width = w + 'px';
+  return w;
+}
+
 function paintStats(){
   const root = document.getElementById('stats'), host = root.querySelector('.stats__body');
   if (!STATS_AGG || root.hidden || host.clientWidth < 80) return;
@@ -2686,7 +2778,7 @@ function paintStats(){
   svg.innerHTML = '';
   const tab = STAT_TABS.find(t => t[0] === STAB);
   document.getElementById('statsTitle').textContent = tab[1];
-  tab[2](svg, host.clientWidth, host.clientHeight, STATS_AGG, uiFor(root));
+  tab[2](svg, chartWidth(host, svg), host.clientHeight, STATS_AGG, uiFor(root));
 }
 function setTab(id){
   STAB = id;
@@ -2739,7 +2831,7 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
     // the whole-sport views close both films, men and women together
     STAT_TABS.forEach(([id, label, fn, mixed]) => {
       const sc = document.createElement('section');
-      sc.className = 'card';
+      sc.className = 'card statcard';
       sc.innerHTML = statCardHTML(sex, label, mixed);
       track.appendChild(sc);
       SLIDES.push({el: sc, sex, slug: sex + '-' + id, title: label, paint: () => {
@@ -2749,9 +2841,9 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
         // first paint the row is still empty, so the box measured is one that stops existing a
         // moment later. Draw again when it moves — every later paint measures right and stops at one.
         for (let pass = 0; pass < 2; pass++){
-          const h = w.clientHeight;
+          const h = w.clientHeight, cw = chartWidth(w, svg);
           svg.innerHTML = '';
-          fn(svg, w.clientWidth, h, agg, uiFor(sc));
+          fn(svg, cw, h, agg, uiFor(sc));
           if (w.clientHeight === h) break;
         }
       }});
@@ -2760,7 +2852,7 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
     // the companion to the card before it: the same chart with every bar still running, so all gold
     const own = DECK.filter(M => M.card.gender === sex);
     const lw = document.createElement('section');
-    lw.className = 'card';
+    lw.className = 'card statcard';
     lw.innerHTML = openingCardHTML(own, sex, {
       kicker: 'World record film · every event',
       title: 'Current Record Duration',
@@ -2773,7 +2865,7 @@ fetch('data/progressions.json', {cache: 'no-cache'}).then(r => r.json()).then(d 
 
     // and the two sexes back together, closing the film
     const both = document.createElement('section');
-    both.className = 'card';
+    both.className = 'card statcard';
     both.innerHTML = openingCardHTML(DECK, sex, {
       mixed: true,
       kicker: 'World record film · men and women together',
@@ -2824,10 +2916,14 @@ function updateSocialMeta(){
   } catch(e){}
 }
 
+/* on a phone the track does not slide: one card is shown and the page scrolls */
+const NARROW = () => matchMedia('(max-width:860px), (max-height:540px)').matches;
+
 function go(i, fromHash){
   IDX = (i + SLIDES.length) % SLIDES.length;
   SEX = SLIDES[IDX].sex;
   const f = FILMS[SEX];
+  SLIDES.forEach((s, k) => s.el.classList.toggle('on', k === IDX));
   document.getElementById('track').style.transform = `translateX(${-IDX * 100}%)`;
   document.getElementById('cnum').textContent = IDX - f.start + 1;
   document.getElementById('ctot').textContent = f.len;
@@ -2838,6 +2934,7 @@ function go(i, fromHash){
   try { localStorage.setItem('wrf.card', slug); } catch(e){}
   markJump();
   updateSocialMeta();
+  if (NARROW()) scrollTo(0, 0);
   paint();
 }
 
