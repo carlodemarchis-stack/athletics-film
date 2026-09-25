@@ -554,7 +554,7 @@
     visualisation. All data is the property of World Athletics. Built by
     <a href="https://aguywithascarf.substack.com/" target="_blank" rel="noopener noreferrer">Carlo De Marchis</a>
     with Claude Code.</p>
-  </div>
+  <p class="agwas-rel"><a href="https://dataviz.aguywithascarf.com/releases/#athletics" target="_blank" rel="noopener">Release notes</a> <a class="agwas-ver" data-agwas-ver="athletics" href="https://dataviz.aguywithascarf.com/releases/#athletics" target="_blank" rel="noopener"></a></p></div>
 </div>
 
 <script>
@@ -1236,7 +1236,7 @@ function eventCardHTML(sex){
       <div class="stories"></div>
       <div class="snote"></div>
     </div>
-    <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+    <div class="note">Data: World Athletics · A guy with a scarf<a class="agwas-ver" data-agwas-ver="athletics" href="https://dataviz.aguywithascarf.com/releases/#athletics" target="_blank" rel="noopener"></a></div>`;
 }
 
 /* Every quirk on a card, described from that card's own data rather than written by hand:
@@ -1378,7 +1378,7 @@ function statCardHTML(sex, title, mixed){
       <div class="chartwrap"><svg></svg><div class="tip"></div></div>
       <div class="snote"></div>
     </div>
-    <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+    <div class="note">Data: World Athletics · A guy with a scarf<a class="agwas-ver" data-agwas-ver="athletics" href="https://dataviz.aguywithascarf.com/releases/#athletics" target="_blank" rel="noopener"></a></div>`;
 }
 
 function openingCardHTML(deck, sex, o){
@@ -1413,7 +1413,7 @@ function openingCardHTML(deck, sex, o){
       <div class="chartwrap"><svg></svg><div class="tip"></div></div>
       <div class="snote">${o.note || ''}</div>
     </div>
-    <div class="note">Data: World Athletics · A guy with a scarf</div>`;
+    <div class="note">Data: World Athletics · A guy with a scarf<a class="agwas-ver" data-agwas-ver="athletics" href="https://dataviz.aguywithascarf.com/releases/#athletics" target="_blank" rel="noopener"></a></div>`;
 }
 
 /* the bar is flex-sized, so what fits in each block is only knowable after layout */
@@ -3082,7 +3082,8 @@ document.addEventListener('fullscreenchange', () => setTimeout(paint, 140));
 </script>
 
 <!-- Cloudflare Web Analytics -->
-<!-- Umami --><script defer src="https://m.aguywithascarf.com/k.js" data-website-id="c9c46589-765a-42e1-a4bc-af4f0b7841d8"></script><!-- End Umami -->
+<!-- Umami --><script defer src="https://m.aguywithascarf.com/k.js" data-website-id="c9c46589-765a-42e1-a4bc-af4f0b7841d8"></script>
+<script defer src="https://dataviz.aguywithascarf.com/ver.js"></script><!-- End Umami -->
 <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "0e11f639978547d6a4c33b703dbdf568"}'></script>
 <!-- End Cloudflare Web Analytics -->
 </body>
